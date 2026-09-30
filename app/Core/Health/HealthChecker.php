@@ -49,12 +49,24 @@ class HealthChecker
 
                 return config('filesystems.default').' (privado)';
             }),
+            'audit' => $this->measure(function () {
+                $triggers = $this->auditTriggersActive();
+                $scopes = DB::table('audit_chain_heads')->count();
+
+                return ($triggers ? 'bloqueio no banco ativo' : 'sem trigger (hospedagem compartilhada) — protegida pela cadeia HMAC')
+                    ." · {$scopes} cadeias";
+            }),
             'queue' => $this->measure(function () {
                 $driver = config('queue.default');
                 $failed = DB::table('failed_jobs')->count();
 
                 if ($driver === 'database') {
                     $pending = DB::table('jobs')->count();
+                    $stale = DB::table('jobs')->where('available_at', '<', now()->subMinutes(10)->timestamp)->whereNull('reserved_at')->count();
+
+                    if ($stale > 0) {
+                        throw new \RuntimeException("{$stale} jobs aguardando há mais de 10 min — verifique o cron (schedule:run)");
+                    }
 
                     return "{$driver} · pendentes: {$pending} · falhas: {$failed}";
                 }
@@ -62,6 +74,16 @@ class HealthChecker
                 return "{$driver} · falhas: {$failed}";
             }),
         ];
+    }
+
+    public function auditTriggersActive(): bool
+    {
+        return match (DB::getDriverName()) {
+            'pgsql' => DB::table('pg_trigger')->where('tgname', 'audit_logs_immutable')->exists(),
+            'mysql', 'mariadb' => DB::table('information_schema.triggers')
+                ->where('trigger_schema', DB::getDatabaseName())->where('event_object_table', 'audit_logs')->count() >= 2,
+            default => false,
+        };
     }
 
     public function healthy(array $results): bool

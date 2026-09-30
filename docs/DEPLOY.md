@@ -1,5 +1,8 @@
 # Deploy e ambientes
 
+> **Produção atual: HostGator Plano Turbo (cPanel).** Passo a passo completo em
+> [HOSTGATOR.md](HOSTGATOR.md). As seções de VPS abaixo valem para a evolução futura.
+
 | Ambiente | `APP_ENV` | `APP_STAGE` | Integrações | Dados |
 |---|---|---|---|---|
 | Desenvolvimento | local | development | **mock** | DemoSeeder (fictícios) |
@@ -9,10 +12,10 @@
 
 O estágio aparece na interface sempre que não for produção.
 
-## Produção — topologia recomendada
+## VPS (evolução) — topologia recomendada
 
 - 2+ instâncias da aplicação (imagem do `Dockerfile`) atrás de load balancer com TLS.
-- PostgreSQL gerenciado (Multi-AZ, backups PITR, criptografia em repouso), região `sa-east-1` (dados no Brasil).
+- MySQL/MariaDB ou PostgreSQL gerenciado (backups PITR, criptografia em repouso), dados no Brasil.
 - Redis gerenciado (cache, sessão, filas).
 - Workers: `php artisan queue:work --tries=3` (processo supervisionado) e um único `schedule:run` por minuto (`onOneServer`).
 - Armazenamento S3 privado com SSE e bloqueio de acesso público.

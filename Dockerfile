@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# AivexaClínica — imagem da aplicação (PHP-FPM 8.4). Multi-stage: dependências → runtime.
+# AivexaClínica — imagem de desenvolvimento/VPS (PHP-FPM 8.3, mesma versão-alvo da HostGator).
 
 FROM composer:2 AS vendor
 WORKDIR /app
@@ -8,11 +8,11 @@ RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --opti
 COPY . .
 RUN composer dump-autoload --no-dev --optimize --classmap-authoritative
 
-FROM php:8.4-fpm-alpine AS runtime
+FROM php:8.3-fpm-alpine AS runtime
 RUN apk add --no-cache icu-libs libzip libpng libjpeg-turbo freetype postgresql-libs \
     && apk add --no-cache --virtual .build $PHPIZE_DEPS icu-dev libzip-dev libpng-dev libjpeg-turbo-dev freetype-dev postgresql-dev linux-headers \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_pgsql intl zip gd bcmath opcache pcntl \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_pgsql intl zip gd bcmath opcache pcntl \
     && pecl install redis && docker-php-ext-enable redis \
     && apk del .build
 

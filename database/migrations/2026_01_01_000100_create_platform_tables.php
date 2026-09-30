@@ -5,6 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/*
+ * Compatível com MySQL 5.7+/MariaDB 10.3+ (produção HostGator) e PostgreSQL 13+.
+ * Unicidade condicional ("somente registros não excluídos") é feita com colunas
+ * geradas + índice único, pois o MySQL não tem índices parciais.
+ */
 return new class extends Migration
 {
     public function up(): void
@@ -17,11 +22,10 @@ return new class extends Migration
             $table->unsignedBigInteger('price_monthly_cents')->default(0);
             $table->unsignedBigInteger('price_yearly_cents')->default(0);
             $table->unsignedInteger('trial_days')->default(0);
-            // Limites e recursos: max_users, max_doctors, max_branches, storage_mb,
-            // ai_enabled, whatsapp_enabled, ai_monthly_messages ...
-            $table->jsonb('limits')->default('{}');
+            // max_users, max_doctors, max_branches, storage_mb, ai_enabled, whatsapp_enabled...
+            $table->json('limits')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestampsTz();
+            $table->datetimes();
         });
 
         Schema::create('companies', function (Blueprint $table) {
@@ -32,18 +36,17 @@ return new class extends Migration
             $table->string('slug', 80)->unique();
             $table->string('email', 190)->nullable();
             $table->string('phone', 20)->nullable();
-            $table->string('status', 20)->default('trial');
+            $table->string('status', 20)->default('trial')->index();
             $table->foreignUlid('saas_plan_id')->nullable()->constrained('saas_plans')->restrictOnDelete();
-            $table->timestampTz('trial_ends_at')->nullable();
-            $table->jsonb('settings')->default('{}');
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->dateTime('trial_ends_at')->nullable();
+            $table->json('settings')->nullable();
+            $table->datetimes();
+            $table->softDeletesDatetime();
 
-            $table->index('status');
+            // CNPJ único entre empresas não excluídas.
+            $table->string('active_document', 14)->nullable()
+                ->storedAs('CASE WHEN deleted_at IS NULL THEN document END')->unique();
         });
-
-        DB::statement("ALTER TABLE companies ADD CONSTRAINT companies_status_check CHECK (status IN ('trial','active','suspended','cancelled'))");
-        DB::statement('CREATE UNIQUE INDEX companies_document_unique ON companies (document) WHERE deleted_at IS NULL');
 
         Schema::create('branches', function (Blueprint $table) {
             $table->ulid('id')->primary();
@@ -63,18 +66,22 @@ return new class extends Migration
             $table->char('state', 2)->nullable();
             $table->string('timezone', 64)->default('America/Sao_Paulo');
             $table->string('status', 20)->default('active');
-            $table->jsonb('settings')->default('{}');
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->json('settings')->nullable();
+            $table->datetimes();
+            $table->softDeletesDatetime();
 
             $table->unique(['company_id', 'code']);
-            // Alvo de FKs compostas: garante que um registro que aponta para a
-            // filial pertence à MESMA empresa (integridade multi-tenant no banco).
+            // Alvo de FKs compostas: um registro que aponta para a filial pertence à MESMA empresa.
             $table->unique(['company_id', 'id']);
+
+            // Uma única matriz ativa por empresa.
+            // (RTRIM: o MariaDB não aceita colunas CHAR puras em expressões geradas.)
+            $table->string('headquarters_key', 26)->nullable()
+                ->storedAs('CASE WHEN is_headquarters = TRUE AND deleted_at IS NULL THEN RTRIM(company_id) END')->unique();
         });
 
-        DB::statement("ALTER TABLE branches ADD CONSTRAINT branches_status_check CHECK (status IN ('active','inactive'))");
-        DB::statement('CREATE UNIQUE INDEX branches_one_headquarters ON branches (company_id) WHERE is_headquarters AND deleted_at IS NULL');
+        self::check('companies', 'companies_status_check', "status IN ('trial','active','suspended','cancelled')");
+        self::check('branches', 'branches_status_check', "status IN ('active','inactive')");
     }
 
     public function down(): void
@@ -82,5 +89,11 @@ return new class extends Migration
         Schema::dropIfExists('branches');
         Schema::dropIfExists('companies');
         Schema::dropIfExists('saas_plans');
+    }
+
+    /** CHECK constraints: aplicadas no PostgreSQL, MariaDB 10.2+ e MySQL 8.0.16+ (ignoradas no MySQL 5.7). */
+    public static function check(string $table, string $name, string $expression): void
+    {
+        DB::statement("ALTER TABLE {$table} ADD CONSTRAINT {$name} CHECK ({$expression})");
     }
 };

@@ -1,25 +1,40 @@
+# AivexaClínica — Apache (HostGator/cPanel)
+Options -Indexes
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        Options -MultiViews
     </IfModule>
 
     RewriteEngine On
 
-    # Handle Authorization Header
+    # HTTPS obrigatório (AutoSSL do cPanel). Descomente após o certificado estar ativo.
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Repassa o header Authorization (API Bearer) ao PHP
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # Redirect Trailing Slashes If Not A Folder...
+    # Arquivos ocultos nunca são servidos
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    <FilesMatch "\.(css|js|png|webp|svg|ico|woff2?)$">
+        Header set Cache-Control "public, max-age=604800"
+    </FilesMatch>
 </IfModule>

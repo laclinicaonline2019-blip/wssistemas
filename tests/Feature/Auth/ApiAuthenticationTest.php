@@ -134,10 +134,12 @@ class ApiAuthenticationTest extends TestCase
         $this->assertStringNotContainsString($secret, (string) $raw);
     }
 
-    public function test_passwords_are_hashed_with_argon2id(): void
+    public function test_passwords_use_argon2id_when_available_or_bcrypt(): void
     {
         ['admin' => $admin] = $this->createClinic();
+        $hash = DB::table('users')->where('id', $admin->id)->value('password');
 
-        $this->assertStringStartsWith('$argon2id$', DB::table('users')->where('id', $admin->id)->value('password'));
+        $this->assertStringStartsWith(defined('PASSWORD_ARGON2ID') ? '$argon2id$' : '$2y$', $hash);
+        $this->assertNotSame(self::PASSWORD, $hash);
     }
 }

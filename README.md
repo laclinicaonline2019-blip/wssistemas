@@ -7,9 +7,12 @@ perfis granulares, agenda inteligente, prontuário, receitas e atestados com imp
 financeiro, pagamentos (ASAAS/Cielo), convênios, portal do paciente e atendimento por IA/WhatsApp,
 com segurança, auditoria e LGPD como prioridade.
 
-**Stack:** PHP 8.4 · Laravel 13 · PostgreSQL 16 · Redis · JavaScript/CSS próprios (sem build) · Docker
+**Stack:** PHP 8.3+ · Laravel 13 · MySQL/MariaDB (ou PostgreSQL) · JavaScript/CSS próprios (sem build)
 
-## Estado atual — v0.2.0 (Fases 1 e 2 concluídas)
+**Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
+SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
+
+## Estado atual — v0.3.0 (Fases 1 e 2 concluídas, adaptado para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -18,12 +21,17 @@ com segurança, auditoria e LGPD como prioridade.
 - ✅ Super Admin: clínicas, planos e limites, suspensão, saúde do sistema
 - ✅ Filiais, usuários, perfis de acesso, configurações, **auditoria imutável** (web + API)
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
-- ✅ Instalador, dados demo fictícios, Docker, CI, 66 testes
+- ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 71 testes
 
 Próxima fase: pacientes, médicos e especialidades → agenda com anti-dupla-marcação → prontuário.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido
+
+**Produção (HostGator):** siga [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
+
+**Desenvolvimento (Docker):**
 
 ```bash
 cp .env.example .env
@@ -44,7 +52,8 @@ Abra http://localhost:8080 (demo: `admin@demo.aivexa.local` / `Demo@12345`). Det
 | [DATABASE.md](docs/DATABASE.md) | tabelas, constraints e modelo alvo |
 | [SECURITY.md](docs/SECURITY.md) | controles implementados e checklist de produção |
 | [API.md](docs/API.md) · [openapi.yaml](docs/openapi.yaml) | API REST v1 |
-| [INSTALL.md](docs/INSTALL.md) · [DEPLOY.md](docs/DEPLOY.md) | instalação, ambientes, backup |
+| [HOSTGATOR.md](docs/HOSTGATOR.md) | **instalação em produção na HostGator (cPanel)** |
+| [INSTALL.md](docs/INSTALL.md) · [DEPLOY.md](docs/DEPLOY.md) | instalação de desenvolvimento, ambientes, backup |
 | [TESTING.md](docs/TESTING.md) | estratégia e cobertura de testes |
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [AI.md](docs/AI.md) | pagamentos, WhatsApp, IA |
 | [LGPD.md](docs/LGPD.md) | privacidade e proteção de dados |
@@ -53,7 +62,7 @@ Abra http://localhost:8080 (demo: `admin@demo.aivexa.local` / `Demo@12345`). Det
 ## Testes
 
 ```bash
-php artisan test        # requer PostgreSQL (ver .env.testing)
+php artisan test        # MySQL/MariaDB por padrão (ver .env.testing); PostgreSQL também suportado
 vendor/bin/pint --test
 ```
 

@@ -25,9 +25,8 @@
         <env name="ARGON_THREADS" value="1"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <!-- PostgreSQL real: constraints, triggers e locks são parte do que se testa. -->
-        <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_DATABASE" value="aivexa_testing"/>
+        <!-- Banco: definido em .env.testing (MySQL/MariaDB). Para PostgreSQL:
+             DB_CONNECTION=pgsql DB_PORT=5432 DB_USERNAME=postgres php artisan test -->
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

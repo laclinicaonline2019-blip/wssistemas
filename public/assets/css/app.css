@@ -263,3 +263,4 @@ details.diff pre { white-space: pre-wrap; word-break: break-word; background: va
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 .error-page { min-height: 100vh; }
+.install { max-width: 960px; margin: 0 auto; }

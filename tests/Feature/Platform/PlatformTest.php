@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Platform;
 
+use App\Core\Install\Installer;
 use App\Modules\Identity\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class PlatformTest extends TestCase
@@ -63,7 +65,7 @@ class PlatformTest extends TestCase
         $this->createClinic();
 
         $this->api($this->super)->getJson('/api/v1/platform/health')
-            ->assertOk()->assertJsonPath('status', 'ok')->assertJsonStructure(['checks' => ['database', 'migrations', 'cache', 'storage', 'queue']]);
+            ->assertOk()->assertJsonPath('status', 'ok')->assertJsonStructure(['checks' => ['database', 'migrations', 'cache', 'storage', 'audit', 'queue']]);
         $this->api($this->super)->getJson('/api/v1/platform/metrics')->assertOk()->assertJsonPath('data.companies.active', 1);
     }
 
@@ -83,5 +85,6 @@ class PlatformTest extends TestCase
         $this->assertSame(1, DB::table('companies')->count());
         $this->assertSame(3, DB::table('saas_plans')->count());
         $this->assertDatabaseHas('users', ['email' => 'adm@example.test']);
+        File::delete(app(Installer::class)->lockPath());
     }
 }

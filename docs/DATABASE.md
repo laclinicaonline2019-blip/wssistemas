@@ -1,8 +1,24 @@
 # Banco de dados
 
-PostgreSQL 16. Chaves primárias **ULID** (`char(26)`), timestamps `timestamptz` (UTC; exibição no
-fuso da filial), valores monetários em **centavos (bigint)**, exclusão lógica (`deleted_at`) em
-cadastros e **nunca** exclusão física de dados clínicos.
+**Produção: MySQL 5.7.8+ / MariaDB 10.3+ (HostGator).** Também compatível com PostgreSQL 13+ (VPS).
+Charset `utf8mb4_unicode_ci`. Chaves primárias **ULID** (`char(26)`), datas `DATETIME` em UTC
+(sem o limite de 2038 do `TIMESTAMP`; exibição no fuso da filial), valores monetários em
+**centavos (bigint)**, exclusão lógica (`deleted_at`) em cadastros e **nunca** exclusão física de
+dados clínicos.
+
+### Técnicas portáveis de integridade
+
+| Necessidade | PostgreSQL puro | Solução portável adotada |
+|---|---|---|
+| Único apenas entre não excluídos | índice parcial | coluna gerada `CASE WHEN deleted_at IS NULL THEN … END` + `UNIQUE` (NULLs não colidem) |
+| E-mail único sem diferenciar maiúsculas | índice em `lower(email)` | coluna gerada `active_email = lower(email)` + `UNIQUE` |
+| Um único "empresa toda" por usuário/perfil | `UNIQUE NULLS NOT DISTINCT` | coluna gerada `branch_key = COALESCE(branch_id,'*')` |
+| Mesma empresa entre tabelas | FK composta | FK composta (InnoDB suporta) |
+| Auditoria imutável | trigger | cadeia HMAC (sempre) + trigger quando houver privilégio |
+| Sem dupla marcação na agenda (Fase 4) | exclusion constraint | índice único (médico, início do slot, ativo) + `SELECT … FOR UPDATE` na grade do dia |
+
+Observação MariaDB: colunas `CHAR` não podem ser usadas diretamente em colunas geradas — por isso
+as expressões usam `RTRIM(coluna)`.
 
 ## Tabelas implementadas (Fases 1–2)
 
@@ -16,7 +32,8 @@ cadastros e **nunca** exclusão física de dados clínicos.
 | `roles` | Perfis por empresa (`is_system`, `is_locked`) | `UNIQUE(company_id, key)` |
 | `role_permission` | N:N perfil × permissão | PK composta |
 | `user_role_assignments` | Usuário × perfil × filial (NULL = empresa toda) | **FKs compostas** `(company_id, user_id/role_id/branch_id)`; `UNIQUE NULLS NOT DISTINCT (user_id, role_id, branch_id)` |
-| `audit_logs` | Trilha de auditoria | **Trigger bloqueia UPDATE/DELETE/TRUNCATE**; sem FKs (sobrevive a qualquer mudança) |
+| `audit_logs` | Trilha de auditoria (`prev_hash`, `hash` HMAC) | cadeia criptográfica por empresa; trigger de bloqueio quando o banco permitir; sem FKs |
+| `audit_chain_heads` | Topo da cadeia por empresa (lock serializa as inserções) | PK `scope` |
 | `personal_access_tokens` | Tokens de API (Sanctum) com `expires_at` | token hash único |
 | `sessions`, `cache`, `jobs`, `failed_jobs`, `job_batches`, `password_reset_tokens` | Infraestrutura | |
 
@@ -32,9 +49,10 @@ para garantir mesma empresa, e é consultada via `BelongsToCompany`.
   `patients` (CPF único por empresa, nome social, responsável, contatos), `patient_contacts`,
   `patient_insurances`, `patient_consents`, `patient_documents`, `files`.
 - **Agenda:** `schedule_templates` (dia, horário, duração, limite por período, encaixes),
-  `schedule_blocks` (férias, feriados, bloqueios), `holidays`, `appointments`
-  com `tstzrange` + **`EXCLUDE USING gist (doctor_id WITH =, period WITH &&) WHERE status ativo`**
-  (impossível marcar dois pacientes no mesmo horário, mesmo com requisições simultâneas),
+  `schedule_blocks` (férias, feriados, bloqueios), `holidays`, `appointments` com coluna gerada
+  `active_slot_key` (médico + início, só para status ativos) **UNIQUE** e reserva feita dentro de
+  transação com `SELECT … FOR UPDATE` na grade do médico/dia (impossível marcar dois pacientes no
+  mesmo horário, mesmo com requisições simultâneas; limites por período contados sob o mesmo lock),
   `appointment_status_history`, `queue_tickets` (sequência por filial/dia/tipo), `queue_calls`.
 - **Clínico:** `medical_records`, `medical_record_versions` (imutável, hash encadeado),
   `vital_signs`, `diagnoses`, `cid_codes` (versão da tabela CID), `medications`,

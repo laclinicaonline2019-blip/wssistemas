@@ -19,35 +19,38 @@ return new class extends Migration
             $table->boolean('is_super_admin')->default(false);
             $table->string('status', 20)->default('active');
             $table->text('two_factor_secret')->nullable()->comment('Criptografado (APP_KEY)');
-            $table->text('two_factor_recovery_codes')->nullable()->comment('Hashes, criptografado');
-            $table->timestampTz('two_factor_confirmed_at')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable()->comment('HMACs, criptografado');
+            $table->dateTime('two_factor_confirmed_at')->nullable();
             $table->unsignedSmallInteger('failed_login_attempts')->default(0);
-            $table->timestampTz('locked_until')->nullable();
-            $table->timestampTz('last_login_at')->nullable();
+            $table->dateTime('locked_until')->nullable();
+            $table->dateTime('last_login_at')->nullable();
             $table->string('last_login_ip', 45)->nullable();
-            $table->timestampTz('password_changed_at')->nullable();
+            $table->dateTime('password_changed_at')->nullable();
             $table->boolean('must_change_password')->default(false);
             $table->rememberToken();
-            $table->timestampsTz();
-            $table->softDeletesTz();
+            $table->datetimes();
+            $table->softDeletesDatetime();
 
             $table->index(['company_id', 'status']);
             $table->unique(['company_id', 'id']);
+
+            // E-mail único (sem diferenciar maiúsculas) entre usuários não excluídos.
+            $table->string('active_email', 190)->nullable()
+                ->storedAs('CASE WHEN deleted_at IS NULL THEN lower(email) END')->unique();
         });
 
         DB::statement("ALTER TABLE users ADD CONSTRAINT users_status_check CHECK (status IN ('active','blocked','invited'))");
-        // Super admin da plataforma não pertence a nenhuma clínica; usuário de clínica sempre pertence a uma.
-        DB::statement('ALTER TABLE users ADD CONSTRAINT users_tenant_check CHECK ((is_super_admin AND company_id IS NULL) OR (NOT is_super_admin AND company_id IS NOT NULL))');
-        DB::statement('CREATE UNIQUE INDEX users_email_unique ON users (lower(email)) WHERE deleted_at IS NULL');
+        // Super admin não pertence a nenhuma clínica; usuário de clínica sempre pertence a uma.
+        DB::statement('ALTER TABLE users ADD CONSTRAINT users_tenant_check CHECK ((is_super_admin = TRUE AND company_id IS NULL) OR (is_super_admin = FALSE AND company_id IS NOT NULL))');
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
-            $table->string('email')->primary();
+            $table->string('email', 190)->primary();
             $table->string('token');
-            $table->timestampTz('created_at')->nullable();
+            $table->dateTime('created_at')->nullable();
         });
 
         Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
+            $table->string('id', 128)->primary();
             $table->string('user_id', 26)->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
@@ -61,9 +64,9 @@ return new class extends Migration
             $table->text('name');
             $table->string('token', 64)->unique();
             $table->text('abilities')->nullable();
-            $table->timestampTz('last_used_at')->nullable();
-            $table->timestampTz('expires_at')->nullable()->index();
-            $table->timestampsTz();
+            $table->dateTime('last_used_at')->nullable();
+            $table->dateTime('expires_at')->nullable()->index();
+            $table->datetimes();
         });
     }
 

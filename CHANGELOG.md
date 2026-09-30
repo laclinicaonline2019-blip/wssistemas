@@ -2,6 +2,26 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.3.0] — 2026-09-30 — Produção na HostGator (Plano Turbo, hospedagem compartilhada)
+
+### Alterado
+- Banco de produção passa a ser **MySQL 5.7.8+/MariaDB 10.3+**; migrations portáveis (colunas geradas
+  + índices únicos no lugar de índices parciais, `DATETIME` UTC, JSON). PostgreSQL continua suportado.
+- Dependências travadas para **PHP 8.3** (`config.platform`).
+- Cache, sessões e filas no banco; fila processada pelo **cron** (`schedule:run` a cada minuto).
+- Hash de senha automático: argon2id quando disponível, senão bcrypt.
+- Docker de desenvolvimento usa MariaDB com as mesmas restrições da hospedagem (binlog, sem SUPER).
+
+### Adicionado
+- **Instalador web** `/instalar` (sem SSH): token obrigatório, gera `APP_KEY`, verifica servidor e banco,
+  cria clínica, administrador e Super Admin, e se autodesativa.
+- **Cadeia criptográfica HMAC** na auditoria (`aivexa:audit:verify`, verificação diária) — protege a
+  trilha mesmo quando o MySQL compartilhado não permite triggers.
+- `docs/HOSTGATOR.md`, `.htaccess` endurecido, `deploy/hostgator/` (pacote `.zip` com vendor e
+  `.htaccess` para o caso `public_html`), artefato de release no CI.
+- Saúde do sistema: estado da proteção da auditoria e alerta de fila parada (cron ausente).
+- CI em matriz MariaDB 10.6 + PostgreSQL 16 com PHP 8.3. 71 testes.
+
 ## [0.2.0] — 2026-09-30 — Fases 1 e 2
 
 ### Adicionado
@@ -30,6 +50,6 @@ Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versiona
 | Auditoria | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Pendências conhecidas
-- Imagem Docker não validada em build neste ambiente (daemon indisponível); validar no primeiro uso.
+- Imagem Docker (apenas desenvolvimento) não validada em build neste ambiente (daemon indisponível).
 - Recuperação de senha por e-mail ("esqueci minha senha") — entra com a configuração de e-mail transacional.
 - Fonte Inter carregada do Google Fonts; considerar hospedar localmente.

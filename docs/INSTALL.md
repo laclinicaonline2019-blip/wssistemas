@@ -1,5 +1,8 @@
 # Instalação
 
+- **Produção (HostGator Plano Turbo / cPanel):** siga [HOSTGATOR.md](HOSTGATOR.md) — pacote `.zip` + instalador web `/instalar`.
+- **Desenvolvimento:** opções abaixo.
+
 ## Opção A — Docker (recomendado)
 
 ```bash
@@ -14,11 +17,12 @@ docker compose exec app php artisan db:seed --class=DemoSeeder
 ```
 
 Acesse http://localhost:8080 · e-mails de teste em http://localhost:8025 (Mailpit).
+O Compose usa MariaDB com binlog e usuário sem SUPER — as mesmas restrições da HostGator.
 
 ## Opção B — Local
 
-Requisitos: PHP 8.3+ (`pdo_pgsql`, `mbstring`, `openssl`, `sodium`, `intl`, `gd`, `zip`),
-Composer 2, PostgreSQL 16+ (Redis opcional em dev).
+Requisitos: PHP 8.3+ (`pdo_mysql` ou `pdo_pgsql`, `mbstring`, `openssl`, `sodium`, `intl`, `gd`, `zip`),
+Composer 2, MySQL 5.7.8+/MariaDB 10.3+ (ou PostgreSQL 13+).
 
 ```bash
 composer install

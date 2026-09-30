@@ -3,6 +3,11 @@
 Plataforma SaaS multiempresa de gestão clínica. Este documento responde aos 15 itens do
 "primeiro passo" da especificação e registra as decisões técnicas (ADRs resumidos).
 
+> **Ambiente de produção-alvo: HostGator Plano Turbo (hospedagem compartilhada/cPanel).**
+> Por isso a produção usa MySQL/MariaDB, cache/sessão/filas no banco, fila processada por cron e
+> instalador web. O mesmo código roda em VPS com PostgreSQL/Redis/workers quando a operação crescer.
+> Guia: [HOSTGATOR.md](HOSTGATOR.md).
+
 ---
 
 ## 1. Arquitetura geral
@@ -24,12 +29,12 @@ por serviços/eventos e não por acesso direto a tabelas de outros módulos.
                      │  Integrações   Payment/WhatsApp/AI/Storage via interfaces │
                      └──────┬──────────────┬───────────────┬─────────────────────┘
                             │              │               │
-                     PostgreSQL 16     Redis (cache,    Storage privado
-                     (dados + RLS-     filas, sessão)   (local/S3, URLs
-                      ready, triggers)                  temporárias)
+                     MySQL/MariaDB     Cache/sessão/    Storage privado
+                     (HostGator) ou    filas no banco   (local/S3, URLs
+                     PostgreSQL (VPS)  (Redis no VPS)   temporárias)
                             ▲
-                     Workers de fila (WhatsApp, IA, OCR, PDF, webhooks, conciliação)
-                     Scheduler (lembretes, cobranças, backup, limpeza)
+                     Cron do cPanel (1/min) → schedule:run → fila (WhatsApp, IA, OCR, PDF,
+                     webhooks, conciliação), lembretes, cobranças, verificação da auditoria
 ```
 
 ### Estrutura de pastas
@@ -51,7 +56,7 @@ config/permissions.php  # catálogo único de permissões + perfis padrão
 database/migrations     # schema PostgreSQL (constraints, FKs compostas, triggers)
 resources/views         # Blade (server-side) — telas e layouts de impressão
 public/assets           # CSS/JS próprios, sem build obrigatório
-tests/{Unit,Feature}    # PHPUnit contra PostgreSQL real
+tests/{Unit,Feature}    # PHPUnit contra MySQL/MariaDB e PostgreSQL reais
 docs/                   # esta documentação
 ```
 
@@ -64,13 +69,14 @@ Regras de negócio e de autorização fina ficam nos Services (reutilizados por 
 |---|---|---|
 | Linguagem | **PHP 8.4** (mín. 8.3) | requisito; tipagem moderna, enums, readonly |
 | Framework | **Laravel 13** | maduro, seguro por padrão (CSRF, hashing, validação, filas, scheduler, migrations), enorme ecossistema e mão de obra no Brasil |
-| Banco | **PostgreSQL 16** | FKs compostas, índices parciais, `UNIQUE NULLS NOT DISTINCT`, **exclusion constraints** (anti-dupla-marcação na agenda), JSONB, triggers, Row Level Security disponível. MySQL/MariaDB **não** é suportado: perderíamos garantias de integridade que a agenda e a auditoria exigem |
-| Cache/filas/sessão | **Redis 7** (prod) / database (dev) | filas assíncronas e locks distribuídos |
+| Banco | **MySQL 5.7.8+ / MariaDB 10.3+** (HostGator) · PostgreSQL 13+ (VPS) | a HostGator compartilhada oferece MySQL/MariaDB. As garantias de integridade foram mantidas de forma portável: FKs compostas, **colunas geradas + índices únicos** (no lugar de índices parciais), CHECKs, transações e `SELECT … FOR UPDATE`. O CI testa nos dois bancos |
+| Cache/filas/sessão | **banco de dados** (HostGator) · Redis (VPS) | sem processos permanentes na hospedagem compartilhada: a fila é processada pelo cron a cada minuto |
 | Front-end | **Blade + JavaScript puro + CSS próprio** | sem etapa de build, compatível com CSP estrita (`script-src 'self'`), rápido em máquinas modestas de recepção; componentes interativos maiores (agenda, fila) poderão usar módulos ES sem mudar a arquitetura |
 | API | REST `/api/v1` + **Sanctum** (tokens Bearer com expiração) | apps, integrações e portal do paciente |
 | 2FA | TOTP RFC 6238 (`pragmarx/google2fa`) + códigos de recuperação | |
 | Impressão | CSS `@page` (A4 e térmica 58/80 mm); PDF server-side (Fase 6) | ver §16 |
-| Infra | Docker (php-fpm + nginx + postgres + redis + mailpit), GitHub Actions | |
+| Infra | **cPanel/Apache (HostGator)** com pacote `.zip` e instalador web; Docker (php-fpm + nginx + MariaDB) para desenvolvimento; GitHub Actions | |
+| PHP | dependências travadas para **PHP 8.3** (`config.platform`) | compatível com a versão disponível no cPanel |
 
 ## 3. Diagrama dos módulos
 
@@ -117,8 +123,7 @@ Defesa em profundidade, em camadas:
    mesmo por SQL direto, vincular perfil/filial/usuário de empresas diferentes.
 6. **Jobs/webhooks** executam com `TenantContext::runFor($companyId, …)`; rotinas globais com
    `runAsSystem()` (uso restrito e explícito).
-7. **Evolução opcional:** Row Level Security do PostgreSQL (`SET app.company_id`) como 4ª
-   barreira — planejado para a Fase 17 (exige cuidado com pooling em modo transação).
+7. **Evolução opcional (somente VPS/PostgreSQL):** Row Level Security como barreira adicional.
 
 Exceção documentada: o escopo de `users` não falha fechado sem contexto, pois a autenticação
 precisa localizar o usuário antes de existir tenant (ver `TenantUserScope`).
@@ -127,9 +132,9 @@ precisa localizar o usuário antes de existir tenant (ver `TenantUserScope`).
 
 - **Web:** sessão (cookie `HttpOnly`, `SameSite=Lax`, `Secure` em produção, sessão criptografada,
   expiração por inatividade de 60 min, regeneração do ID no login).
-- **API:** Sanctum — tokens Bearer com **expiração** (padrão 12 h), revogação no logout, na troca
+- **API:** Sanctum — tokens Bearer com **expiração** (padrão 12 h; `public/.htaccess` repassa o header `Authorization` no Apache), revogação no logout, na troca
   de senha, no bloqueio do usuário e na suspensão da clínica.
-- **Senhas:** Argon2id; política mínima (10+, maiúsc./minúsc./números/símbolos); opção de
+- **Senhas:** Argon2id quando o PHP do servidor suporta, senão bcrypt (detecção automática; rehash no login); política mínima (10+, maiúsc./minúsc./números/símbolos); opção de
   verificação em base de senhas vazadas (HIBP k-anonymity); troca obrigatória no 1º acesso.
 - **2FA TOTP** com proteção contra replay e 8 códigos de recuperação de uso único (armazenados
   como HMAC); obrigatório para Super Admin e configurável por clínica para todos.
@@ -209,7 +214,11 @@ Nome físico aleatório (ULID), hash SHA-256 para integridade, validação de MI
 
 ## 13. Estratégia de auditoria
 
-`audit_logs` **append-only** (trigger no PostgreSQL bloqueia UPDATE/DELETE/TRUNCATE). Registra
+`audit_logs` **append-only** com duas proteções: (1) **cadeia criptográfica HMAC-SHA256 por
+empresa** — cada registro assina seu conteúdo e o hash do anterior, então qualquer alteração,
+exclusão ou inserção fora da aplicação é detectada por `aivexa:audit:verify` (executado diariamente
+pelo cron); (2) **trigger** que bloqueia UPDATE/DELETE no banco quando o servidor permite (VPS;
+em hospedagem compartilhada o MySQL costuma negar triggers sem privilégio SUPER). Registra
 usuário, empresa, filial, data/hora, IP, user-agent, request-id, ação, registro, valores antes/
 depois e resultado (`success|failure|denied`). Segredos são mascarados. Eventos de models via
 trait `Auditable`; eventos de segurança explícitos. Negações sobrevivem a rollbacks. Painel com
@@ -218,7 +227,7 @@ versionamento imutável com hash encadeado (Fase 5/6).
 
 ## 14. Estratégia de testes
 
-Ver [TESTING.md](TESTING.md). PHPUnit contra **PostgreSQL real** (constraints, triggers e locks
+Ver [TESTING.md](TESTING.md). PHPUnit contra **MySQL/MariaDB e PostgreSQL reais** (constraints, cadeia de auditoria e locks
 fazem parte do que se testa), testes específicos para isolamento de tenant, escalonamento de
 privilégio, autenticação/2FA, auditoria e segurança. CI no GitHub Actions com Pint + `composer
 audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a partir da Fase 4.
@@ -230,7 +239,7 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 1 | Arquitetura, banco, autenticação (web/API/2FA), multi-tenant, RBAC, auditoria, segurança base, Docker, CI, instalador | **Concluída** |
 | 2 | Empresas, filiais, usuários, perfis/permissões (web + API), Super Admin, planos e limites | **Concluída** |
 | 3 | Pacientes (CPF, responsável, convênio, consentimentos, histórico), médicos, especialidades | Próxima |
-| 4 | Agenda (grades, limites por período, encaixes, bloqueios, feriados; exclusion constraint anti-dupla-marcação), fila/senhas, painel de chamadas, salas | |
+| 4 | Agenda (grades, limites por período, encaixes, bloqueios, feriados; anti-dupla-marcação por índice único de horário + lock transacional), fila/senhas, painel de chamadas, salas | |
 | 5 | Prontuário (versões imutáveis, autosave), CID, medicamentos | |
 | 6 | Receitas, atestados, solicitações, documentos, **impressão A4/térmica e PDF**, assinatura digital (arquitetura ICP-Brasil) | |
 | 7 | Financeiro, caixa e conferência de caixa | |
@@ -243,7 +252,7 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 14 | Conciliação bancária (OFX/CSV/Open Finance) | |
 | 15 | Relatórios (PDF/Excel/CSV), conferência médico × clínica | |
 | 16 | SaaS comercial: assinatura recorrente, upgrade/downgrade, bloqueio por inadimplência | |
-| 17 | Segurança avançada (RLS, WAF, antivírus, pentest) | |
+| 17 | Segurança avançada (WAF/Cloudflare, antivírus, pentest; RLS se migrar para PostgreSQL) | |
 | 18–20 | Testes completos, homologação, produção | |
 
 ### Definição de pronto (por funcionalidade)
@@ -266,8 +275,9 @@ ERROR HANDLING · SECURITY — só é DONE com todos. Status das Fases 1–2 em 
 ## Decisões registradas (ADR resumido)
 
 1. Monólito modular > microsserviços no início (custo e consistência transacional).
-2. PostgreSQL exclusivo (integridade > portabilidade).
+2. **MySQL/MariaDB em produção (HostGator compartilhada)**, PostgreSQL também suportado; integridade mantida com recursos portáveis e testada nos dois bancos.
 3. ULID como chave primária (não sequencial → sem enumeração; ordenável).
 4. Escopo de tenant que falha fechado.
 5. Front-end sem build obrigatório, CSP estrita.
 6. Integrações sempre atrás de interfaces com modo MOCK/SANDBOX/PRODUÇÃO explícito.
+7. Hospedagem compartilhada: fila via cron, instalador web, auditoria com cadeia HMAC (sem depender de triggers), dependências para PHP 8.3.

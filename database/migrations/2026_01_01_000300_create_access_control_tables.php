@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('module', 50)->index();
             $table->string('description', 255);
             $table->string('scope', 20)->default('tenant');
-            $table->timestampsTz();
+            $table->datetimes();
         });
 
         DB::statement("ALTER TABLE permissions ADD CONSTRAINT permissions_scope_check CHECK (scope IN ('tenant','platform'))");
@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('description', 255)->nullable();
             $table->boolean('is_system')->default(false);
             $table->boolean('is_locked')->default(false);
-            $table->timestampsTz();
+            $table->datetimes();
 
             $table->unique(['company_id', 'key']);
             $table->unique(['company_id', 'id']);
@@ -42,12 +42,16 @@ return new class extends Migration
 
         Schema::create('user_role_assignments', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('company_id');
-            $table->ulid('user_id');
-            $table->ulid('role_id');
-            $table->ulid('branch_id')->nullable()->comment('NULL = todas as filiais da empresa');
-            $table->ulid('assigned_by')->nullable();
-            $table->timestampsTz();
+            $table->char('company_id', 26);
+            $table->char('user_id', 26);
+            $table->char('role_id', 26);
+            $table->char('branch_id', 26)->nullable()->comment('NULL = todas as filiais da empresa');
+            $table->char('assigned_by', 26)->nullable();
+            $table->datetimes();
+
+            // NULL não participa de unicidade: normaliza "empresa toda" para uma chave comparável.
+            $table->string('branch_key', 26)->storedAs("COALESCE(RTRIM(branch_id), '*')");
+            $table->unique(['user_id', 'role_id', 'branch_key'], 'user_role_assignments_unique');
 
             $table->foreign('company_id')->references('id')->on('companies')->restrictOnDelete();
             // FKs compostas: usuário, perfil e filial obrigatoriamente da mesma empresa.
@@ -57,8 +61,6 @@ return new class extends Migration
             $table->foreign('assigned_by')->references('id')->on('users')->nullOnDelete();
             $table->index(['company_id', 'user_id']);
         });
-
-        DB::statement('ALTER TABLE user_role_assignments ADD CONSTRAINT user_role_assignments_unique UNIQUE NULLS NOT DISTINCT (user_id, role_id, branch_id)');
     }
 
     public function down(): void

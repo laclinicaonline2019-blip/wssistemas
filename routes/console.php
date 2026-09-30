@@ -3,9 +3,16 @@
 use Illuminate\Support\Facades\Schedule;
 
 /*
-| Tarefas agendadas (cron: * * * * * php artisan schedule:run).
+| Tarefas agendadas. No cPanel (HostGator) configure UM cron a cada minuto:
+|   * * * * * /usr/local/bin/php /home/CONTA/aivexa/artisan schedule:run >> /dev/null 2>&1
 | Os módulos futuros registram aqui lembretes, cobranças, conciliação e backup.
 */
+
+// Hospedagem compartilhada não permite processos permanentes: o worker de fila roda
+// a cada minuto até esvaziar a fila (limite de 50 s para não sobrepor execuções).
+Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3 --backoff=30')
+    ->everyMinute()->withoutOverlapping(5)->when(fn () => config('queue.default') === 'database');
+Schedule::command('aivexa:audit:verify')->dailyAt('03:10')->onOneServer();
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily()->onOneServer();
 Schedule::command('queue:prune-failed --hours=720')->daily()->onOneServer();

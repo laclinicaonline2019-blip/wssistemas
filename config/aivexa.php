@@ -13,6 +13,9 @@ return [
     */
     'stage' => env('APP_STAGE', 'development'),
 
+    // Token do instalador web (/instalar). Mínimo 16 caracteres; vazio = instalador desativado.
+    'install_token' => env('INSTALL_TOKEN'),
+
     'security' => [
         // Tentativas de login por e-mail+IP por minuto (rate limit).
         'login_rate_per_minute' => (int) env('LOGIN_RATE_PER_MINUTE', 5),

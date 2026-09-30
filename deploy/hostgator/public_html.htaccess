@@ -1,0 +1,18 @@
+# ---------------------------------------------------------------------------
+# OPÇÃO C (último recurso): projeto inteiro dentro de public_html.
+# Copie este arquivo para public_html/.htaccess. Todas as requisições são
+# desviadas para public/ — .env, vendor, storage etc. NUNCA ficam acessíveis.
+# Prefira as opções A ou B de docs/HOSTGATOR.md.
+# ---------------------------------------------------------------------------
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule (^|/)\.(?!well-known/) - [F,L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<FilesMatch "^(\.env.*|composer\.(json|lock)|artisan|phpunit\.xml|.*\.md)$">
+    Require all denied
+</FilesMatch>

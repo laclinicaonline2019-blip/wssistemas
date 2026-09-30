@@ -32,7 +32,10 @@ class AuditLogger
      */
     public static int $baseTransactionLevel = 0;
 
-    public function __construct(private readonly TenantContext $context) {}
+    public function __construct(
+        private readonly TenantContext $context,
+        private readonly AuditChain $chain = new AuditChain,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $old
@@ -78,10 +81,10 @@ class AuditLogger
             'user_agent' => $request ? Str::limit((string) $request->userAgent(), 500, '') : null,
             'request_id' => $request?->attributes->get('request_id'),
             'metadata' => $metadata ? json_encode($this->redact($metadata), JSON_UNESCAPED_UNICODE) : null,
-            'created_at' => now(),
+            'created_at' => now()->format('Y-m-d H:i:s'),
         ];
 
-        $insert = fn () => DB::table('audit_logs')->insert($row);
+        $insert = fn () => $this->chain->append($row);
 
         // Eventos de negação/falha costumam ocorrer dentro de transações que serão
         // desfeitas pela própria exceção. Eles precisam sobreviver ao rollback.

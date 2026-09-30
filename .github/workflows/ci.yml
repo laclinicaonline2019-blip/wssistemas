@@ -7,30 +7,66 @@ on:
 
 jobs:
   tests:
+    name: Testes (${{ matrix.db }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Produção (HostGator): MySQL/MariaDB
+          - { db: mariadb, connection: mysql, port: 3306, user: aivexa, password: aivexa }
+          # VPS/alternativa: PostgreSQL
+          - { db: postgres, connection: pgsql, port: 5432, user: postgres, password: postgres }
     services:
+      mariadb:
+        image: ${{ matrix.db == 'mariadb' && 'mariadb:10.6' || '' }}
+        env:
+          MARIADB_DATABASE: aivexa_testing
+          MARIADB_USER: aivexa
+          MARIADB_PASSWORD: aivexa
+          MARIADB_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
       postgres:
-        image: postgres:16
+        image: ${{ matrix.db == 'postgres' && 'postgres:16' || '' }}
         env:
           POSTGRES_DB: aivexa_testing
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
-        options: >-
-          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+        options: --health-cmd=pg_isready --health-interval=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
-          extensions: pdo_pgsql, intl, gd, zip, sodium, mbstring
+          php-version: "8.3"   # mesma versão-alvo da HostGator
+          extensions: pdo_mysql, pdo_pgsql, intl, gd, zip, sodium, mbstring
           coverage: none
       - run: composer install --no-interaction --prefer-dist
       - name: Estilo (Pint)
         run: vendor/bin/pint --test
       - name: Auditoria de dependências
         run: composer audit
-      - name: Testes (PostgreSQL)
+      - name: Testes
         env:
-          DB_PASSWORD: postgres
+          DB_CONNECTION: ${{ matrix.connection }}
+          DB_PORT: ${{ matrix.port }}
+          DB_USERNAME: ${{ matrix.user }}
+          DB_PASSWORD: ${{ matrix.password }}
         run: php artisan test
+
+  release:
+    name: Pacote para HostGator (cPanel)
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.3", extensions: "intl, gd, zip, sodium, mbstring" }
+      - run: deploy/hostgator/build-release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aivexa-hostgator
+          path: dist/*.zip
+          retention-days: 30

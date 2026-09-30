@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Audit;
 
+use App\Core\Audit\AuditChain;
+use App\Core\Health\HealthChecker;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -37,8 +39,12 @@ class AuditTrailTest extends TestCase
         $this->assertStringNotContainsString('$argon2id$', $dump);
     }
 
-    public function test_audit_log_is_append_only_in_the_database(): void
+    public function test_audit_log_is_append_only_in_the_database_when_triggers_are_available(): void
     {
+        if (! app(HealthChecker::class)->auditTriggersActive()) {
+            $this->markTestSkipped('Banco sem privilégio para triggers (ex.: hospedagem compartilhada) — coberto pela cadeia HMAC.');
+        }
+
         $this->createClinic();
         $id = DB::table('audit_logs')->value('id');
 
@@ -51,6 +57,40 @@ class AuditTrailTest extends TestCase
 
         $this->expectException(QueryException::class);
         DB::table('audit_logs')->where('id', $id)->delete();
+    }
+
+    public function test_hash_chain_is_intact_after_normal_operation(): void
+    {
+        ['admin' => $admin, 'branch' => $branch] = $this->createClinic();
+        $this->api($admin)->patchJson("/api/v1/branches/{$branch->id}", ['name' => 'Ação com acentuação & "aspas"'])->assertOk();
+
+        $this->artisan('aivexa:audit:verify')->assertSuccessful();
+
+        $chain = app(AuditChain::class);
+        foreach ($chain->scopes() as $scope) {
+            $this->assertTrue($chain->verify($scope)['ok'], "cadeia {$scope}");
+        }
+    }
+
+    public function test_hash_chain_detects_tampering_and_deletion(): void
+    {
+        if (app(HealthChecker::class)->auditTriggersActive()) {
+            $this->markTestSkipped('Com triggers ativos o banco impede a adulteração (testado acima).');
+        }
+
+        ['company' => $company] = $this->createClinic();
+        $chain = app(AuditChain::class);
+        $ids = DB::table('audit_logs')->where('company_id', $company->id)->orderBy('id')->pluck('id');
+
+        DB::table('audit_logs')->where('id', $ids[1])->update(['action' => 'adulterado']);
+        $result = $chain->verify($company->id);
+        $this->assertFalse($result['ok']);
+        $this->assertSame($ids[1], $result['broken_at']);
+
+        DB::table('audit_logs')->where('id', $ids[1])->delete();
+        $this->assertFalse($chain->verify($company->id)['ok']);
+
+        $this->artisan('aivexa:audit:verify')->assertFailed();
     }
 
     public function test_audit_listing_filters_and_export(): void

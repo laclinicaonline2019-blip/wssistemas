@@ -25,7 +25,7 @@ Canal (WhatsApp / chat do site / painel) → fila → ConversationOrchestrator
 - **Agendamento:** `check_availability` consulta a agenda real (grade, limites por período,
   encaixes, bloqueios, feriados). `hold_slot` reserva o horário por poucos minutos com lock;
   `book_appointment` só confirma após validação transacional (a mesma usada pela recepção),
-  protegida pela exclusion constraint. Esgotado o período, a IA procura o próximo horário livre.
+  protegida pelo índice único de horário e lock transacional. Esgotado o período, a IA procura o próximo horário livre.
 - **Pagamento:** a IA gera a cobrança e informa o link; a confirmação vem apenas do webhook
   validado — a IA nunca "aceita" comprovante como pagamento (o comprovante vai para conferência humana).
 - **Handoff:** pedido explícito, baixa confiança, reclamação ou tema clínico → conversa marcada
@@ -39,6 +39,8 @@ Canal (WhatsApp / chat do site / painel) → fila → ConversationOrchestrator
 - **Assistente clínico (área do médico):** resumo do histórico e preenchimento assistido de
   campos, sempre como sugestão editável, com indicação de fonte.
 - **Limites:** recursos de IA habilitados por plano (`ai_enabled`) e quotas mensais.
+- **Hospedagem compartilhada:** mensagens são processadas pela fila via cron (atraso de até ~1 min).
+  Para respostas em tempo real no WhatsApp em alto volume, migrar para VPS com worker dedicado.
 
 ## Modelo
 
