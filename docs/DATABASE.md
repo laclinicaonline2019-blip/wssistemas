@@ -54,18 +54,31 @@ as expressões usam `RTRIM(coluna)`.
 Índices: `audit_logs(company_id, created_at)`, `(company_id, auditable_type, auditable_id)`,
 `(company_id, user_id, created_at)`, `(action, created_at)`; `users(company_id, status)`.
 
+### Fase 4 — agenda e fila
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `rooms` | Salas/consultórios por unidade (especialidade/médico preferencial, equipamentos, situação) | `UNIQUE(branch_id, name, number)`; FKs compostas |
+| `doctor_services` | Tipos de atendimento do médico (consulta, retorno, teleconsulta…), duração, **valor particular**, aceita particular/convênio | `UNIQUE(doctor_id, name)` |
+| `schedule_templates` | Grade: um registro por período semanal (dia, início/fim no fuso da unidade, duração do horário, **limite de pacientes do período**, **encaixes**, sala, especialidade do período, vigência) | CHECK fim > início; sobreposição do mesmo médico (em qualquer unidade) bloqueada no serviço |
+| `schedule_blocks` | Férias, congressos, manutenção — do médico ou da unidade inteira | CHECK fim > início |
+| `holidays` | Feriados da empresa ou de uma unidade | |
+| `appointments` | Agendamentos: protocolo (AGaa000000), início/fim (UTC), status, encaixe, canal, pagador, carteirinha, **valor no momento do agendamento**, chave de idempotência, marcos (confirmação, chegada, início, término, cancelamento + motivo) | **índice único (médico, início) somente para agendamentos ativos não-encaixe** (coluna gerada `holds_slot`); `UNIQUE(company_id, protocol)`; `UNIQUE(company_id, idempotency_key)`; CHECK de status |
+| `queue_tickets` | Senhas: tipo/prefixo, número sequencial **por unidade/dia/tipo**, prioridade, status, sala/médico, marcos de chegada/chamada/início/fim | `UNIQUE(branch_id, service_date, prefix, number)` |
+| `queue_calls` | Histórico de chamadas exibido no painel (código, **nome reduzido**, sala, médico) | |
+| `doctors.daily_limit` | Limite diário de pacientes do médico (todas as unidades) | |
+
+**Anti-dupla-marcação (camadas):** (1) o motor de disponibilidade só oferece horários realmente livres;
+(2) a reserva roda em transação com `SELECT … FOR UPDATE` na linha do médico, revalidando horário,
+limite do período, limite diário e encaixes; (3) o índice único do banco impede dois agendamentos ativos
+no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`).
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas
 para garantir mesma empresa, e é consultada via `BelongsToCompany`.
 
-- **Cadastros (restantes):** `rooms` (Fase 4), `patient_documents`, `files` (Fase 6).
-- **Agenda:** `schedule_templates` (dia, horário, duração, limite por período, encaixes),
-  `schedule_blocks` (férias, feriados, bloqueios), `holidays`, `appointments` com coluna gerada
-  `active_slot_key` (médico + início, só para status ativos) **UNIQUE** e reserva feita dentro de
-  transação com `SELECT … FOR UPDATE` na grade do médico/dia (impossível marcar dois pacientes no
-  mesmo horário, mesmo com requisições simultâneas; limites por período contados sob o mesmo lock),
-  `appointment_status_history`, `queue_tickets` (sequência por filial/dia/tipo), `queue_calls`.
+- **Cadastros (restantes):** `patient_documents`, `files` (Fase 6).
 - **Clínico:** `medical_records`, `medical_record_versions` (imutável, hash encadeado),
   `vital_signs`, `diagnoses`, `cid_codes` (versão da tabela CID), `medications`,
   `prescriptions`, `prescription_items`, `medical_certificates`, `exam_requests`,

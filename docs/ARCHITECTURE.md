@@ -239,8 +239,8 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 1 | Arquitetura, banco, autenticação (web/API/2FA), multi-tenant, RBAC, auditoria, segurança base, Docker, CI, instalador | **Concluída** |
 | 2 | Empresas, filiais, usuários, perfis/permissões (web + API), Super Admin, planos e limites | **Concluída** |
 | 3 | Pacientes (CPF, responsável, convênio, consentimentos, histórico, exportação/anonimização LGPD), médicos, especialidades, busca global | **Concluída** |
-| 4 ▶ | Agenda (grades, limites por período, encaixes, bloqueios, feriados; anti-dupla-marcação por índice único de horário + lock transacional), fila/senhas, painel de chamadas, salas | |
-| 5 | Prontuário (versões imutáveis, autosave), CID, medicamentos | |
+| 4 | Agenda (grades, limites por período, encaixes, bloqueios, feriados; anti-dupla-marcação por índice único de horário + lock transacional), fila/senhas, painel de chamadas, salas | **Concluída** |
+| 5 ▶ | Prontuário (versões imutáveis, autosave), CID, medicamentos | Próxima |
 | 6 | Receitas, atestados, solicitações, documentos, **impressão A4/térmica e PDF**, assinatura digital (arquitetura ICP-Brasil) | |
 | 7 | Financeiro, caixa e conferência de caixa | |
 | 8 | ASAAS, Cielo, webhooks, split, links de pagamento | |

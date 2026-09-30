@@ -1,0 +1,26 @@
+/* Painel de chamadas (TV) — alto contraste, leitura à distância. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #04080f; color: #fff; font-family: "Inter", system-ui, sans-serif; overflow: hidden; }
+.panel { height: 100vh; display: grid; grid-template-columns: 2fr 1fr; grid-template-rows: auto 1fr; gap: 2vh 2vw; padding: 2.5vh 2.5vw; }
+.panel__top { grid-column: 1 / -1; display: flex; align-items: center; gap: 2vw; }
+.panel__top img { height: 4vh; width: auto; }
+.panel__branch { font-size: 2.6vh; color: #9fb0c6; }
+.panel__clock { margin-left: auto; font-size: 4vh; font-weight: 700; font-variant-numeric: tabular-nums; }
+.panel__current { border-radius: 3vh; background: radial-gradient(1200px 500px at 0% 0%, #0f3a78 0%, transparent 60%), radial-gradient(900px 500px at 100% 100%, #0b5a57 0%, transparent 60%), #08111f; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 3vh; }
+.panel__label { font-size: 3.2vh; letter-spacing: .4em; color: #8fe9e1; }
+.panel__code { font-size: 22vh; font-weight: 800; line-height: 1; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.panel__name { font-size: 5.5vh; font-weight: 600; margin-top: 1vh; min-height: 6vh; }
+.panel__room { font-size: 6vh; font-weight: 700; color: #27d9cf; margin-top: 1.5vh; }
+.panel__doctor { font-size: 3.2vh; color: #b9c6d8; margin-top: .8vh; }
+.panel__current.is-flash { animation: flash 1s ease-in-out 3; }
+@keyframes flash { 50% { background-color: #1a6fe6; box-shadow: 0 0 0 1vh rgba(39,217,207,.5) inset; } }
+.panel__history { background: #0a1322; border-radius: 3vh; padding: 3vh 2vw; overflow: hidden; }
+.panel__history h2 { margin: 0 0 2vh; font-size: 3vh; color: #9fb0c6; font-weight: 600; }
+.panel__history ol { list-style: none; margin: 0; padding: 0; }
+.panel__history li { display: flex; justify-content: space-between; align-items: baseline; gap: 1vw; padding: 1.6vh 0; border-bottom: 1px solid #16233a; font-size: 3.2vh; }
+.panel__history li b { font-size: 4.2vh; font-variant-numeric: tabular-nums; }
+.panel__history li span { color: #9fb0c6; text-align: right; }
+.panel__sound { position: fixed; bottom: 2vh; left: 50%; transform: translateX(-50%); padding: 1.4vh 3vw; font-size: 2.4vh; border-radius: 99px; border: 0; background: #27d9cf; color: #04080f; font-weight: 700; cursor: pointer; }
+.panel__offline { position: fixed; top: 1vh; left: 50%; transform: translateX(-50%); background: #d63b4b; padding: .8vh 2vw; border-radius: 99px; font-size: 2vh; }
+.hidden { display: none !important; }
+@media (max-aspect-ratio: 1/1) { .panel { grid-template-columns: 1fr; grid-template-rows: auto 2fr 1fr; } }

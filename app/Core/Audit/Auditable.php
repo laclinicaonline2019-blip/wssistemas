@@ -94,6 +94,15 @@ trait Auditable
 
         $attributes = array_diff_key($attributes, array_flip($exclude));
 
+        // Colunas JSON chegam como texto: decodifica para que segredos aninhados
+        // (ex.: settings.panel.token) sejam mascarados pelo AuditLogger.
+        foreach ($attributes as $key => $value) {
+            if (is_string($value) && $this->hasCast($key, ['array', 'json', 'object', 'collection', 'encrypted:array'])) {
+                $decoded = json_decode($value, true);
+                $attributes[$key] = is_array($decoded) ? $decoded : $value;
+            }
+        }
+
         foreach ($this->getHidden() as $hidden) {
             if (array_key_exists($hidden, $attributes)) {
                 $attributes[$hidden] = AuditLogger::REDACTED;

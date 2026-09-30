@@ -11,8 +11,13 @@
 @section('content')
 <div class="page-head">
     <div><h1>{{ $doctor->exists ? $doctor->displayName() : 'Novo médico' }}</h1>
-        <p>{{ $doctor->exists ? $doctor->registration() : 'Cadastro do profissional. A agenda (horários e limites) é configurada na Fase 4.' }}</p></div>
-    <a class="btn" href="{{ route('doctors.index') }}">Voltar</a>
+        <p>{{ $doctor->exists ? $doctor->registration() : 'Cadastro do profissional. Depois de salvar, configure a agenda (horários, limites e valores).' }}</p></div>
+    <div class="row">
+        @if ($doctor->exists && auth()->user()->hasPermission('agenda.configurar'))
+            <a class="btn btn-primary" href="{{ route('doctors.schedule.index', $doctor) }}"><svg><use href="#i-calendar"/></svg>Agenda, horários e valores</a>
+        @endif
+        <a class="btn" href="{{ route('doctors.index') }}">Voltar</a>
+    </div>
 </div>
 
 @if ($doctor->exists && ! $canManage)

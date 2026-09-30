@@ -7,6 +7,8 @@ use App\Core\Access\PermissionService;
 use App\Core\Install\Installer;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Identity\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -28,6 +30,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Datas por extenso em português ("segunda-feira, 5 de outubro").
+        Carbon::setLocale(config('app.locale'));
+        CarbonImmutable::setLocale(config('app.locale'));
+
         // Índices seguros em MySQL/MariaDB antigos (limite de 767 bytes por chave).
         Schema::defaultStringLength(191);
 

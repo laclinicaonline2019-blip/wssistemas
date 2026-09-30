@@ -2,6 +2,29 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.5.0] — 2026-09-30 — Fase 4: agenda inteligente, fila e painel de chamadas
+
+### Adicionado
+- **Agenda:** grade semanal por médico/unidade (duração do horário, limite de pacientes do período,
+  encaixes, sala, especialidade do período, vigência), limite diário do médico, tipos de atendimento com
+  valor particular, feriados, bloqueios (médico ou unidade, com lista de agendamentos afetados), salas.
+- **Motor de disponibilidade** único para recepção, API e (futuramente) IA: só oferece horários realmente
+  livres; "próximos horários" por médico ou especialidade.
+- **Agendamento sem dupla marcação:** transação com lock do médico + índice único no banco; testado com
+  processos paralelos reais. Protocolo, idempotência, particular/convênio (carteirinha válida), remarcação
+  com o mesmo protocolo, cancelamento com motivo, confirmação, falta, histórico.
+- **Fila e senhas:** senha na chegada (tipo sugerido: 60+ → prioridade, retorno, convênio), senhas avulsas,
+  numeração por unidade/dia/tipo, chamar próxima (prioridades primeiro), rechamar, pular, iniciar,
+  finalizar (atualiza o agendamento), encaminhar para outra sala; **impressão automática na térmica**.
+- **Painel da TV:** endereço secreto por unidade (rotacionável), nome reduzido ("Maria S.") ou só a
+  senha, sinal sonoro e voz em português, histórico de chamadas, funciona com hospedagem compartilhada.
+- Dashboard com consultas do dia, fila, cancelamentos, faltas e próximos atendimentos.
+- API REST: disponibilidade, agendamentos, configuração da agenda e fila. 113 testes (MariaDB e PostgreSQL).
+
+### Corrigido
+- Envio duplicado bloqueado no formulário descartava o valor do botão clicado (ex.: tipo de senha).
+- Colunas JSON auditadas agora têm segredos aninhados mascarados (ex.: token do painel).
+
 ## [0.4.0] — 2026-09-30 — Fase 3: pacientes, médicos e especialidades
 
 ### Adicionado

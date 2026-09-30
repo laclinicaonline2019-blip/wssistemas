@@ -73,8 +73,10 @@
   document.addEventListener('submit', function (ev) {
     var msg = ev.target.getAttribute('data-confirm');
     if (msg && !window.confirm(msg)) { ev.preventDefault(); return; }
-    // Evita duplo envio
-    $$('button[type=submit]', ev.target).forEach(function (b) { b.disabled = true; });
+    // Evita duplo envio. Desabilita só depois que o navegador montou os dados do
+    // formulário — botão desabilitado não envia seu name/value (ex.: tipo de senha).
+    var form = ev.target;
+    setTimeout(function () { $$('button[type=submit]', form).forEach(function (b) { b.disabled = true; }); }, 0);
   });
 
   // Auto-submit (ex.: seletor de filial)
@@ -84,6 +86,63 @@
 
   // Barras de progresso (sem style inline por causa da CSP)
   $$('[data-pct]').forEach(function (el) { el.style.width = Math.max(0, Math.min(100, +el.getAttribute('data-pct'))) + '%'; });
+
+  // Atualização automática (fila da recepção) — não recarrega enquanto o usuário digita/seleciona.
+  var auto = $('[data-autorefresh]');
+  if (auto) {
+    var seconds = +auto.getAttribute('data-autorefresh') || 20;
+    setInterval(function () {
+      var a = document.activeElement;
+      var busy = a && (a.tagName === 'INPUT' || a.tagName === 'SELECT' || a.tagName === 'TEXTAREA') || $('.dropdown.is-open');
+      if (!busy && document.visibilityState === 'visible') window.location.reload();
+    }, seconds * 1000);
+  }
+
+  // Agendamento: busca de paciente (JSON) e convênio
+  var lookup = $('[data-patient-lookup]');
+  if (lookup) {
+    var q = $('#patient-q'), results = $('#patient-results'), hidden = $('#patient_id');
+    var selected = $('#patient-selected'), insSelect = $('#patient_insurance_id'), timer = null;
+    var render = function (items) {
+      results.innerHTML = '';
+      if (!items.length) { results.innerHTML = '<div class="lookup__item muted">Nenhum paciente encontrado.</div>'; }
+      items.forEach(function (p) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'lookup__item';
+        b.textContent = '#' + p.record_number + ' — ' + p.name + (p.birth_date ? ' · ' + p.birth_date : '') + (p.cpf ? ' · CPF ' + p.cpf : '');
+        b.addEventListener('click', function () {
+          hidden.value = p.id;
+          $('#patient-selected-name').textContent = p.name;
+          $('#patient-selected-info').textContent = '#' + p.record_number + (p.birth_date ? ' · ' + p.birth_date : '');
+          selected.classList.remove('hidden'); q.classList.add('hidden'); results.classList.add('hidden');
+          insSelect.innerHTML = '';
+          p.insurances.forEach(function (i) {
+            var o = document.createElement('option'); o.value = i.id; o.textContent = i.label + (i.expired ? ' (VENCIDA)' : '');
+            insSelect.appendChild(o);
+          });
+        });
+        results.appendChild(b);
+      });
+      results.classList.remove('hidden');
+    };
+    q.addEventListener('input', function () {
+      clearTimeout(timer);
+      if (q.value.trim().length < 2) { results.classList.add('hidden'); return; }
+      timer = setTimeout(function () {
+        fetch(lookup.getAttribute('data-patient-lookup') + '?q=' + encodeURIComponent(q.value.trim()), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+          .then(function (j) { render(j.data || []); });
+      }, 250);
+    });
+    document.addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-patient-clear]')) {
+        hidden.value = ''; selected.classList.add('hidden'); q.classList.remove('hidden'); q.value = ''; q.focus();
+      }
+    });
+    var payer = $('[data-payer]');
+    var syncPayer = function () { $('#insurance-field').classList.toggle('hidden', payer.value !== 'insurance'); };
+    payer.addEventListener('change', syncPayer);
+  }
 
   // Página de teste de impressão abre o diálogo automaticamente
   if (document.body.hasAttribute('data-autoprint')) {

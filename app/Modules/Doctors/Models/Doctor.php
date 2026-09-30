@@ -6,11 +6,14 @@ use App\Core\Audit\Auditable;
 use App\Core\Tenancy\BelongsToCompany;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
+use App\Modules\Scheduling\Models\DoctorService;
+use App\Modules\Scheduling\Models\ScheduleTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Doctor extends Model
@@ -21,9 +24,14 @@ class Doctor extends Model
 
     protected array $auditExclude = ['active_crm', 'active_user_key'];
 
-    protected $fillable = ['user_id', 'name', 'social_name', 'crm', 'crm_state', 'cpf', 'email', 'phone', 'bio', 'status'];
+    protected $fillable = ['user_id', 'name', 'social_name', 'crm', 'crm_state', 'cpf', 'email', 'phone', 'bio', 'status', 'daily_limit'];
 
     protected $attributes = ['status' => 'active'];
+
+    protected function casts(): array
+    {
+        return ['daily_limit' => 'integer'];
+    }
 
     public function user(): BelongsTo
     {
@@ -33,6 +41,16 @@ class Doctor extends Model
     public function specialties(): BelongsToMany
     {
         return $this->belongsToMany(Specialty::class, 'doctor_specialty')->withPivot('rqe');
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(DoctorService::class)->orderBy('name');
+    }
+
+    public function scheduleTemplates(): HasMany
+    {
+        return $this->hasMany(ScheduleTemplate::class)->orderBy('weekday')->orderBy('start_time');
     }
 
     public function branches(): BelongsToMany

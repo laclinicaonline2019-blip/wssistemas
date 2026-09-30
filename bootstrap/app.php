@@ -22,7 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         // Instalador web: fora do grupo "web" (sem sessão/cookies — as tabelas ainda não existem).
-        then: fn () => Route::group([], base_path('routes/install.php')),
+        then: function () {
+            Route::group([], base_path('routes/install.php'));
+            Route::group([], base_path('routes/public.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);

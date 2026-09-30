@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (91 testes; 1 ignorado conforme o banco)
+## Cobertura atual (113 testes; 1 ignorado conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -28,10 +28,12 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Web/WebPagesTest` | todas as telas renderizam, formulários web, menu por permissão, troca de filial, telas da plataforma |
 | `Patients/PatientTest` | nº de prontuário sequencial por empresa, normalização, CPF válido/único por empresa, **duplicidade com confirmação**, **responsável obrigatório para menor**, busca sem acento/CPF/telefone/prontuário, CPF mascarado em listas, acesso auditado, **isolamento entre clínicas**, permissões por perfil, consentimentos imutáveis com histórico, **exportação e anonimização LGPD** (sem PII na trilha), proibição de exclusão física, telas web, CEP via servidor |
 | `Doctors/DoctorTest` | especialidades padrão, médico com especialidades/RQE/unidades/usuário, CRM único por empresa, vínculos de outra empresa rejeitados, limite do plano, **gestor de filial restrito às suas unidades**, permissões de especialidades, telas web, busca global respeitando permissões |
+| `Scheduling/BookingTest` | disponibilidade real, **mesmo horário não pode ser marcado duas vezes** (serviço e banco), duração que ocupa vários horários, **limite do período** e próximo horário, limite diário, **encaixes** (permissão e limite), feriado, bloqueio, horário passado/fora da grade, conflito do paciente, médico fora da unidade, regras de convênio, cancelamento libera horário, remarcação mantém protocolo, **idempotência**, grades sobrepostas entre unidades, bloqueio lista afetados, isolamento entre clínicas e filiais |
+| `Scheduling/ConcurrentBookingTest` | **concorrência real com processos paralelos** (8 × mesmo horário → 1 sucesso; 8 horários × limite 2 → 2 sucessos). Verificado que o teste falha sem o lock |
+| `Scheduling/QueueTest` | senha na chegada com tipo sugerido (60+ → prioridade), numeração por dia/tipo, chamar próxima priorizando, rechamar, iniciar/finalizar atualizando o agendamento, **painel com nome reduzido e token** (rotação invalida; token nunca vai à auditoria), isolamento, telas web e impressão |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)
 
-- Agenda: **dupla marcação concorrente** (processos paralelos contra o índice único + lock), limites por período/encaixe.
 - Pagamentos: confirmação falsa (webhook sem assinatura/valor divergente), **duplicação de cobrança** (idempotência), webhook repetido.
 - Prontuário: alteração indevida (versões imutáveis, somente autor/perfil permitido), sem exclusão física.

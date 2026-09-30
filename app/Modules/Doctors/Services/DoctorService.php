@@ -85,7 +85,7 @@ class DoctorService
 
     private function attributes(array $data): array
     {
-        return array_intersect_key($data, array_flip(['user_id', 'name', 'social_name', 'crm', 'crm_state', 'cpf', 'email', 'phone', 'bio']));
+        return array_intersect_key($data, array_flip(['user_id', 'name', 'social_name', 'crm', 'crm_state', 'cpf', 'email', 'phone', 'bio', 'daily_limit']));
     }
 
     private function validateUser(?string $userId, ?Doctor $current = null): void

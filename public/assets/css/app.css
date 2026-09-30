@@ -292,3 +292,25 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
 .mb-2 { margin-bottom: 1rem; }
 .kpi-link { color: inherit; } .kpi-link:hover { text-decoration: none; border-color: var(--primary); }
 .kpi-action .kpi__value { color: var(--primary); font-size: 1.35rem; margin-top: .45rem; }
+
+/* Fase 4 — agenda e fila */
+.agenda-board .card__head { align-items: flex-start; }
+.period + .period { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px dashed var(--border); }
+.period__head { margin-bottom: .6rem; }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .45rem; }
+.slot { display: flex; align-items: center; gap: .5rem; padding: .45rem .6rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); min-height: 42px; }
+.slot__time { font-family: var(--mono); font-weight: 700; font-size: .85rem; color: var(--text-2); }
+.slot__who { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slot--free { border-style: dashed; }
+.slot__free { color: var(--success); font-weight: 600; }
+.slot--appt { background: var(--primary-soft); border-color: transparent; }
+.slot--overbook { background: var(--warning-soft); margin-top: .45rem; }
+.slot--blocked, .slot--past, .slot--full, .slot--booked { opacity: .6; background: var(--surface-2); }
+.ticket-code { font-family: var(--mono); font-size: 1.25rem; font-weight: 800; letter-spacing: .04em; }
+.ticket-code--priority { color: var(--danger); }
+.lookup { position: relative; }
+.lookup__list { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); max-height: 320px; overflow: auto; }
+.lookup__item { display: block; width: 100%; text-align: left; padding: .55rem .7rem; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; border-bottom: 1px solid var(--border); }
+.lookup__item:hover, .lookup__item:focus { background: var(--primary-soft); }
+.selected-patient { padding: .7rem .85rem; border: 1px solid var(--primary); border-radius: var(--radius-sm); background: var(--primary-soft); }
+.print-frame { position: absolute; width: 0; height: 0; border: 0; }

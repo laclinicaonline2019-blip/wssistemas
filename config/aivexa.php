@@ -32,4 +32,16 @@ return [
         'hsts' => (bool) env('SECURITY_HSTS', false),
         'force_https' => (bool) env('FORCE_HTTPS', false),
     ],
+
+    /*
+    | Tipos de senha da fila (padrão). Prioridade legal: Lei 10.048/2000
+    | (idosos 60+, gestantes, lactantes, pessoas com deficiência, com criança de colo)
+    | e Lei 13.466/2017 (80+ têm preferência sobre os demais idosos).
+    */
+    'queue_types' => [
+        'geral' => ['prefix' => 'A', 'label' => 'Atendimento geral', 'priority' => false],
+        'convenio' => ['prefix' => 'C', 'label' => 'Convênio', 'priority' => false],
+        'retorno' => ['prefix' => 'R', 'label' => 'Retorno', 'priority' => false],
+        'prioridade' => ['prefix' => 'P', 'label' => 'Prioridade (Lei 10.048/2000)', 'priority' => true],
+    ],
 ];

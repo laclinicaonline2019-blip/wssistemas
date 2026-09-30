@@ -12,6 +12,28 @@
     </div>
 </div>
 
+@if ($today)
+<div class="grid grid-4 mb-2">
+    <a class="card kpi kpi-link" href="{{ route('agenda.index') }}"><div class="kpi__label">Consultas hoje</div><div class="kpi__value">{{ $today['scheduled'] }}</div><div class="kpi__hint">{{ $today['completed'] }} realizadas</div></a>
+    <a class="card kpi kpi-link" href="{{ route('queue.index') }}"><div class="kpi__label">Aguardando na fila</div><div class="kpi__value">{{ $today['waiting'] }}</div><div class="kpi__hint">senhas em espera</div></a>
+    <div class="card kpi"><div class="kpi__label">Cancelamentos hoje</div><div class="kpi__value">{{ $today['cancelled'] }}</div><div class="kpi__hint">horários liberados</div></div>
+    <div class="card kpi"><div class="kpi__label">Faltas hoje</div><div class="kpi__value">{{ $today['no_show'] }}</div><div class="kpi__hint">não compareceram</div></div>
+</div>
+@if ($today['next']->isNotEmpty())
+<section class="card mb-2">
+    <div class="card__head"><h2>Próximos atendimentos</h2><a class="btn btn-sm" href="{{ route('agenda.index') }}">Agenda</a></div>
+    <div class="table-wrap"><table class="table"><tbody>
+        @foreach ($today['next'] as $a)
+            <tr><td class="nowrap"><strong>{{ $a->starts_at->setTimezone('America/Sao_Paulo')->format('H:i') }}</strong></td>
+                <td><a href="{{ route('agenda.show', $a) }}">{{ $a->patient?->displayName() }}</a></td>
+                <td class="small hide-sm">{{ $a->doctor?->displayName() }}</td>
+                <td>@include('agenda._status', ['status' => $a->status])</td></tr>
+        @endforeach
+    </tbody></table></div>
+</section>
+@endif
+@endif
+
 @if ($patients || $doctorsActive !== null)
 <div class="grid grid-4 mb-2">
     @if ($patients)
@@ -101,7 +123,7 @@
 <section class="card mt-2">
     <div class="card__head"><h2>Próximos módulos</h2><span class="badge">Roadmap</span></div>
     <div class="card__body text-2">
-        Agenda inteligente, fila e senhas, prontuário, receitas/atestados com impressão, financeiro, pagamentos (ASAAS/Cielo),
+        Prontuário eletrônico, receitas/atestados com impressão, financeiro, pagamentos (ASAAS/Cielo),
         convênios, portal do paciente e atendimento por IA/WhatsApp serão habilitados por fases. Os indicadores
         operacionais e financeiros deste painel aparecem conforme cada módulo for entregue — nada aqui é simulado.
     </div>

@@ -13,6 +13,10 @@ use App\Modules\Platform\Http\Controllers\Api\CompanySettingsController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformCompanyController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformHealthController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformPlanController;
+use App\Modules\Queue\Http\Controllers\Api\QueueController;
+use App\Modules\Scheduling\Http\Controllers\Api\AppointmentController;
+use App\Modules\Scheduling\Http\Controllers\Api\AvailabilityController;
+use App\Modules\Scheduling\Http\Controllers\Api\ScheduleConfigController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -81,6 +85,46 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::post('patients/{patient}/consents', [PatientController::class, 'consent'])->middleware('permission:paciente.editar')->name('patients.consents');
             Route::get('patients/{patient}/export', [PatientController::class, 'export'])->middleware('permission:paciente.exportar')->name('patients.export');
             Route::post('patients/{patient}/anonymize', [PatientController::class, 'anonymize'])->middleware('permission:paciente.anonimizar')->name('patients.anonymize');
+
+            // Fase 4 — agenda, disponibilidade e fila
+            Route::get('availability/slots', [AvailabilityController::class, 'slots'])->middleware('permission:agenda.visualizar')->name('availability.slots');
+            Route::get('availability/next', [AvailabilityController::class, 'next'])->middleware('permission:agenda.visualizar')->name('availability.next');
+
+            Route::get('appointments', [AppointmentController::class, 'index'])->middleware('permission:agenda.visualizar')->name('appointments.index');
+            Route::post('appointments', [AppointmentController::class, 'store'])->middleware('permission:agenda.criar')->name('appointments.store');
+            Route::get('appointments/{appointment}', [AppointmentController::class, 'show'])->middleware('permission:agenda.visualizar')->name('appointments.show');
+            Route::post('appointments/{appointment}/confirm', [AppointmentController::class, 'confirm'])->middleware('permission:agenda.editar')->name('appointments.confirm');
+            Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->middleware('permission:agenda.cancelar')->name('appointments.cancel');
+            Route::post('appointments/{appointment}/no-show', [AppointmentController::class, 'noShow'])->middleware('permission:agenda.editar')->name('appointments.no_show');
+            Route::post('appointments/{appointment}/reschedule', [AppointmentController::class, 'reschedule'])->middleware('permission:agenda.editar')->name('appointments.reschedule');
+            Route::post('appointments/{appointment}/arrive', [AppointmentController::class, 'arrive'])->middleware('permission:fila.gerenciar')->name('appointments.arrive');
+
+            Route::middleware('permission:agenda.configurar')->group(function () {
+                Route::get('doctors/{doctor}/schedule-templates', [ScheduleConfigController::class, 'templates'])->name('schedule.templates');
+                Route::post('doctors/{doctor}/schedule-templates', [ScheduleConfigController::class, 'storeTemplate'])->name('schedule.templates.store');
+                Route::patch('doctors/{doctor}/schedule-templates/{template}', [ScheduleConfigController::class, 'updateTemplate'])->name('schedule.templates.update');
+                Route::get('doctors/{doctor}/services', [ScheduleConfigController::class, 'services'])->name('schedule.services');
+                Route::post('doctors/{doctor}/services', [ScheduleConfigController::class, 'storeService'])->name('schedule.services.store');
+                Route::patch('doctors/{doctor}/services/{service}', [ScheduleConfigController::class, 'updateService'])->name('schedule.services.update');
+                Route::get('schedule-blocks', [ScheduleConfigController::class, 'blocks'])->name('schedule.blocks');
+                Route::post('schedule-blocks', [ScheduleConfigController::class, 'storeBlock'])->name('schedule.blocks.store');
+                Route::delete('schedule-blocks/{block}', [ScheduleConfigController::class, 'destroyBlock'])->name('schedule.blocks.destroy');
+                Route::get('holidays', [ScheduleConfigController::class, 'holidays'])->name('holidays.index');
+                Route::post('holidays', [ScheduleConfigController::class, 'storeHoliday'])->name('holidays.store');
+                Route::delete('holidays/{holiday}', [ScheduleConfigController::class, 'destroyHoliday'])->name('holidays.destroy');
+                Route::get('rooms', [ScheduleConfigController::class, 'rooms'])->name('rooms.index');
+                Route::post('rooms', [ScheduleConfigController::class, 'storeRoom'])->name('rooms.store');
+                Route::patch('rooms/{room}', [ScheduleConfigController::class, 'updateRoom'])->name('rooms.update');
+            });
+
+            Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
+            Route::middleware('permission:fila.gerenciar')->group(function () {
+                Route::post('queue/tickets', [QueueController::class, 'issue'])->name('queue.issue');
+                Route::post('queue/call-next', [QueueController::class, 'callNext'])->name('queue.call_next');
+                Route::post('queue/tickets/{ticket}/call', [QueueController::class, 'call'])->name('queue.call');
+                Route::post('queue/tickets/{ticket}/recall', [QueueController::class, 'recall'])->name('queue.recall');
+                Route::post('queue/tickets/{ticket}/{action}', [QueueController::class, 'action'])->whereIn('action', ['start', 'finish', 'skip', 'transfer'])->name('queue.action');
+            });
         });
 
         // ------------------------------------------------ Plataforma (SaaS)

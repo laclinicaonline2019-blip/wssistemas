@@ -142,6 +142,16 @@ fila ficar parada (cron não configurado).
    *Filiais*, *Usuários* e *Perfis*.
 3. *Configurações → Impressão → Teste A4 / Teste térmica* para calibrar as impressoras da recepção.
 
+## Painel de chamadas na TV
+
+1. *Fila e senhas → Painel da TV*: salve as configurações para gerar o endereço secreto da unidade.
+2. Abra o endereço no navegador da TV/Smart TV/mini-PC, em tela cheia, e toque em **"ativar som"**
+   (os navegadores só liberam áudio após uma interação).
+3. O painel consulta o servidor a cada 3 segundos (sem websockets — compatível com hospedagem
+   compartilhada) e anuncia a senha com sinal sonoro e voz em português.
+4. Impressão de senhas: impressora térmica instalada no computador da recepção como impressora
+   padrão, papel 80 mm (ou 58 mm em *Configurações → Impressão*), margens "nenhuma".
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

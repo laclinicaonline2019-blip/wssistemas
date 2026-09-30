@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.4.0 (Fases 1, 2 e 3 concluídas, pronto para HostGator)
+## Estado atual — v0.5.0 (Fases 1 a 4 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -22,11 +22,13 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ Filiais, usuários, perfis de acesso, configurações, **auditoria imutável** (web + API)
 - ✅ **Pacientes** (prontuário nº, CPF, responsáveis, convênios, CEP, duplicidade, consentimentos, exportação/anonimização LGPD), **médicos** (CRM/RQE, especialidades, unidades) e **especialidades**
 - ✅ Busca global (paciente, CPF, telefone, prontuário, médico) respeitando permissões
+- ✅ **Agenda inteligente** (grades, limites por período/dia, encaixes, feriados, bloqueios, valores) **sem dupla marcação** (testado com concorrência real)
+- ✅ **Fila e senhas** com impressão térmica e **painel de chamadas para TV** com voz
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 91 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 113 testes
 
-Próxima fase: **Fase 4** — agenda inteligente (grades, limites por período, encaixes, anti-dupla-marcação), fila/senhas e painel de chamadas.
+Próxima fase: **Fase 5** — prontuário eletrônico (consulta, anamnese, exame, CID, conduta, versões imutáveis, autosave), base de CID e medicamentos.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

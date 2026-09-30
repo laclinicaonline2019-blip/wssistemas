@@ -14,6 +14,9 @@ use App\Modules\Patients\Http\Controllers\Web\PatientWebController;
 use App\Modules\Platform\Http\Controllers\Web\CompanySettingsWebController;
 use App\Modules\Platform\Http\Controllers\Web\PlatformWebController;
 use App\Modules\Printing\Http\Controllers\PrintTestController;
+use App\Modules\Queue\Http\Controllers\Web\QueueWebController;
+use App\Modules\Scheduling\Http\Controllers\Web\AgendaWebController;
+use App\Modules\Scheduling\Http\Controllers\Web\ScheduleConfigWebController;
 use Illuminate\Support\Facades\Route;
 
 // ---------------------------------------------------------------- Autenticação
@@ -101,6 +104,44 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::get('{doctor}/editar', [DoctorWebController::class, 'edit'])->middleware('permission:medico.visualizar')->name('edit');
         Route::put('{doctor}', [DoctorWebController::class, 'update'])->middleware('permission:medico.gerenciar')->name('update');
         Route::patch('{doctor}/status', [DoctorWebController::class, 'status'])->middleware('permission:medico.gerenciar')->name('status');
+    });
+
+    // Fase 4 — agenda, configuração e fila
+    Route::prefix('agenda')->name('agenda.')->group(function () {
+        Route::get('/', [AgendaWebController::class, 'index'])->middleware('permission:agenda.visualizar')->name('index');
+        Route::get('agendar', [AgendaWebController::class, 'create'])->middleware('permission:agenda.criar')->name('create');
+        Route::post('/', [AgendaWebController::class, 'store'])->middleware('permission:agenda.criar')->name('store');
+        Route::get('pacientes/busca', [AgendaWebController::class, 'patientLookup'])->middleware(['permission:agenda.criar', 'throttle:60,1'])->name('patient_lookup');
+        Route::get('feriados', [ScheduleConfigWebController::class, 'holidays'])->middleware('permission:agenda.configurar')->name('holidays');
+        Route::post('feriados', [ScheduleConfigWebController::class, 'storeHoliday'])->middleware('permission:agenda.configurar')->name('holidays.store');
+        Route::delete('feriados/{holiday}', [ScheduleConfigWebController::class, 'destroyHoliday'])->middleware('permission:agenda.configurar')->name('holidays.destroy');
+        Route::post('bloqueios', [ScheduleConfigWebController::class, 'storeBlock'])->middleware('permission:agenda.configurar')->name('blocks.store');
+        Route::delete('bloqueios/{block}', [ScheduleConfigWebController::class, 'destroyBlock'])->middleware('permission:agenda.configurar')->name('blocks.destroy');
+        Route::get('{appointment}', [AgendaWebController::class, 'show'])->middleware('permission:agenda.visualizar')->name('show');
+        Route::post('{appointment}/{action}', [AgendaWebController::class, 'action'])->whereIn('action', ['confirm', 'cancel', 'no-show', 'arrive', 'reschedule'])->name('action');
+    });
+
+    Route::prefix('medicos/{doctor}/agenda')->name('doctors.schedule.')->middleware('permission:agenda.configurar')->group(function () {
+        Route::get('/', [ScheduleConfigWebController::class, 'doctor'])->name('index');
+        Route::post('periodos', [ScheduleConfigWebController::class, 'storeTemplate'])->name('templates.store');
+        Route::patch('periodos/{template}/alternar', [ScheduleConfigWebController::class, 'toggleTemplate'])->name('templates.toggle');
+        Route::post('servicos', [ScheduleConfigWebController::class, 'storeService'])->name('services.store');
+        Route::put('servicos/{service}', [ScheduleConfigWebController::class, 'updateService'])->name('services.update');
+        Route::put('limite-diario', [ScheduleConfigWebController::class, 'dailyLimit'])->name('daily_limit');
+    });
+
+    Route::get('salas', [ScheduleConfigWebController::class, 'rooms'])->middleware('permission:agenda.configurar')->name('rooms.index');
+    Route::post('salas', [ScheduleConfigWebController::class, 'storeRoom'])->middleware('permission:agenda.configurar')->name('rooms.store');
+    Route::put('salas/{room}', [ScheduleConfigWebController::class, 'updateRoom'])->middleware('permission:agenda.configurar')->name('rooms.update');
+
+    Route::prefix('fila')->name('queue.')->group(function () {
+        Route::get('/', [QueueWebController::class, 'index'])->middleware('permission:fila.visualizar')->name('index');
+        Route::post('senhas', [QueueWebController::class, 'issue'])->middleware('permission:fila.gerenciar')->name('issue');
+        Route::post('chamar-proxima', [QueueWebController::class, 'callNext'])->middleware('permission:fila.gerenciar')->name('call_next');
+        Route::get('senhas/{ticket}/imprimir', [QueueWebController::class, 'print'])->middleware('permission:fila.visualizar')->name('print');
+        Route::post('senhas/{ticket}/{action}', [QueueWebController::class, 'action'])->middleware('permission:fila.gerenciar')->whereIn('action', ['call', 'recall', 'start', 'finish', 'skip', 'transfer'])->name('action');
+        Route::get('painel', [QueueWebController::class, 'panelSettings'])->middleware('permission:fila.painel')->name('panel');
+        Route::put('painel', [QueueWebController::class, 'updatePanel'])->middleware('permission:fila.painel')->name('panel.update');
     });
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');

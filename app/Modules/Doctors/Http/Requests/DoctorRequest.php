@@ -55,6 +55,7 @@ class DoctorRequest extends FormRequest
             'email' => ['nullable', 'email:rfc', 'max:190'],
             'phone' => ['nullable', 'string', 'min:10', 'max:11'],
             'bio' => ['nullable', 'string', 'max:1000'],
+            'daily_limit' => ['nullable', 'integer', 'min:1', 'max:200'],
             'user_id' => ['nullable', 'string', 'size:26'],
             'specialties' => ['sometimes', 'array', 'max:10'],
             'specialties.*.id' => ['required', 'string', 'size:26'],

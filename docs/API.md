@@ -51,6 +51,22 @@ Base: `/api/v1` · JSON · autenticação **Bearer** (Sanctum) · especificaçã
 | GET | `/patients/{id}/export` | `paciente.exportar` — dados do titular (LGPD), auditado |
 | POST | `/patients/{id}/anonymize` | `paciente.anonimizar` (empresa toda) — `{reason, confirm: true}`; irreversível |
 
+### Agenda e fila (Fase 4)
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| GET | `/availability/slots` | `agenda.visualizar` — `doctor_id, branch_id, date_from, date_to?, service_id?, only_free?`; por período: capacidade, ocupados, encaixes e cada horário (`free, booked, blocked, past, full` + motivo) |
+| GET | `/availability/next` | `agenda.visualizar` — `branch_id` + `doctor_id` **ou** `specialty_id`, `limit` — próximos horários livres (base para a IA) |
+| GET/POST | `/appointments` | `agenda.visualizar` / `agenda.criar` — `{doctor_id, branch_id, patient_id, starts_at, service_id?, is_overbook?, payer_type?, patient_insurance_id?, channel?, notes?, idempotency_key?}`. Erros: `409 slot_booked/slot_taken`, `422 slot_full, slot_blocked, off_grid, no_schedule, past_time, patient_conflict, overbook_limit, insurance_*`, `403 overbook_forbidden`. Repetição com a mesma `idempotency_key` devolve `200` com o mesmo agendamento |
+| GET | `/appointments/{id}` | `agenda.visualizar` |
+| POST | `/appointments/{id}/confirm` · `/no-show` · `/reschedule` | `agenda.editar` — remarcação `{starts_at, doctor_id?, branch_id?}` mantém o protocolo |
+| POST | `/appointments/{id}/cancel` | `agenda.cancelar` — `{reason}`; libera o horário |
+| POST | `/appointments/{id}/arrive` | `fila.gerenciar` — registra chegada e **emite a senha** (`ticket_type?`, sugerido automaticamente: 60+ → prioridade) |
+| GET/POST/PATCH | `/doctors/{id}/schedule-templates`, `/doctors/{id}/services`, `/schedule-blocks`, `/holidays`, `/rooms` | `agenda.configurar` — bloqueio retorna `affected_appointments` |
+| GET | `/queue` | `fila.visualizar` — fila do dia da unidade (`X-Branch-Id`) |
+| POST | `/queue/tickets`, `/queue/call-next`, `/queue/tickets/{id}/call`, `/recall`, `/start`, `/finish`, `/skip`, `/transfer` | `fila.gerenciar` — início/fim da senha atualizam o agendamento (em atendimento/realizado) |
+| GET | `/painel/{token}/estado` (fora de `/api`) | público com token secreto da unidade — dados mínimos para a TV |
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |
