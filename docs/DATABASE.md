@@ -37,6 +37,20 @@ as expressões usam `RTRIM(coluna)`.
 | `personal_access_tokens` | Tokens de API (Sanctum) com `expires_at` | token hash único |
 | `sessions`, `cache`, `jobs`, `failed_jobs`, `job_batches`, `password_reset_tokens` | Infraestrutura | |
 
+### Fase 3 — cadastros clínicos
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `company_sequences` | Sequências por empresa (nº de prontuário) | PK `(company_id, name)`; incremento sob `SELECT … FOR UPDATE` |
+| `specialties` | Especialidades da clínica (padrões criados no provisionamento) | `UNIQUE(company_id, name)` |
+| `doctors` | Médicos: CRM/UF, CPF, contato, apresentação, vínculo opcional com `users` | CRM/UF único por empresa entre não excluídos; um usuário ↔ no máximo um médico; FK composta para `users` |
+| `doctor_specialty` | Médico × especialidade (+ RQE) | FKs compostas (mesma empresa) |
+| `doctor_branch` | Unidades onde o médico atende | FKs compostas |
+| `patients` | Paciente: nº de prontuário, nome civil/social, CPF, RG, CNS, nascimento, sexo, identidade de gênero, mãe, contatos, endereço, `search_name` normalizado, status, anonimização | CPF único por empresa entre não excluídos (NULL permitido); `UNIQUE(company_id, record_number)`; sem exclusão física |
+| `patient_contacts` | Responsável legal / emergência / outros | FK composta; CHECK de tipo |
+| `patient_insurances` | Carteirinhas (convênio, plano, número, validade, principal) — `insurance_company_id` será ligado na Fase 9 | FK composta |
+| `patient_consents` | Consentimentos LGPD (finalidade, versão do termo, canal, quem registrou, IP) — cada concessão/revogação é um novo registro imutável | FK composta |
+
 Índices: `audit_logs(company_id, created_at)`, `(company_id, auditable_type, auditable_id)`,
 `(company_id, user_id, created_at)`, `(action, created_at)`; `users(company_id, status)`.
 
@@ -45,9 +59,7 @@ as expressões usam `RTRIM(coluna)`.
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas
 para garantir mesma empresa, e é consultada via `BelongsToCompany`.
 
-- **Cadastros:** `specialties`, `doctors` (CRM/UF, `user_id`), `doctor_specialties`, `rooms`,
-  `patients` (CPF único por empresa, nome social, responsável, contatos), `patient_contacts`,
-  `patient_insurances`, `patient_consents`, `patient_documents`, `files`.
+- **Cadastros (restantes):** `rooms` (Fase 4), `patient_documents`, `files` (Fase 6).
 - **Agenda:** `schedule_templates` (dia, horário, duração, limite por período, encaixes),
   `schedule_blocks` (férias, feriados, bloqueios), `holidays`, `appointments` com coluna gerada
   `active_slot_key` (médico + início, só para status ativos) **UNIQUE** e reserva feita dentro de

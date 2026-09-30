@@ -2,6 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#070d18">
+<meta name="app-url" content="{{ url('/') }}">
 <title>{{ isset($title) ? $title.' · ' : '' }}{{ config('aivexa.brand.name') }}</title>
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/icon-32.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/img/icon-192.png') }}">

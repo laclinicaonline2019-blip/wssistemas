@@ -92,6 +92,7 @@
 
   // Máscaras simples (CNPJ, CEP, telefone) — o backend normaliza/valida.
   var masks = {
+    cpf: function (v) { return v.replace(/\D/g, '').slice(0, 11).replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2'); },
     cnpj: function (v) { return v.replace(/\D/g, '').slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2'); },
     cep: function (v) { return v.replace(/\D/g, '').slice(0, 8).replace(/^(\d{5})(\d)/, '$1-$2'); },
     phone: function (v) { v = v.replace(/\D/g, '').slice(0, 11); return v.length > 10 ? v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3') : v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3'); }
@@ -99,5 +100,26 @@
   document.addEventListener('input', function (ev) {
     var m = ev.target.getAttribute && ev.target.getAttribute('data-mask');
     if (m && masks[m]) ev.target.value = masks[m](ev.target.value);
+
+    // Endereço pelo CEP (consulta feita pelo servidor; falha não bloqueia o preenchimento manual)
+    if (ev.target.hasAttribute && ev.target.hasAttribute('data-cep-lookup')) {
+      var cep = ev.target.value.replace(/\D/g, '');
+      if (cep.length !== 8 || ev.target.getAttribute('data-last') === cep) return;
+      ev.target.setAttribute('data-last', cep);
+      var base = (document.querySelector('meta[name=app-url]') || {}).content || '';
+      var form = ev.target.form;
+      fetch(base.replace(/\/$/, '') + '/cep/' + cep, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (a) {
+          if (!a || !form) return;
+          ['street', 'district', 'city', 'state'].forEach(function (k) {
+            var field = form.querySelector('[name=' + k + ']');
+            if (field && a[k] && !field.value) field.value = a[k];
+          });
+          var number = form.querySelector('[name=number]');
+          if (number) number.focus();
+        })
+        .catch(function () { /* preenchimento manual */ });
+    }
   });
 })();

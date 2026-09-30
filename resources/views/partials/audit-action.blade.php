@@ -13,6 +13,14 @@
         'role_assignment.created' => 'Perfil atribuído', 'role_assignment.deleted' => 'Perfil removido',
         'company.created' => 'Empresa criada', 'company.updated' => 'Empresa alterada', 'company.provisioned' => 'Clínica provisionada',
         'audit.exported' => 'Auditoria exportada',
+        'patient.created' => 'Paciente cadastrado', 'patient.updated' => 'Cadastro do paciente alterado',
+        'patient.viewed' => 'Cadastro do paciente acessado', 'patient.exported' => 'Dados do paciente exportados (LGPD)',
+        'patient.anonymized' => 'Paciente anonimizado (LGPD)', 'patient.consent_granted' => 'Consentimento concedido',
+        'patient.consent_revoked' => 'Consentimento revogado', 'patient.contacts_changed' => 'Contatos/responsáveis alterados',
+        'patient.insurances_changed' => 'Convênios alterados',
+        'doctor.created' => 'Médico cadastrado', 'doctor.updated' => 'Médico alterado',
+        'doctor.specialties_changed' => 'Especialidades do médico alteradas', 'doctor.branches_changed' => 'Filiais do médico alteradas',
+        'specialty.created' => 'Especialidade criada', 'specialty.updated' => 'Especialidade alterada',
     ];
     $cls = ['success' => 'badge-success', 'failure' => 'badge-danger', 'denied' => 'badge-warning'][$log->result] ?? '';
 @endphp

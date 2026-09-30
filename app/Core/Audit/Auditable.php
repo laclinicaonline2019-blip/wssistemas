@@ -13,9 +13,31 @@ use Illuminate\Database\Eloquent\Model;
  */
 trait Auditable
 {
+    private static bool $auditingSuspended = false;
+
+    /**
+     * Executa sem a auditoria automática deste model. Uso restrito a operações
+     * que registram um evento próprio sem copiar dados pessoais (ex.: anonimização LGPD).
+     */
+    public static function withoutAuditing(callable $callback): mixed
+    {
+        $previous = self::$auditingSuspended;
+        self::$auditingSuspended = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$auditingSuspended = $previous;
+        }
+    }
+
     public static function bootAuditable(): void
     {
         static::created(function (Model $model) {
+            if (self::$auditingSuspended) {
+                return;
+            }
+
             app(AuditLogger::class)->record(
                 $model->auditType().'.created',
                 $model,
@@ -24,6 +46,10 @@ trait Auditable
         });
 
         static::updated(function (Model $model) {
+            if (self::$auditingSuspended) {
+                return;
+            }
+
             $changes = $model->auditableAttributes($model->getChanges());
 
             if ($changes === []) {
@@ -41,6 +67,10 @@ trait Auditable
         });
 
         static::deleted(function (Model $model) {
+            if (self::$auditingSuspended) {
+                return;
+            }
+
             app(AuditLogger::class)->record(
                 $model->auditType().'.deleted',
                 $model,

@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Web;
 use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Modules\Audit\Http\Controllers\Api\AuditLogController;
+use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
+use App\Modules\Patients\Models\Patient;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Services\PlanLimitService;
 use Illuminate\Http\RedirectResponse;
@@ -41,6 +43,11 @@ class DashboardController extends Controller
             'usersCount' => User::query()->manageableBy($allowed)->count(),
             'usersWithout2fa' => User::query()->manageableBy($allowed)->whereNull('two_factor_confirmed_at')->count(),
             'recent' => $recent,
+            'patients' => $user->hasPermission('paciente.visualizar') ? [
+                'active' => Patient::query()->where('status', 'active')->count(),
+                'new_month' => Patient::query()->where('created_at', '>=', now()->startOfMonth())->count(),
+            ] : null,
+            'doctorsActive' => $user->hasPermission('medico.visualizar') ? Doctor::query()->active()->inBranches($allowed)->count() : null,
             'failedLogins' => $failedLogins,
         ]);
     }

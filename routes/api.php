@@ -1,11 +1,14 @@
 <?php
 
 use App\Modules\Audit\Http\Controllers\Api\AuditLogController;
+use App\Modules\Doctors\Http\Controllers\Api\DoctorController;
+use App\Modules\Doctors\Http\Controllers\Api\SpecialtyController;
 use App\Modules\Identity\Http\Controllers\Api\AuthController;
 use App\Modules\Identity\Http\Controllers\Api\RoleController;
 use App\Modules\Identity\Http\Controllers\Api\TwoFactorController;
 use App\Modules\Identity\Http\Controllers\Api\UserController;
 use App\Modules\Organization\Http\Controllers\Api\BranchController;
+use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Platform\Http\Controllers\Api\CompanySettingsController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformCompanyController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformHealthController;
@@ -58,6 +61,26 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::delete('roles/{role}', [RoleController::class, 'destroy'])->middleware('permission:perfil.gerenciar')->name('roles.destroy');
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->middleware('permission:auditoria.visualizar')->name('audit.index');
+
+            // Fase 3 — especialidades, médicos e pacientes
+            Route::get('specialties', [SpecialtyController::class, 'index'])->middleware('permission:medico.visualizar|agenda.visualizar')->name('specialties.index');
+            Route::post('specialties', [SpecialtyController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');
+            Route::patch('specialties/{specialty}', [SpecialtyController::class, 'update'])->middleware('permission:especialidade.gerenciar')->name('specialties.update');
+
+            Route::get('doctors', [DoctorController::class, 'index'])->middleware('permission:medico.visualizar|agenda.visualizar')->name('doctors.index');
+            Route::post('doctors', [DoctorController::class, 'store'])->middleware('permission:medico.gerenciar')->name('doctors.store');
+            Route::get('doctors/{doctor}', [DoctorController::class, 'show'])->middleware('permission:medico.visualizar|agenda.visualizar')->name('doctors.show');
+            Route::patch('doctors/{doctor}', [DoctorController::class, 'update'])->middleware('permission:medico.gerenciar')->name('doctors.update');
+            Route::patch('doctors/{doctor}/status', [DoctorController::class, 'status'])->middleware('permission:medico.gerenciar')->name('doctors.status');
+
+            Route::get('patients', [PatientController::class, 'index'])->middleware('permission:paciente.visualizar')->name('patients.index');
+            Route::post('patients', [PatientController::class, 'store'])->middleware('permission:paciente.criar')->name('patients.store');
+            Route::get('patients/{patient}', [PatientController::class, 'show'])->middleware('permission:paciente.visualizar')->name('patients.show');
+            Route::patch('patients/{patient}', [PatientController::class, 'update'])->middleware('permission:paciente.editar')->name('patients.update');
+            Route::patch('patients/{patient}/status', [PatientController::class, 'status'])->middleware('permission:paciente.editar')->name('patients.status');
+            Route::post('patients/{patient}/consents', [PatientController::class, 'consent'])->middleware('permission:paciente.editar')->name('patients.consents');
+            Route::get('patients/{patient}/export', [PatientController::class, 'export'])->middleware('permission:paciente.exportar')->name('patients.export');
+            Route::post('patients/{patient}/anonymize', [PatientController::class, 'anonymize'])->middleware('permission:paciente.anonimizar')->name('patients.anonymize');
         });
 
         // ------------------------------------------------ Plataforma (SaaS)

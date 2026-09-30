@@ -34,8 +34,10 @@
             <div class="sidebar__section">Clínica</div>
             <ul class="nav">
                 {!! $nav('home', 'home', 'home', 'Dashboard', $can('dashboard.visualizar')) !!}
+                {!! $nav('patients.index', 'patients.*', 'patient', 'Pacientes', $can('paciente.visualizar')) !!}
                 {!! $soon('calendar', 'Agenda', 'Fase 4') !!}
-                {!! $soon('users', 'Pacientes', 'Fase 3') !!}
+                {!! $nav('doctors.index', 'doctors.*', 'stethoscope', 'Médicos', $can('medico.visualizar')) !!}
+                {!! $nav('specialties.index', 'specialties.*', 'tag', 'Especialidades', $can('medico.visualizar')) !!}
                 {!! $soon('heart', 'Atendimento', 'Fase 5') !!}
                 {!! $soon('file', 'Documentos', 'Fase 6') !!}
                 {!! $soon('cash', 'Financeiro', 'Fase 7') !!}
@@ -52,7 +54,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.2.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.4.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>
@@ -79,6 +81,13 @@
                 </form>
             @elseif ($isPlatform)
                 <span class="badge badge-primary">Super Admin</span>
+            @endif
+
+            @if (! $isPlatform && $ctx->hasCompany())
+                <form method="get" action="{{ route('search') }}" class="topbar__search" role="search">
+                    <label class="sr-only" for="global-q">Buscar</label>
+                    <input id="global-q" name="q" class="input" type="search" placeholder="Buscar paciente, CPF, telefone, médico…" value="{{ request()->routeIs('search') ? request('q') : '' }}" autocomplete="off">
+                </form>
             @endif
 
             <div class="topbar__spacer"></div>

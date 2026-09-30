@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Modules\Patients\Http\Controllers\Web;
+
+use App\Core\Tenancy\TenantContext;
+use App\Http\Controllers\Controller;
+use App\Modules\Organization\Models\Branch;
+use App\Modules\Patients\Http\Controllers\Api\PatientController;
+use App\Modules\Patients\Http\Requests\PatientRequest;
+use App\Modules\Patients\Models\Patient;
+use App\Modules\Patients\Services\PatientService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+class PatientWebController extends Controller
+{
+    public function __construct(
+        private readonly PatientService $service,
+        private readonly TenantContext $context,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        $request->validate(['search' => ['nullable', 'string', 'max:100'], 'status' => ['nullable', Rule::in(['active', 'inactive'])]]);
+
+        $patients = Patient::query()->search($request->query('search'))
+            ->when($request->query('status', 'active'), fn ($q, $s) => $q->where('status', $s))
+            ->orderBy('search_name')->paginate(25)->withQueryString();
+
+        return view('patients.index', compact('patients'));
+    }
+
+    public function create(): View
+    {
+        return view('patients.form', ['patient' => new Patient, 'branches' => $this->branches()]);
+    }
+
+    public function store(PatientRequest $request): RedirectResponse
+    {
+        $patient = $this->service->create($request->user(), $request->validated(), $request->boolean('confirm_duplicate'));
+
+        return redirect()->route('patients.show', $patient)->with('success', "Paciente cadastrado — prontuário nº {$patient->record_number}.");
+    }
+
+    public function show(Patient $patient): View
+    {
+        $this->service->recordView($patient, 'web');
+
+        return view('patients.show', [
+            'patient' => $patient->load(['contacts', 'insurances', 'consents.recorder:id,name', 'homeBranch']),
+            'history' => $this->service->history($patient, 30),
+        ]);
+    }
+
+    public function edit(Patient $patient): View
+    {
+        abort_if($patient->isAnonymized(), 403, 'Paciente anonimizado: o cadastro não pode ser alterado.');
+
+        return view('patients.form', ['patient' => $patient->load(['contacts', 'insurances']), 'branches' => $this->branches()]);
+    }
+
+    public function update(PatientRequest $request, Patient $patient): RedirectResponse
+    {
+        $this->service->update($request->user(), $patient, $request->validated() + ['contacts' => [], 'insurances' => []]);
+
+        return redirect()->route('patients.show', $patient)->with('success', 'Cadastro atualizado.');
+    }
+
+    public function status(Request $request, Patient $patient): RedirectResponse
+    {
+        $data = $request->validate(['status' => ['required', Rule::in(['active', 'inactive'])]]);
+        $this->service->setStatus($patient, $data['status']);
+
+        return back()->with('success', $data['status'] === 'active' ? 'Paciente reativado.' : 'Paciente inativado.');
+    }
+
+    public function consent(Request $request, Patient $patient): RedirectResponse
+    {
+        $data = PatientController::validateConsent($request);
+        $this->service->recordConsent($request->user(), $patient, $data['purpose'], (bool) $data['granted'], $data['channel'], $data['notes'] ?? null);
+
+        return back()->with('success', 'Consentimento registrado.');
+    }
+
+    public function export(Request $request, Patient $patient): StreamedResponse
+    {
+        $data = $this->service->export($request->user(), $patient);
+
+        return response()->streamDownload(
+            fn () => print (json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            "paciente-{$patient->record_number}-dados.json",
+            ['Content-Type' => 'application/json; charset=UTF-8'],
+        );
+    }
+
+    public function anonymize(Request $request, Patient $patient): RedirectResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'min:10', 'max:255'], 'confirm' => ['accepted']]);
+        $this->service->anonymize($request->user(), $patient, $data['reason']);
+
+        return redirect()->route('patients.show', $patient)->with('success', 'Paciente anonimizado.');
+    }
+
+    private function branches()
+    {
+        return Branch::query()->active()->accessible($this->context->allowedBranchIds())->orderByDesc('is_headquarters')->orderBy('name')->get(['id', 'name']);
+    }
+}

@@ -2,6 +2,28 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.4.0] — 2026-09-30 — Fase 3: pacientes, médicos e especialidades
+
+### Adicionado
+- **Pacientes:** nº de prontuário sequencial por empresa (sem colisão em concorrência), nome civil e
+  social, CPF (validado, único por empresa, opcional), RG, CNS, sexo/identidade de gênero, mãe,
+  contatos, endereço com **busca de CEP** (ViaCEP pelo servidor), responsáveis/contatos de emergência
+  (responsável legal obrigatório para menores), convênios (carteirinha, validade, principal),
+  observações administrativas, unidade de cadastro.
+- **Detecção de duplicidade** (nome + nascimento ou telefone) com confirmação explícita.
+- **Busca** por nome sem acento, CPF, telefone/WhatsApp ou nº de prontuário; **busca global** na barra
+  superior (pacientes, médicos, usuários — conforme permissões).
+- **LGPD:** consentimentos por finalidade com histórico imutável, exportação dos dados do titular,
+  anonimização irreversível (sem copiar PII para a auditoria), registro de acesso ao cadastro, CPF
+  mascarado em listas, proibição de exclusão física; histórico de alterações na ficha do paciente.
+- **Médicos:** CRM/UF (único por empresa), CPF, contato, apresentação, especialidades com RQE,
+  unidades de atendimento, vínculo com a conta de acesso; limite `max_doctors` do plano; gestor de
+  filial restrito às suas unidades.
+- **Especialidades:** 17 padrões criados para cada clínica (`aivexa:permissions:sync --roles` aplica às
+  existentes), gestão com código CBO opcional.
+- Dashboard com pacientes ativos, novos no mês e médicos ativos; demo com 3 médicos e 25 pacientes fictícios.
+- API REST: `/specialties`, `/doctors`, `/patients` (+ consents, export, anonymize). 91 testes (MariaDB e PostgreSQL).
+
 ## [0.3.0] — 2026-09-30 — Produção na HostGator (Plano Turbo, hospedagem compartilhada)
 
 ### Alterado

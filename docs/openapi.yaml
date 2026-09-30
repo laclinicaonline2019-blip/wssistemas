@@ -141,3 +141,70 @@ paths:
     get: { summary: Lista clínicas (Super Admin), responses: { '200': { description: OK } } }
     post: { summary: Provisiona clínica, responses: { '201': { description: Criada } } }
   /platform/health: { get: { summary: Saúde do sistema, responses: { '200': { description: OK }, '503': { description: Degradado } } } }
+  /specialties:
+    get: { summary: Lista especialidades ativas, responses: { '200': { description: OK } } }
+    post: { summary: Cria especialidade, responses: { '201': { description: Criada }, '422': { description: Nome já existe } } }
+  /doctors:
+    get:
+      summary: Lista médicos
+      parameters:
+        - { name: search, in: query, schema: { type: string } }
+        - { name: specialty_id, in: query, schema: { type: string } }
+        - { name: branch_id, in: query, schema: { type: string } }
+      responses: { '200': { description: OK } }
+    post:
+      summary: Cadastra médico (limite max_doctors)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, crm, crm_state]
+              properties:
+                name: { type: string }
+                crm: { type: string }
+                crm_state: { type: string, minLength: 2, maxLength: 2 }
+                user_id: { type: string, nullable: true }
+                specialties: { type: array, items: { type: object, properties: { id: { type: string }, rqe: { type: string } } } }
+                branches: { type: array, items: { type: string } }
+      responses: { '201': { description: Criado }, '422': { description: Validação/limite } }
+  /patients:
+    get:
+      summary: Lista/busca pacientes (CPF mascarado)
+      parameters: [{ name: search, in: query, schema: { type: string }, description: 'nome, CPF, telefone ou nº do prontuário' }]
+      responses: { '200': { description: OK } }
+    post:
+      summary: Cadastra paciente
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, birth_date]
+              properties:
+                name: { type: string }
+                social_name: { type: string }
+                cpf: { type: string, nullable: true }
+                birth_date: { type: string, format: date }
+                sex: { type: string, enum: [F, M, I] }
+                whatsapp: { type: string }
+                contacts: { type: array, items: { type: object, properties: { type: { type: string, enum: [guardian, emergency, other] }, name: { type: string } } } }
+                insurances: { type: array, items: { type: object, properties: { insurer_name: { type: string }, card_number: { type: string } } } }
+                confirm_duplicate: { type: boolean }
+      responses:
+        '201': { description: Criado }
+        '409': { description: Possível duplicidade (reenvie com confirm_duplicate) }
+        '422': { description: Validação / responsável obrigatório para menor }
+  /patients/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Ficha do paciente (acesso auditado), responses: { '200': { description: OK }, '404': { description: Inexistente ou de outra empresa } } }
+    patch: { summary: Atualiza cadastro, responses: { '200': { description: OK }, '422': { description: Paciente anonimizado } } }
+  /patients/{id}/consents:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { summary: Registra concessão/revogação de consentimento, responses: { '201': { description: Registrado } } }
+  /patients/{id}/export:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Exporta dados do titular (LGPD), responses: { '200': { description: OK } } }
+  /patients/{id}/anonymize:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { summary: Anonimiza (irreversível), responses: { '200': { description: OK } } }

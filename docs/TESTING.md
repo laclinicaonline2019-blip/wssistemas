@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (71 testes; 1 ignorado conforme o banco)
+## Cobertura atual (91 testes; 1 ignorado conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -26,6 +26,8 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Platform/WebInstallerTest` | instalador web oculto sem token, token inválido, instalação completa e autodesativação |
 | `Security/SecurityHeadersTest` | CSP/headers, no-store, token CSRF, injeção tratada como dado, escape de HTML |
 | `Web/WebPagesTest` | todas as telas renderizam, formulários web, menu por permissão, troca de filial, telas da plataforma |
+| `Patients/PatientTest` | nº de prontuário sequencial por empresa, normalização, CPF válido/único por empresa, **duplicidade com confirmação**, **responsável obrigatório para menor**, busca sem acento/CPF/telefone/prontuário, CPF mascarado em listas, acesso auditado, **isolamento entre clínicas**, permissões por perfil, consentimentos imutáveis com histórico, **exportação e anonimização LGPD** (sem PII na trilha), proibição de exclusão física, telas web, CEP via servidor |
+| `Doctors/DoctorTest` | especialidades padrão, médico com especialidades/RQE/unidades/usuário, CRM único por empresa, vínculos de outra empresa rejeitados, limite do plano, **gestor de filial restrito às suas unidades**, permissões de especialidades, telas web, busca global respeitando permissões |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)

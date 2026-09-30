@@ -12,6 +12,21 @@
     </div>
 </div>
 
+@if ($patients || $doctorsActive !== null)
+<div class="grid grid-4 mb-2">
+    @if ($patients)
+        <a class="card kpi kpi-link" href="{{ route('patients.index') }}"><div class="kpi__label">Pacientes ativos</div><div class="kpi__value">{{ number_format($patients['active'], 0, ',', '.') }}</div><div class="kpi__hint">cadastro da empresa</div></a>
+        <div class="card kpi"><div class="kpi__label">Novos pacientes no mês</div><div class="kpi__value">{{ $patients['new_month'] }}</div><div class="kpi__hint">desde {{ now()->startOfMonth()->format('d/m') }}</div></div>
+    @endif
+    @if ($doctorsActive !== null)
+        <a class="card kpi kpi-link" href="{{ route('doctors.index') }}"><div class="kpi__label">Médicos ativos</div><div class="kpi__value">{{ $doctorsActive }}</div><div class="kpi__hint">nas suas unidades</div></a>
+    @endif
+    @if (auth()->user()->hasPermission('paciente.criar'))
+        <a class="card kpi kpi-link kpi-action" href="{{ route('patients.create') }}"><div class="kpi__label">Ação rápida</div><div class="kpi__value">+ Paciente</div><div class="kpi__hint">novo cadastro</div></a>
+    @endif
+</div>
+@endif
+
 <div class="grid grid-4">
     <div class="card kpi">
         <div class="kpi__label">Filiais ativas</div>
@@ -86,7 +101,7 @@
 <section class="card mt-2">
     <div class="card__head"><h2>Próximos módulos</h2><span class="badge">Roadmap</span></div>
     <div class="card__body text-2">
-        Agenda inteligente, pacientes, prontuário, receitas/atestados com impressão, financeiro, pagamentos (ASAAS/Cielo),
+        Agenda inteligente, fila e senhas, prontuário, receitas/atestados com impressão, financeiro, pagamentos (ASAAS/Cielo),
         convênios, portal do paciente e atendimento por IA/WhatsApp serão habilitados por fases. Os indicadores
         operacionais e financeiros deste painel aparecem conforme cada módulo for entregue — nada aqui é simulado.
     </div>

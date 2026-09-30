@@ -39,6 +39,17 @@ Base: `/api/v1` · JSON · autenticação **Bearer** (Sanctum) · especificaçã
 | GET/POST | `/roles` | `perfil.visualizar` / `perfil.gerenciar` |
 | GET/PATCH/DELETE | `/roles/{id}` | `perfil.visualizar` / `perfil.gerenciar` |
 | GET | `/audit-logs` | `auditoria.visualizar` — filtros `user_id, branch_id, action (prefixo), auditable_type, auditable_id, result, from, to` |
+| GET/POST | `/specialties` | `medico.visualizar` ou `agenda.visualizar` / `especialidade.gerenciar` (`?include_inactive=1`) |
+| PATCH | `/specialties/{id}` | `especialidade.gerenciar` |
+| GET/POST | `/doctors` | `medico.visualizar` ou `agenda.visualizar` / `medico.gerenciar` — filtros `search, specialty_id, branch_id, status`; corpo `{name, crm, crm_state, cpf?, user_id?, specialties: [{id, rqe?}], branches: [ids]}`; respeita limite `max_doctors` |
+| GET/PATCH | `/doctors/{id}` | idem; gestor de filial só altera médicos que atendem exclusivamente nas suas filiais |
+| PATCH | `/doctors/{id}/status` | `medico.gerenciar` |
+| GET/POST | `/patients` | `paciente.visualizar` / `paciente.criar` — `?search=` (nome sem acento, CPF, telefone, nº prontuário); **CPF mascarado na listagem**. Possível duplicidade → `409 {code: possible_duplicate, candidates}`; reenviar com `confirm_duplicate: true`. Menor sem responsável → `422 guardian_required` |
+| GET/PATCH | `/patients/{id}` | `paciente.visualizar` (acesso registrado na auditoria) / `paciente.editar` — `contacts[]` e `insurances[]` substituem as listas |
+| PATCH | `/patients/{id}/status` | `paciente.editar` (inativar; nunca excluir) |
+| POST | `/patients/{id}/consents` | `paciente.editar` — `{purpose, granted, channel, notes?}` (finalidades em `config/consents.php`) |
+| GET | `/patients/{id}/export` | `paciente.exportar` — dados do titular (LGPD), auditado |
+| POST | `/patients/{id}/anonymize` | `paciente.anonimizar` (empresa toda) — `{reason, confirm: true}`; irreversível |
 
 ## Plataforma (Super Admin)
 

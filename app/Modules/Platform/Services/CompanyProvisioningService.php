@@ -5,6 +5,7 @@ namespace App\Modules\Platform\Services;
 use App\Core\Access\PermissionRegistry;
 use App\Core\Audit\AuditLogger;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Doctors\Services\SpecialtyService;
 use App\Modules\Identity\Models\Permission;
 use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\RoleAssignment;
@@ -25,6 +26,7 @@ class CompanyProvisioningService
         private readonly TenantContext $context,
         private readonly PermissionRegistry $registry,
         private readonly AuditLogger $audit,
+        private readonly SpecialtyService $specialties,
     ) {}
 
     /**
@@ -60,6 +62,7 @@ class CompanyProvisioningService
                 ]);
 
                 $roles = $this->createDefaultRoles();
+                $this->specialties->createDefaults();
 
                 $user = new User([
                     'name' => $admin['name'],

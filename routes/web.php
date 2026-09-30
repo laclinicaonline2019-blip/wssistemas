@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\UtilityController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
+use App\Modules\Doctors\Http\Controllers\Web\DoctorWebController;
+use App\Modules\Doctors\Http\Controllers\Web\SpecialtyWebController;
 use App\Modules\Identity\Http\Controllers\Web\AccountController;
 use App\Modules\Identity\Http\Controllers\Web\LoginController;
 use App\Modules\Identity\Http\Controllers\Web\RoleWebController;
 use App\Modules\Identity\Http\Controllers\Web\UserWebController;
 use App\Modules\Organization\Http\Controllers\Web\BranchWebController;
+use App\Modules\Patients\Http\Controllers\Web\PatientWebController;
 use App\Modules\Platform\Http\Controllers\Web\CompanySettingsWebController;
 use App\Modules\Platform\Http\Controllers\Web\PlatformWebController;
 use App\Modules\Printing\Http\Controllers\PrintTestController;
@@ -72,6 +76,36 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::put('empresa', [CompanySettingsWebController::class, 'update'])->middleware('permission:empresa.editar')->name('company.update');
 
     Route::get('impressao/teste/{format}', PrintTestController::class)->middleware('permission:impressao.configurar')->name('print.test');
+
+    Route::get('busca', [UtilityController::class, 'search'])->name('search');
+    Route::get('cep/{cep}', [UtilityController::class, 'cep'])->where('cep', '[0-9\-]{8,9}')->middleware('throttle:30,1')->name('cep');
+
+    // Fase 3 — pacientes, médicos e especialidades
+    Route::prefix('pacientes')->name('patients.')->group(function () {
+        Route::get('/', [PatientWebController::class, 'index'])->middleware('permission:paciente.visualizar')->name('index');
+        Route::get('novo', [PatientWebController::class, 'create'])->middleware('permission:paciente.criar')->name('create');
+        Route::post('/', [PatientWebController::class, 'store'])->middleware('permission:paciente.criar')->name('store');
+        Route::get('{patient}', [PatientWebController::class, 'show'])->middleware('permission:paciente.visualizar')->name('show');
+        Route::get('{patient}/editar', [PatientWebController::class, 'edit'])->middleware('permission:paciente.editar')->name('edit');
+        Route::put('{patient}', [PatientWebController::class, 'update'])->middleware('permission:paciente.editar')->name('update');
+        Route::patch('{patient}/status', [PatientWebController::class, 'status'])->middleware('permission:paciente.editar')->name('status');
+        Route::post('{patient}/consentimentos', [PatientWebController::class, 'consent'])->middleware('permission:paciente.editar')->name('consents');
+        Route::get('{patient}/exportar', [PatientWebController::class, 'export'])->middleware('permission:paciente.exportar')->name('export');
+        Route::post('{patient}/anonimizar', [PatientWebController::class, 'anonymize'])->middleware('permission:paciente.anonimizar')->name('anonymize');
+    });
+
+    Route::prefix('medicos')->name('doctors.')->group(function () {
+        Route::get('/', [DoctorWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('index');
+        Route::get('novo', [DoctorWebController::class, 'create'])->middleware('permission:medico.gerenciar')->name('create');
+        Route::post('/', [DoctorWebController::class, 'store'])->middleware('permission:medico.gerenciar')->name('store');
+        Route::get('{doctor}/editar', [DoctorWebController::class, 'edit'])->middleware('permission:medico.visualizar')->name('edit');
+        Route::put('{doctor}', [DoctorWebController::class, 'update'])->middleware('permission:medico.gerenciar')->name('update');
+        Route::patch('{doctor}/status', [DoctorWebController::class, 'status'])->middleware('permission:medico.gerenciar')->name('status');
+    });
+
+    Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
+    Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');
+    Route::put('especialidades/{specialty}', [SpecialtyWebController::class, 'update'])->middleware('permission:especialidade.gerenciar')->name('specialties.update');
 });
 
 // ---------------------------------------------------------------- Plataforma SaaS
