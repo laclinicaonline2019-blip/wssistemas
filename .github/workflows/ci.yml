@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: aivexa_testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: pdo_pgsql, intl, gd, zip, sodium, mbstring
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Estilo (Pint)
+        run: vendor/bin/pint --test
+      - name: Auditoria de dependências
+        run: composer audit
+      - name: Testes (PostgreSQL)
+        env:
+          DB_PASSWORD: postgres
+        run: php artisan test

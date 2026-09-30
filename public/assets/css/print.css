@@ -1,0 +1,37 @@
+/* Impressão — A4 (documentos clínicos/financeiros) e térmica 58/80 mm (senhas/comprovantes). */
+* { box-sizing: border-box; }
+body { margin: 0; font: 10pt/1.45 "Helvetica Neue", Arial, sans-serif; color: #000; background: #e9edf2; }
+.print-toolbar { position: sticky; top: 0; display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: #0b1220; color: #cfd8e6; font-size: 13px; }
+.print-toolbar button { background: #1a6fe6; color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-weight: 600; cursor: pointer; }
+
+/* ---------------- A4 */
+@page { size: A4; margin: 15mm; }
+.print-a4 .sheet { width: 210mm; min-height: 297mm; margin: 16px auto; padding: 15mm; background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.12); display: flex; flex-direction: column; outline: 1px dashed #b8c2d0; outline-offset: -15mm; }
+.doc-header { display: flex; justify-content: space-between; gap: 16px; padding-bottom: 8px; border-bottom: 2px solid #000; }
+.doc-company { font-size: 14pt; font-weight: 700; }
+.doc-muted { color: #444; font-size: 8.5pt; }
+.doc-right { text-align: right; max-width: 45%; }
+.doc-body { flex: 1; padding: 10mm 0; }
+.doc-title { font-size: 14pt; text-align: center; text-transform: uppercase; letter-spacing: .05em; margin: 0 0 8mm; }
+.doc-table { width: 100%; border-collapse: collapse; margin: 6mm 0; }
+.doc-table th, .doc-table td { border: 1px solid #999; padding: 2mm 3mm; text-align: left; }
+.doc-signature { margin-top: 25mm; text-align: center; }
+.doc-signature__line { width: 80mm; margin: 0 auto 2mm; border-top: 1px solid #000; }
+.doc-footer { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #999; padding-top: 3mm; font-size: 8pt; color: #333; }
+
+/* ---------------- Térmica (tamanho do papel definido no driver da impressora) */
+@page thermal { margin: 0; }
+.print-thermal { background: #fff; page: thermal; }
+.ticket { margin: 0 auto; padding: 2mm; font-family: "Courier New", monospace; font-size: 9pt; }
+.print-thermal-80 .ticket { width: 72mm; }
+.print-thermal-58 .ticket { width: 48mm; font-size: 8pt; }
+.t-center { text-align: center; } .t-bold { font-weight: 700; } .t-small { font-size: 8pt; }
+.t-huge { font-size: 28pt; font-weight: 700; letter-spacing: 2px; margin: 2mm 0; }
+.t-rule { border-top: 1px dashed #000; margin: 2mm 0; }
+
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .print-a4 .sheet { width: auto; min-height: auto; margin: 0; padding: 0; box-shadow: none; outline: 0; }
+  .print-thermal { margin: 0; }
+}

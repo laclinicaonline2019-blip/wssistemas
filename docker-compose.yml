@@ -1,0 +1,71 @@
+# Ambiente de DESENVOLVIMENTO/HOMOLOGAÇÃO local.
+# Uso: cp .env.example .env && docker compose up -d --build
+#      docker compose exec app php artisan key:generate
+#      docker compose exec app php artisan aivexa:install
+name: aivexa
+
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    DB_HOST: db
+    DB_USERNAME: aivexa
+    DB_PASSWORD: ${DB_PASSWORD:-aivexa_dev}
+    REDIS_HOST: redis
+    CACHE_STORE: redis
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: redis
+    MAIL_MAILER: smtp
+    MAIL_HOST: mailpit
+    MAIL_PORT: 1025
+  volumes:
+    - ./:/var/www/html
+  depends_on:
+    db: { condition: service_healthy }
+    redis: { condition: service_started }
+
+services:
+  app:
+    <<: *app
+
+  web:
+    image: nginx:1.27-alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [app]
+
+  queue:
+    <<: *app
+    command: php artisan queue:work --tries=3 --backoff=10 --max-time=3600
+
+  scheduler:
+    <<: *app
+    command: php artisan schedule:work
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aivexa
+      POSTGRES_USER: aivexa
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aivexa_dev}
+    volumes: [dbdata:/var/lib/postgresql/data]
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aivexa -d aivexa"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes: [redisdata:/data]
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025"]
+
+volumes:
+  dbdata:
+  redisdata:

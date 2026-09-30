@@ -1,0 +1,143 @@
+openapi: 3.1.0
+info:
+  title: AivexaClínica API
+  version: 1.0.0
+  description: API REST multiempresa. Autorização validada no backend; 404 para recursos de outra empresa.
+servers:
+  - url: http://localhost:8080/api/v1
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer }
+  parameters:
+    BranchHeader: { name: X-Branch-Id, in: header, required: false, schema: { type: string }, description: Filial de trabalho (validada) }
+    Id: { name: id, in: path, required: true, schema: { type: string, minLength: 26, maxLength: 26 } }
+  schemas:
+    Error: { type: object, properties: { message: { type: string }, code: { type: string } } }
+    Branch:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        code: { type: string }
+        is_headquarters: { type: boolean }
+        document: { type: string, nullable: true }
+        status: { type: string, enum: [active, inactive] }
+        timezone: { type: string }
+    BranchInput:
+      type: object
+      required: [name, code]
+      properties:
+        name: { type: string, maxLength: 150 }
+        code: { type: string, pattern: '^[A-Za-z0-9_-]+$' }
+        document: { type: string, description: CNPJ }
+        email: { type: string, format: email }
+        phone: { type: string }
+        zip_code: { type: string }
+        city: { type: string }
+        state: { type: string, minLength: 2, maxLength: 2 }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        status: { type: string, enum: [active, blocked, invited] }
+        two_factor_enabled: { type: boolean }
+        roles: { type: array, items: { $ref: '#/components/schemas/Assignment' } }
+    Assignment:
+      type: object
+      required: [role_id]
+      properties:
+        role_id: { type: string }
+        branch_id: { type: string, nullable: true, description: 'null = empresa toda' }
+    Role:
+      type: object
+      properties:
+        id: { type: string }
+        key: { type: string }
+        name: { type: string }
+        is_system: { type: boolean }
+        is_locked: { type: boolean }
+        permissions: { type: array, items: { type: string } }
+paths:
+  /auth/token:
+    post:
+      security: []
+      summary: Emite token de acesso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_name]
+              properties:
+                email: { type: string }
+                password: { type: string }
+                device_name: { type: string }
+                code: { type: string, description: TOTP quando 2FA ativo }
+                recovery_code: { type: string }
+      responses:
+        '201': { description: Token emitido }
+        '401': { description: Credenciais inválidas / 2FA requerido, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '429': { description: Muitas tentativas }
+  /auth/me: { get: { summary: Usuário autenticado, responses: { '200': { description: OK } } } }
+  /auth/logout: { post: { summary: Revoga o token atual, responses: { '200': { description: OK } } } }
+  /branches:
+    get:
+      summary: Lista filiais acessíveis
+      parameters: [{ $ref: '#/components/parameters/BranchHeader' }, { name: search, in: query, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    post:
+      summary: Cria filial (limite do plano)
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BranchInput' } } } }
+      responses: { '201': { description: Criada }, '403': { description: Sem permissão }, '422': { description: Validação ou limite do plano } }
+  /branches/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Detalhe, responses: { '200': { description: OK }, '404': { description: Inexistente ou de outra empresa } } }
+    patch:
+      summary: Atualiza
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/BranchInput' } } } }
+      responses: { '200': { description: OK } }
+  /users:
+    get: { summary: Lista usuários gerenciáveis, responses: { '200': { description: OK } } }
+    post:
+      summary: Cria usuário (troca de senha obrigatória no 1º acesso)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, password_confirmation]
+              properties:
+                name: { type: string }
+                email: { type: string }
+                password: { type: string }
+                password_confirmation: { type: string }
+                roles: { type: array, items: { $ref: '#/components/schemas/Assignment' } }
+      responses: { '201': { description: Criado }, '422': { description: Validação/limite } }
+  /users/{id}/roles:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put:
+      summary: Substitui os perfis do usuário (anti-escalonamento)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { roles: { type: array, items: { $ref: '#/components/schemas/Assignment' } } } } } } }
+      responses: { '200': { description: OK }, '403': { description: Escalonamento de privilégio ou fora do escopo } }
+  /users/{id}/block: { parameters: [{ $ref: '#/components/parameters/Id' }], post: { summary: Bloqueia e encerra sessões, responses: { '200': { description: OK } } } }
+  /roles:
+    get: { summary: Lista perfis, responses: { '200': { description: OK } } }
+    post: { summary: Cria perfil, responses: { '201': { description: Criado } } }
+  /audit-logs:
+    get:
+      summary: Trilha de auditoria
+      parameters:
+        - { name: action, in: query, schema: { type: string }, description: prefixo }
+        - { name: result, in: query, schema: { type: string, enum: [success, failure, denied] } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses: { '200': { description: OK } }
+  /platform/companies:
+    get: { summary: Lista clínicas (Super Admin), responses: { '200': { description: OK } } }
+    post: { summary: Provisiona clínica, responses: { '201': { description: Criada } } }
+  /platform/health: { get: { summary: Saúde do sistema, responses: { '200': { description: OK }, '503': { description: Degradado } } } }
