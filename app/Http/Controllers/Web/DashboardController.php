@@ -6,6 +6,9 @@ use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Modules\Audit\Http\Controllers\Api\AuditLogController;
 use App\Modules\Doctors\Models\Doctor;
+use App\Modules\Finance\Models\CashSession;
+use App\Modules\Finance\Models\Receivable;
+use App\Modules\Finance\Services\FinanceService;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
@@ -15,6 +18,7 @@ use App\Modules\Queue\Models\QueueTicket;
 use App\Modules\Scheduling\Models\Appointment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 /**
@@ -52,6 +56,7 @@ class DashboardController extends Controller
             'today' => $user->hasPermission('agenda.visualizar') ? $this->today($allowed, $context->branchId()) : null,
             'doctorsActive' => $user->hasPermission('medico.visualizar') ? Doctor::query()->active()->inBranches($allowed)->count() : null,
             'failedLogins' => $failedLogins,
+            'finance' => $user->hasPermission('dashboard.financeiro') ? $this->finance($allowed) : null,
         ]);
     }
 
@@ -91,5 +96,20 @@ class DashboardController extends Controller
         }
 
         return back();
+    }
+
+    /** Indicadores financeiros (somente com dashboard.financeiro). */
+    private function finance(?array $allowed): array
+    {
+        $today = now('America/Sao_Paulo')->toDateString();
+        $flow = app(FinanceService::class)->cashFlow($today, $today);
+        $open = Receivable::query()->open()->accessibleBranches($allowed);
+
+        return [
+            'received_today' => $flow['in'],
+            'net_today' => $flow['net'],
+            'overdue' => (int) (clone $open)->where('due_date', '<', $today)->sum(DB::raw('amount_cents - discount_cents - paid_cents')),
+            'to_review' => CashSession::query()->accessibleBranches($allowed)->where('status', 'closed')->count(),
+        ];
     }
 }

@@ -29,6 +29,7 @@ segurança é um processo contínuo (revisões, pentests, atualizações).
 | Erros | Páginas genéricas; sem stack trace com `APP_DEBUG=false` | `resources/views/errors` |
 | Arquivos | Disco local privado (`serve=false`); anexos com tipo detectado pelo conteúdo (finfo), nome aleatório, download com `Content-Disposition` e CSP `sandbox` | `config/filesystems.php`, `PatientFileService` |
 | Documentos médicos | Imutáveis após emissão; selo HMAC; código de verificação aleatório (12 caracteres, ~59 bits) com página pública limitada a 30 consultas/min; cancelamento só pelo emitente | `DocumentService` |
+| Financeiro | Valores em centavos (inteiros); livro imutável com estorno vinculado; dinheiro só por caixa aberto; fechamento cego e conferência por outra pessoa; desconto e estorno com permissões próprias; CSV protegido contra injeção de fórmulas | `FinanceService` |
 | PDF | dompdf com recursos remotos e PHP desabilitados (`isRemoteEnabled=false`, `chroot` em `public/`) | `DocumentPdf` |
 
 ## Checklist de produção (depende de configuração)

@@ -242,8 +242,8 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 4 | Agenda (grades, limites por período, encaixes, bloqueios, feriados; anti-dupla-marcação por índice único de horário + lock transacional), fila/senhas, painel de chamadas, salas | **Concluída** |
 | 5 | Prontuário (versões imutáveis com hash encadeado, adendos, autosave), triagem, alergias, CID-10 (importação DATASUS), medicamentos (Portaria 344/98) | **Concluída** |
 | 6 | Receitas (Portaria 344/98: simples, controle especial 2 vias, notificação), atestados, exames, relatórios, **impressão A4/A5/térmica e PDF**, QR Code de validação, anexos do paciente, arquitetura de assinatura ICP-Brasil | **Concluída** |
-| 7 ▶ | Financeiro, caixa e conferência de caixa | Próxima |
-| 8 | ASAAS, Cielo, webhooks, split, links de pagamento | |
+| 7 | Financeiro: contas a receber/pagar, caixa por operador (fechamento cego + conferência), livro imutável com estornos, recibos, fluxo de caixa | **Concluída** |
+| 8 ▶ | ASAAS, Cielo, webhooks, split, links de pagamento | Próxima |
 | 9 | Convênios (preparado para TISS) | |
 | 10 | Portal do paciente | |
 | 11 | WhatsApp oficial | |

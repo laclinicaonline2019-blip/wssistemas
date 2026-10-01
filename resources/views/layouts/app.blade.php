@@ -43,7 +43,8 @@
                 {!! $nav('workspace', ['workspace', 'encounters.*'], 'heart', 'Atendimento', $can('prontuario.editar')) !!}
                 {!! $nav('triage.index', 'triage.*', 'activity', 'Triagem', $can('triagem.registrar')) !!}
                 {!! $nav('documents.index', ['documents.*'], 'file', 'Documentos', $can('receita.imprimir') || $can('atestado.imprimir') || $can('documento.visualizar') || $can('exame.solicitar') || $can('prontuario.visualizar')) !!}
-                {!! $soon('cash', 'Financeiro', 'Fase 7') !!}
+                {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
+                {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
             </ul>
             @php
@@ -65,7 +66,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.7.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.8.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

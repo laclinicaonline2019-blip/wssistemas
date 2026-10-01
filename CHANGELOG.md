@@ -2,6 +2,34 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.8.0] — 2026-10-01 — Fase 7: financeiro, caixa e conferência
+
+### Adicionado
+- **Contas a receber**: consultas particulares geram a cobrança automaticamente na **chegada** do
+  paciente (uma única vez); cancelamento/falta do agendamento cancela a cobrança não paga. Lançamentos
+  manuais, recebimento parcial, desconto (somente com permissão), **troco calculado**, parcelas e NSU do
+  cartão, data retroativa (até 60 dias) para lançamentos fora do caixa.
+- **Contas a pagar** com fornecedor, categoria, nº do documento e **parcelamento mensal** (os centavos
+  da divisão vão para a última parcela).
+- **Caixa por operador**: abertura com fundo de troco, sangria e suprimento (sem deixar a gaveta
+  negativa), **fechamento cego** por forma de pagamento e **conferência por outra pessoa** (justificativa
+  obrigatória quando há diferença). Um único caixa aberto por operador (garantido no banco). Dinheiro só
+  entra ou sai por um caixa aberto.
+- **Livro financeiro imutável**: nenhuma movimentação é editada ou apagada (aplicação + trigger no banco
+  quando permitido); correção por **estorno** vinculado, uma única vez, com motivo — o saldo da conta e
+  do caixa voltam automaticamente.
+- **Recibo** (térmica, A5 ou A4) com valor por extenso; relatório de fechamento de caixa para impressão.
+- **Visão geral**: entradas/saídas/saldo do período, por forma de pagamento, por categoria e por dia;
+  contas vencidas; caixas a conferir; **exportação CSV** (abre direto no Excel, protegida contra
+  injeção de fórmulas). Indicadores financeiros no dashboard (permissão `dashboard.financeiro`).
+- Plano de contas inicial em toda clínica (receitas e despesas), editável.
+- Agenda mostra a situação da cobrança com botão "Receber".
+- API: `/receivables`, `/payables`, `/transactions/{id}/reverse`, `/cash-sessions`, `/finance/summary`
+  (valores em centavos). 152 testes (MariaDB e PostgreSQL).
+
+### Corrigido
+- Seletores marcados como "largura automática" ocupavam a linha inteira (afetava filtros de várias telas).
+
 ## [0.7.0] — 2026-10-01 — Fase 6: receitas, atestados, exames, documentos e impressão
 
 ### Adicionado

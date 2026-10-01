@@ -98,6 +98,16 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `medical_documents` | Receitas, controle especial, registro de notificação, atestados, exames, relatórios. Conteúdo JSON com **cabeçalho congelado** (clínica, médico/CRM/RQE, paciente) no momento da emissão; número sequencial; grupo (emitidos juntos); validade; situação; impressões; campos de assinatura ICP-Brasil | `UNIQUE(company_id, number)`, `UNIQUE(verification_code)`; CHECK de tipo/situação; **imutável** (só situação, contadores e assinatura mudam); selo HMAC `content_hash` |
 | `patient_files` | Anexos (PDF/imagens) em disco privado: categoria, título, nome original, tipo detectado, tamanho, SHA-256, situação `active/archived` | nunca excluído; limite `storage_mb` do plano |
 
+### Fase 7 — financeiro
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `financial_categories` | Plano de contas (receita/despesa) | `UNIQUE(company_id, type, name)` |
+| `receivables` | Contas a receber: origem (agendamento/manual/online), valor, desconto, recebido, vencimento, situação | CHECK `desconto + recebido ≤ valor`; `UNIQUE(company_id, appointment_id)` (uma cobrança por consulta) |
+| `payables` | Contas a pagar com parcelamento (`installment_group`, `installment/installments`) | CHECK `pago ≤ valor` |
+| `cash_sessions` | Caixa do operador: abertura, fundo de troco, esperado × declarado por forma, diferença, conferência | **um caixa aberto por operador** (coluna gerada `open_user` + índice único) |
+| `financial_transactions` | **Livro imutável**: direção, tipo (recebimento, pagamento, sangria, suprimento, estorno), forma, valor, vínculos, NSU, campos do gateway (Fase 8) | `UNIQUE(reversal_of)` (um estorno por lançamento); trigger bloqueia UPDATE/DELETE quando o banco permite |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

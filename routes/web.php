@@ -11,6 +11,11 @@ use App\Modules\Doctors\Http\Controllers\Web\DoctorWebController;
 use App\Modules\Doctors\Http\Controllers\Web\SpecialtyWebController;
 use App\Modules\Documents\Http\Controllers\Web\DocumentWebController;
 use App\Modules\Documents\Http\Controllers\Web\PatientFileController;
+use App\Modules\Finance\Http\Controllers\Web\CashWebController;
+use App\Modules\Finance\Http\Controllers\Web\FinanceWebController;
+use App\Modules\Finance\Http\Controllers\Web\PayableWebController;
+use App\Modules\Finance\Http\Controllers\Web\ReceivableWebController;
+use App\Modules\Finance\Http\Controllers\Web\TransactionWebController;
 use App\Modules\Identity\Http\Controllers\Web\AccountController;
 use App\Modules\Identity\Http\Controllers\Web\LoginController;
 use App\Modules\Identity\Http\Controllers\Web\RoleWebController;
@@ -117,7 +122,7 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::get('/', [AgendaWebController::class, 'index'])->middleware('permission:agenda.visualizar')->name('index');
         Route::get('agendar', [AgendaWebController::class, 'create'])->middleware('permission:agenda.criar')->name('create');
         Route::post('/', [AgendaWebController::class, 'store'])->middleware('permission:agenda.criar')->name('store');
-        Route::get('pacientes/busca', [AgendaWebController::class, 'patientLookup'])->middleware(['permission:agenda.criar', 'throttle:60,1'])->name('patient_lookup');
+        Route::get('pacientes/busca', [AgendaWebController::class, 'patientLookup'])->middleware(['permission:agenda.criar|paciente.visualizar', 'throttle:60,1'])->name('patient_lookup');
         Route::get('feriados', [ScheduleConfigWebController::class, 'holidays'])->middleware('permission:agenda.configurar')->name('holidays');
         Route::post('feriados', [ScheduleConfigWebController::class, 'storeHoliday'])->middleware('permission:agenda.configurar')->name('holidays.store');
         Route::delete('feriados/{holiday}', [ScheduleConfigWebController::class, 'destroyHoliday'])->middleware('permission:agenda.configurar')->name('holidays.destroy');
@@ -189,6 +194,33 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::post('pacientes/{patient}/arquivos', [PatientFileController::class, 'store'])->middleware(['permission:documento.anexar', 'throttle:30,1'])->name('patient_files.store');
     Route::get('arquivos/{file}', [PatientFileController::class, 'download'])->middleware('permission:documento.visualizar|prontuario.visualizar')->name('patient_files.download');
     Route::patch('arquivos/{file}/arquivar', [PatientFileController::class, 'archive'])->middleware('permission:documento.anexar')->name('patient_files.archive');
+
+    // Fase 7 — financeiro e caixa
+    Route::get('financeiro', [FinanceWebController::class, 'overview'])->middleware('permission:financeiro.visualizar|relatorio.financeiro')->name('finance.overview');
+    Route::get('financeiro/categorias', [FinanceWebController::class, 'categories'])->middleware('permission:financeiro.editar')->name('finance.categories');
+    Route::post('financeiro/categorias', [FinanceWebController::class, 'storeCategory'])->middleware('permission:financeiro.editar')->name('finance.categories.store');
+    Route::patch('financeiro/categorias/{category}', [FinanceWebController::class, 'toggleCategory'])->middleware('permission:financeiro.editar')->name('finance.categories.toggle');
+    Route::get('contas-a-receber', [ReceivableWebController::class, 'index'])->middleware('permission:financeiro.visualizar|caixa.operar')->name('receivables.index');
+    Route::get('contas-a-receber/nova', [ReceivableWebController::class, 'create'])->middleware('permission:financeiro.editar|caixa.operar')->name('receivables.create');
+    Route::post('contas-a-receber', [ReceivableWebController::class, 'store'])->middleware('permission:financeiro.editar|caixa.operar')->name('receivables.store');
+    Route::get('contas-a-receber/{receivable}', [ReceivableWebController::class, 'show'])->middleware('permission:financeiro.visualizar|caixa.operar')->name('receivables.show');
+    Route::post('contas-a-receber/{receivable}/receber', [ReceivableWebController::class, 'receive'])->middleware(['permission:caixa.operar|financeiro.editar', 'throttle:60,1'])->name('receivables.receive');
+    Route::post('contas-a-receber/{receivable}/cancelar', [ReceivableWebController::class, 'cancel'])->middleware('permission:financeiro.editar')->name('receivables.cancel');
+    Route::get('contas-a-pagar', [PayableWebController::class, 'index'])->middleware('permission:financeiro.visualizar')->name('payables.index');
+    Route::post('contas-a-pagar', [PayableWebController::class, 'store'])->middleware('permission:financeiro.editar')->name('payables.store');
+    Route::get('contas-a-pagar/{payable}', [PayableWebController::class, 'show'])->middleware('permission:financeiro.visualizar')->name('payables.show');
+    Route::post('contas-a-pagar/{payable}/pagar', [PayableWebController::class, 'pay'])->middleware('permission:financeiro.editar')->name('payables.pay');
+    Route::post('contas-a-pagar/{payable}/cancelar', [PayableWebController::class, 'cancel'])->middleware('permission:financeiro.editar')->name('payables.cancel');
+    Route::get('caixa', [CashWebController::class, 'index'])->middleware('permission:caixa.operar')->name('cash.index');
+    Route::post('caixa/abrir', [CashWebController::class, 'open'])->middleware('permission:caixa.operar')->name('cash.open');
+    Route::get('caixa/conferencia', [CashWebController::class, 'sessions'])->middleware('permission:caixa.conferir|financeiro.visualizar')->name('cash.sessions');
+    Route::get('caixa/{session}', [CashWebController::class, 'show'])->name('cash.show');
+    Route::get('caixa/{session}/imprimir', [CashWebController::class, 'print'])->name('cash.print');
+    Route::post('caixa/{session}/movimento', [CashWebController::class, 'movement'])->middleware('permission:caixa.operar')->name('cash.movement');
+    Route::post('caixa/{session}/fechar', [CashWebController::class, 'close'])->middleware('permission:caixa.operar')->name('cash.close');
+    Route::post('caixa/{session}/conferir', [CashWebController::class, 'review'])->middleware('permission:caixa.conferir')->name('cash.review');
+    Route::post('movimentacoes/{transaction}/estornar', [TransactionWebController::class, 'reverse'])->middleware('permission:pagamento.estornar')->name('transactions.reverse');
+    Route::get('movimentacoes/{transaction}/recibo', [TransactionWebController::class, 'receipt'])->middleware('permission:caixa.operar|financeiro.visualizar')->name('transactions.receipt');
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');

@@ -4,6 +4,7 @@ namespace App\Modules\Scheduling\Services;
 
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRuleViolation;
+use App\Modules\Finance\Services\FinanceService;
 use App\Modules\Identity\Models\User;
 use App\Modules\Queue\Models\QueueTicket;
 use App\Modules\Queue\Services\QueueService;
@@ -16,6 +17,7 @@ class AppointmentService
     public function __construct(
         private readonly QueueService $queue,
         private readonly AuditLogger $audit,
+        private readonly FinanceService $finance,
     ) {}
 
     public function confirm(User $actor, Appointment $appointment, string $channel = 'reception'): Appointment
@@ -30,6 +32,7 @@ class AppointmentService
         $this->transition($appointment, 'cancelled', [
             'cancelled_at' => now(), 'cancel_reason' => $reason, 'cancelled_by' => $actor->id,
         ], ['reason' => $reason]);
+        $this->finance->cancelAppointmentReceivable($appointment, $actor, 'Agendamento cancelado: '.$reason);
 
         // Senha aberta vinculada deixa de valer.
         QueueTicket::query()->where('appointment_id', $appointment->id)->whereIn('status', QueueTicket::OPEN)
@@ -45,6 +48,7 @@ class AppointmentService
         }
 
         $this->transition($appointment, 'no_show');
+        $this->finance->cancelAppointmentReceivable($appointment, $actor, 'Paciente faltou ao agendamento');
 
         return $appointment;
     }
@@ -54,6 +58,8 @@ class AppointmentService
     {
         return DB::transaction(function () use ($actor, $appointment, $ticketType) {
             $this->transition($appointment, 'arrived', ['arrived_at' => now()]);
+            // Particular com valor: gera a conta a receber para o caixa cobrar.
+            $this->finance->receivableForAppointment($appointment, $actor);
 
             return $this->queue->issue($actor, [
                 'branch_id' => $appointment->branch_id,

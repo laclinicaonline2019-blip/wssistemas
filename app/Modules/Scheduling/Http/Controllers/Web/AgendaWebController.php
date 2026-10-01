@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Models\Specialty;
+use App\Modules\Finance\Models\Receivable;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Queue\Services\QueueService;
@@ -111,6 +112,7 @@ class AgendaWebController extends Controller
         return view('agenda.show', [
             'appointment' => $appointment,
             'history' => $history,
+            'receivable' => Receivable::query()->where('appointment_id', $appointment->id)->first(),
             'ticketTypes' => app(QueueService::class)->types(),
             'suggestedType' => app(QueueService::class)->suggestType($appointment),
         ]);

@@ -100,6 +100,21 @@ Campos desconhecidos são descartados.
 | GET | `/documents/{id}/pdf?format=a4\|a5` | PDF (conta como impressão; cancelado → `409 document_cancelled`) |
 | GET | `/validar/{código}` (fora de `/api`, público) | validação pelo código/QR: tipo, número, data, médico, situação, iniciais do paciente, itens da receita |
 
+### Financeiro (Fase 7) — valores sempre em centavos
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| GET/POST | `/receivables` | `financeiro.visualizar\|caixa.operar` / `financeiro.editar\|caixa.operar` — `{branch_id, category_id, patient_id?, description, amount_cents, due_date}` |
+| POST | `/receivables/{id}/receive` | `caixa.operar\|financeiro.editar` — `{method, amount_cents, discount_cents?, card_installments?, card_brand?, authorization_code?, paid_on?}`. Erros: `cash_session_required`, `amount_exceeds_balance`, `discount_forbidden` (403), `not_receivable` (409) |
+| POST | `/receivables/{id}/cancel` | `financeiro.editar` — só sem recebimentos (`has_payments`) |
+| GET/POST | `/payables` | `financeiro.visualizar` / `financeiro.editar` — `installments` gera N parcelas mensais |
+| POST | `/payables/{id}/pay` · `/cancel` | `financeiro.editar` |
+| POST | `/transactions/{id}/reverse` | `pagamento.estornar` — `{reason ≥ 10}`; `already_reversed` (409), `reversal_of_reversal` |
+| GET | `/cash-sessions/current` | `caixa.operar` — caixa aberto do usuário + resumo por forma (`cash_expected`) |
+| POST | `/cash-sessions` · `/{id}/movements` · `/{id}/close` | `caixa.operar` — abrir `{branch_id, opening_cents}`; sangria/suprimento `{kind: withdrawal\|deposit, amount_cents, reason}`; fechar `{declared: {cash: …, pix: …}}` (fechamento cego) |
+| POST | `/cash-sessions/{id}/review` | `caixa.conferir` — outra pessoa; `notes` obrigatório se houver diferença |
+| GET | `/finance/summary?from=&to=&branch_id=` | fluxo de caixa: entradas, saídas, por forma, categoria e dia |
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |

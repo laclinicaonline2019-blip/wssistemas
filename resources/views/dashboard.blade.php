@@ -120,10 +120,19 @@
     </section>
 </div>
 
+@if ($finance)
+<div class="grid grid-4 mt-2">
+    <a class="card kpi kpi-link" href="{{ route('finance.overview') }}"><div class="kpi__label">Recebido hoje</div><div class="kpi__value">{{ \App\Core\Support\Format::money($finance['received_today']) }}</div><div class="kpi__hint">todas as formas</div></a>
+    <a class="card kpi kpi-link" href="{{ route('finance.overview') }}"><div class="kpi__label">Saldo do dia</div><div class="kpi__value">{{ \App\Core\Support\Format::money($finance['net_today']) }}</div><div class="kpi__hint">entradas − saídas</div></a>
+    <a class="card kpi kpi-link" href="{{ route('receivables.index', ['status' => 'overdue']) }}"><div class="kpi__label">Recebimentos vencidos</div><div class="kpi__value">{{ \App\Core\Support\Format::money($finance['overdue']) }}</div><div class="kpi__hint">em aberto</div></a>
+    <a class="card kpi kpi-link" href="{{ route('cash.sessions') }}"><div class="kpi__label">Caixas a conferir</div><div class="kpi__value">{{ $finance['to_review'] }}</div><div class="kpi__hint">fechados</div></a>
+</div>
+@endif
+
 <section class="card mt-2">
     <div class="card__head"><h2>Próximos módulos</h2><span class="badge">Roadmap</span></div>
     <div class="card__body text-2">
-        Prontuário eletrônico, receitas/atestados com impressão, financeiro, pagamentos (ASAAS/Cielo),
+        Pagamentos online (ASAAS/Cielo, PIX, links e split),
         convênios, portal do paciente e atendimento por IA/WhatsApp serão habilitados por fases. Os indicadores
         operacionais e financeiros deste painel aparecem conforme cada módulo for entregue — nada aqui é simulado.
     </div>

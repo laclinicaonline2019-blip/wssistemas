@@ -32,7 +32,15 @@
                 <dt>Médico</dt><dd>{{ $appointment->doctor->displayName() }} · {{ $appointment->doctor->registration() }}</dd>
                 <dt>Unidade</dt><dd>{{ $appointment->branch->name }}{{ $appointment->room ? ' · '.$appointment->room->label() : '' }}</dd>
                 <dt>Atendimento</dt><dd>{{ $appointment->service?->name ?? 'Consulta' }}</dd>
-                <dt>Pagamento</dt><dd>{{ $appointment->payer_type === 'insurance' ? 'Convênio: '.($appointment->insurance?->insurer_name ?? '—') : 'Particular · '.$appointment->priceFormatted() }}</dd>
+                <dt>Pagamento</dt><dd>{{ $appointment->payer_type === 'insurance' ? 'Convênio: '.($appointment->insurance?->insurer_name ?? '—') : 'Particular · '.$appointment->priceFormatted() }}
+                    @if ($receivable)
+                        <span class="badge {{ ['paid' => 'badge-success', 'cancelled' => ''][$receivable->status] ?? 'badge-warning' }}">{{ $receivable->statusLabel() }}</span>
+                        @if (auth()->user()->hasPermission('caixa.operar') || auth()->user()->hasPermission('financeiro.visualizar'))
+                            <a class="btn btn-sm {{ in_array($receivable->status, ['open', 'partial'], true) ? 'btn-primary' : '' }}" href="{{ route('receivables.show', $receivable) }}">{{ in_array($receivable->status, ['open', 'partial'], true) ? 'Receber' : 'Ver cobrança' }}</a>
+                        @endif
+                    @elseif ($appointment->payer_type === 'private' && $appointment->price_cents > 0)
+                        <span class="small muted">· a cobrança é gerada na chegada</span>
+                    @endif</dd>
                 <dt>Paciente</dt><dd><a href="{{ route('patients.show', $appointment->patient) }}">#{{ $appointment->patient->record_number }} {{ $appointment->patient->displayName() }}</a>
                     <div class="small muted">{{ Format::phone($appointment->patient->whatsapp ?? $appointment->patient->phone) }}</div></dd>
                 <dt>Canal</dt><dd>{{ \App\Modules\Scheduling\Models\Appointment::CHANNELS[$appointment->channel] ?? $appointment->channel }} · por {{ $appointment->creator?->name ?? 'sistema' }}</dd>

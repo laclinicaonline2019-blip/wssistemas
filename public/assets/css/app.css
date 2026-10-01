@@ -223,7 +223,7 @@ details.diff pre { white-space: pre-wrap; word-break: break-word; background: va
 .svg-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .input-branch { min-width: 190px; }
 .dropdown__label { padding: .4rem .65rem; }
-.w-auto { width: auto; }
+.w-auto, .input.w-auto, select.input.w-auto { width: auto; }
 .hidden { display: none !important; }
 
 /* ---------------------------------------------------------- telas de login */
@@ -344,3 +344,13 @@ details > summary { cursor: pointer; list-style: none; } details > summary::-web
 .rx-row [data-rx-hint]:empty { display: none; }
 .rx-row [data-rx-hint] { color: var(--text-2); }
 .strong { font-weight: 700; }
+
+/* Financeiro (Fase 7) */
+.t-right { text-align: right; }
+.inline-details { display: inline-block; position: relative; }
+.inline-details[open] > form { position: absolute; right: 0; z-index: 10; width: 260px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .6rem; box-shadow: var(--shadow-lg); }
+.money-input, input[data-mask="money"] { text-align: right; font-variant-numeric: tabular-nums; }
+.kpi-neg { color: var(--danger); } .kpi-pos { color: var(--success); }
+.bar-row { display: grid; grid-template-columns: 160px 1fr 120px; gap: .6rem; align-items: center; font-size: .9rem; margin-bottom: .35rem; }
+.bar-row .meter { height: 8px; }
+@media (max-width: 700px) { .bar-row { grid-template-columns: 1fr 100px; } .bar-row .meter { display: none; } }

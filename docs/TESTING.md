@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (143 testes; 1–2 ignorados conforme o banco)
+## Cobertura atual (152 testes; 1–3 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -36,8 +36,9 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Clinical/ClinicalWebTest` | fluxo web completo do médico (iniciar → autosave → finalizar → adendo), telas de triagem/medicamentos/plataforma, dados clínicos ocultos para a recepção |
 | `Documents/DocumentTest` | **receita separada pela Portaria 344/98** (simples, controle especial com validade, registro de notificação), quantidade/notificação obrigatórias, **documento imutável e adulteração detectada** (inclusive na validação pública), texto do atestado com dias por extenso, **CID só com autorização**, data retroativa bloqueada, permissões por perfil (recepção reimprime mas não emite), **cancelamento só pelo emitente**, contagem de vias, A4/A5/térmica/PDF, térmica proibida para controle especial, validação pública com iniciais, isolamento entre clínicas e atendimento de outro médico |
 | `Documents/DocumentWebTest` | emissão web dos 4 tipos (linhas em branco ignoradas, exames por linha), telas, cancelamento, menu por permissão, **anexos privados com tipo detectado pelo conteúdo**, download auditado, arquivar sem apagar, **limite de armazenamento do plano**, isolamento |
+| `Finance/FinanceTest` | cobrança gerada na chegada (uma vez) e cancelada com o agendamento, dinheiro exige caixa aberto, valor acima do saldo, **desconto só com permissão**, recebimento parcial e quitação, recibo por extenso, **fechamento cego com diferença e conferência por outra pessoa** (justificativa obrigatória, operador não confere o próprio caixa), sangria sem saldo, **estorno restaura saldo** (sem estorno duplo nem estorno de estorno), **livro imutável** (aplicação e banco), parcelamento com centavos, data retroativa limitada, fluxo por categoria, permissões por perfil, isolamento entre clínicas, telas, máscara de valor e CSV |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)
 
-- Pagamentos: confirmação falsa (webhook sem assinatura/valor divergente), **duplicação de cobrança** (idempotência), webhook repetido.
+- Pagamentos online (Fase 8): confirmação falsa (webhook sem assinatura/valor divergente), **duplicação de cobrança** (idempotência), webhook repetido.

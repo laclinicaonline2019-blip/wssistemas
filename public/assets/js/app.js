@@ -407,6 +407,23 @@
     ta.value = lines.join('\n') + '\n'; ta.focus();
   });
 
+  // Recebimento: campos de cartão/dinheiro conforme a forma e cálculo do troco.
+  var rf = $('[data-receive-form]');
+  if (rf) {
+    var toCents = function (v) { var d = String(v || '').replace(/\D/g, ''); return d ? parseInt(d, 10) : 0; };
+    var fmt = function (c) { return 'R$ ' + (c / 100).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
+    var syncReceive = function () {
+      var m = $('[data-method]', rf).value;
+      $('[data-card-fields]', rf).classList.toggle('hidden', ['credit_card', 'debit_card', 'pix'].indexOf(m) < 0);
+      $('[name=card_installments]', rf).closest('.field').classList.toggle('hidden', m !== 'credit_card');
+      $('[name=card_brand]', rf).closest('.field').classList.toggle('hidden', m === 'pix');
+      $('[data-cash-fields]', rf).classList.toggle('hidden', m !== 'cash');
+      var given = toCents($('[data-given]', rf).value), amount = toCents($('[name=amount]', rf).value);
+      $('[data-change]', rf).textContent = given ? (given >= amount ? fmt(given - amount) : 'valor insuficiente') : '—';
+    };
+    rf.addEventListener('change', syncReceive); rf.addEventListener('input', syncReceive); syncReceive();
+  }
+
   // Página de teste de impressão abre o diálogo automaticamente
   if (document.body.hasAttribute('data-autoprint')) {
     window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });
@@ -417,6 +434,13 @@
     cpf: function (v) { return v.replace(/\D/g, '').slice(0, 11).replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2'); },
     cnpj: function (v) { return v.replace(/\D/g, '').slice(0, 14).replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2'); },
     cep: function (v) { return v.replace(/\D/g, '').slice(0, 8).replace(/^(\d{5})(\d)/, '$1-$2'); },
+    money: function (v) {
+      var d = v.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 12);
+      if (!d) return '';
+      while (d.length < 3) d = '0' + d;
+      var int = d.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return int + ',' + d.slice(-2);
+    },
     phone: function (v) { v = v.replace(/\D/g, '').slice(0, 11); return v.length > 10 ? v.replace(/^(\d{2})(\d{5})(\d{0,4}).*/, '($1) $2-$3') : v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, '($1) $2-$3'); }
   };
   document.addEventListener('input', function (ev) {

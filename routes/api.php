@@ -6,6 +6,7 @@ use App\Modules\Clinical\Http\Controllers\Api\EncounterController;
 use App\Modules\Doctors\Http\Controllers\Api\DoctorController;
 use App\Modules\Doctors\Http\Controllers\Api\SpecialtyController;
 use App\Modules\Documents\Http\Controllers\Api\DocumentController;
+use App\Modules\Finance\Http\Controllers\Api\FinanceController;
 use App\Modules\Identity\Http\Controllers\Api\AuthController;
 use App\Modules\Identity\Http\Controllers\Api\RoleController;
 use App\Modules\Identity\Http\Controllers\Api\TwoFactorController;
@@ -140,6 +141,23 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
             Route::post('documents/{document}/cancel', [DocumentController::class, 'cancel'])->name('documents.cancel');
             Route::get('documents/{document}/pdf', [DocumentController::class, 'pdf'])->middleware('throttle:30,1')->name('documents.pdf');
+
+            // Fase 7 — financeiro (valores em centavos)
+            Route::get('receivables', [FinanceController::class, 'receivables'])->middleware('permission:financeiro.visualizar|caixa.operar')->name('receivables.index');
+            Route::post('receivables', [FinanceController::class, 'storeReceivable'])->middleware('permission:financeiro.editar|caixa.operar')->name('receivables.store');
+            Route::post('receivables/{receivable}/receive', [FinanceController::class, 'receive'])->middleware('permission:caixa.operar|financeiro.editar')->name('receivables.receive');
+            Route::post('receivables/{receivable}/cancel', [FinanceController::class, 'cancelReceivable'])->middleware('permission:financeiro.editar')->name('receivables.cancel');
+            Route::get('payables', [FinanceController::class, 'payables'])->middleware('permission:financeiro.visualizar')->name('payables.index');
+            Route::post('payables', [FinanceController::class, 'storePayable'])->middleware('permission:financeiro.editar')->name('payables.store');
+            Route::post('payables/{payable}/pay', [FinanceController::class, 'pay'])->middleware('permission:financeiro.editar')->name('payables.pay');
+            Route::post('payables/{payable}/cancel', [FinanceController::class, 'cancelPayable'])->middleware('permission:financeiro.editar')->name('payables.cancel');
+            Route::post('transactions/{transaction}/reverse', [FinanceController::class, 'reverse'])->middleware('permission:pagamento.estornar')->name('transactions.reverse');
+            Route::get('cash-sessions/current', [FinanceController::class, 'currentSession'])->middleware('permission:caixa.operar')->name('cash.current');
+            Route::post('cash-sessions', [FinanceController::class, 'openSession'])->middleware('permission:caixa.operar')->name('cash.open');
+            Route::post('cash-sessions/{session}/movements', [FinanceController::class, 'movement'])->middleware('permission:caixa.operar')->name('cash.movement');
+            Route::post('cash-sessions/{session}/close', [FinanceController::class, 'closeSession'])->middleware('permission:caixa.operar')->name('cash.close');
+            Route::post('cash-sessions/{session}/review', [FinanceController::class, 'reviewSession'])->middleware('permission:caixa.conferir')->name('cash.review');
+            Route::get('finance/summary', [FinanceController::class, 'summary'])->middleware('permission:financeiro.visualizar|relatorio.financeiro')->name('finance.summary');
 
             Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
             Route::middleware('permission:fila.gerenciar')->group(function () {
