@@ -4,6 +4,8 @@ namespace App\Modules\Patients\Http\Controllers\Web;
 
 use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
+use App\Modules\Clinical\Models\Encounter;
+use App\Modules\Clinical\Models\PatientAllergy;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Patients\Http\Requests\PatientRequest;
@@ -45,13 +47,19 @@ class PatientWebController extends Controller
         return redirect()->route('patients.show', $patient)->with('success', "Paciente cadastrado — prontuário nº {$patient->record_number}.");
     }
 
-    public function show(Patient $patient): View
+    public function show(Request $request, Patient $patient): View
     {
         $this->service->recordView($patient, 'web');
+        $clinical = $request->user()->hasPermission('prontuario.visualizar');
 
         return view('patients.show', [
             'patient' => $patient->load(['contacts', 'insurances', 'consents.recorder:id,name', 'homeBranch']),
             'history' => $this->service->history($patient, 30),
+            // Dados clínicos só para quem tem acesso ao prontuário (sigilo médico).
+            'encounters' => $clinical ? Encounter::query()->with(['doctor:id,name,social_name', 'diagnoses', 'branch:id,name'])
+                ->where('patient_id', $patient->id)->orderByDesc('started_at')->limit(30)->get() : null,
+            'allergies' => $clinical || $request->user()->hasPermission('triagem.registrar')
+                ? PatientAllergy::query()->where('patient_id', $patient->id)->orderBy('status')->orderByDesc('created_at')->get() : null,
         ]);
     }
 

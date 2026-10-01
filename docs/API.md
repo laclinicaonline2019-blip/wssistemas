@@ -67,6 +67,25 @@ Base: `/api/v1` · JSON · autenticação **Bearer** (Sanctum) · especificaçã
 | POST | `/queue/tickets`, `/queue/call-next`, `/queue/tickets/{id}/call`, `/recall`, `/start`, `/finish`, `/skip`, `/transfer` | `fila.gerenciar` — início/fim da senha atualizam o agendamento (em atendimento/realizado) |
 | GET | `/painel/{token}/estado` (fora de `/api`) | público com token secreto da unidade — dados mínimos para a TV |
 
+### Prontuário, triagem e bases clínicas (Fase 5)
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| GET | `/encounters?patient_id=` | `prontuario.visualizar` — atendimentos finalizados do paciente (diagnósticos da versão vigente) |
+| POST | `/encounters` | `prontuario.editar` — `{appointment_id}` ou `{patient_id, branch_id}` (avulso). Somente usuário vinculado a médico ativo (`403 not_a_doctor`); agendamento de outro médico → `403 not_your_patient`. Repetir devolve o mesmo atendimento. Rascunho pré-preenchido pela triagem do dia |
+| GET | `/encounters/{id}` | `prontuario.visualizar` — rascunho (se houver), todas as versões com hash e `integrity {ok, broken_at}`. Acesso auditado (`medical_record.viewed`) |
+| PUT | `/encounters/{id}/draft` | `prontuario.editar` — `{revision, data}`; devolve `{revision, saved_at}`. Revisão desatualizada → `409 stale_draft`; finalizado → `409 already_finalized`; outro médico → `403 not_author` |
+| POST | `/encounters/{id}/finalize` | `prontuario.finalizar` — `{revision?, data?}`; exige queixa principal e conduta (`422 incomplete_record`) |
+| POST | `/encounters/{id}/addenda` | `prontuario.editar` — `{reason (≥10), data}` → nova versão completa |
+| GET/POST | `/triages` | `triagem.visualizar`/`triagem.registrar` — sinais vitais + `risk` (vermelho…azul); imutável |
+| GET/POST | `/patients/{id}/allergies` | visualizar: prontuário ou triagem; registrar: `prontuario.editar` ou `triagem.registrar` (`422 duplicate_allergy`) |
+| GET | `/cid?q=` · `/medications?q=` | busca (favoritos/mais usados primeiro); medicamentos indicam `control_type` e `controlled` |
+
+`data` aceita: `chief_complaint, history, past_history, medications_in_use, vital_signs, physical_exam,
+assessment, conduct, exam_requests, guidance, notes` (texto), `return_in_days` e
+`diagnoses: [{cid_code_id, is_primary?, notes?}]` (código/descrição copiados da base; exatamente um principal).
+Campos desconhecidos são descartados.
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |

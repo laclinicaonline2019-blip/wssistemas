@@ -73,6 +73,24 @@ as expressões usam `RTRIM(coluna)`.
 limite do período, limite diário e encaixes; (3) o índice único do banco impede dois agendamentos ativos
 no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`).
 
+### Fase 5 — prontuário e bases clínicas
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `cid_codes` | CID-10 global (código, descrição, restrição de sexo, versão, `is_sample`) | `UNIQUE(version, code)` |
+| `cid_favorites` | Favoritos de CID por usuário | `UNIQUE(user_id, cid_code_id)` |
+| `medications` | `company_id` NULL = base global (somente leitura para clínicas); preenchido = cadastro da clínica. Princípio ativo, apresentação, concentração, via, posologia padrão, **tipo de controle** (none, antimicrobial, A1–C5) | escopo "global ou própria empresa" |
+| `patient_allergies` | Substância, reação, gravidade, situação (inativar mantém o histórico) | FKs compostas |
+| `triages` | Sinais vitais, risco, queixa; **imutável** | triggers de bloqueio (quando permitido) |
+| `encounters` | Atendimento: médico, paciente, agendamento (opcional), status `draft/finalized`, rascunho JSON + **revisão** (autosave otimista), versão vigente | `UNIQUE(company_id, appointment_id)` |
+| `encounter_versions` | Versões **imutáveis** (original/adendo): conteúdo, diagnósticos, justificativa, autor, `prev_hash` + `hash` (HMAC-SHA256 encadeado) | `UNIQUE(encounter_id, version)`; triggers de bloqueio |
+| `encounter_diagnoses` | Diagnósticos por versão com **cópia** de código e descrição (relatórios) | imutável |
+
+**Imutabilidade em camadas:** (1) a aplicação recusa alterar/excluir versões; (2) triggers no banco
+(PostgreSQL sempre; MySQL/MariaDB quando o usuário tem privilégio — na HostGator geralmente não);
+(3) cadeia HMAC verificada a cada visualização — qualquer alteração direta no banco aparece como
+"FALHA DE INTEGRIDADE" na tela e em `integrity.ok=false` na API.
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

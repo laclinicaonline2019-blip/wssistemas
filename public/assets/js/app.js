@@ -72,6 +72,7 @@
   // Confirmação antes de ações sensíveis: <form data-confirm="...">
   document.addEventListener('submit', function (ev) {
     var msg = ev.target.getAttribute('data-confirm');
+    if (ev.defaultPrevented) return;
     if (msg && !window.confirm(msg)) { ev.preventDefault(); return; }
     // Evita duplo envio. Desabilita só depois que o navegador montou os dados do
     // formulário — botão desabilitado não envia seu name/value (ex.: tipo de senha).
@@ -142,6 +143,151 @@
     var payer = $('[data-payer]');
     var syncPayer = function () { $('#insurance-field').classList.toggle('hidden', payer.value !== 'insurance'); };
     payer.addEventListener('change', syncPayer);
+  }
+
+  // Prontuário: diagnósticos (CID), autosave do rascunho e proteção contra perda de dados.
+  var enc = $('#encounter-form');
+  if (enc) {
+    var csrf = (enc.querySelector('input[name=_token]') || {}).value;
+    var dxRows = $('[data-dx-rows]', enc), dxTpl = $('#dx-template'), dxEmpty = $('[data-dx-empty]', enc);
+    var cidInput = $('[data-cid-search]', enc), cidResults = $('[data-cid-results]', enc);
+    var dirty = false, saving = false, timer = null, pendingSubmit = null;
+    var autosaveUrl = enc.getAttribute('data-autosave-url');
+    var status = $('[data-save-status]'), revisionInput = $('[data-revision]', enc);
+    var setStatus = function (txt, cls) { if (status) { status.textContent = txt; status.className = 'small ' + (cls || 'muted'); } };
+
+    var syncPrimary = function () {
+      var rows = $$('[data-dx-row]', dxRows);
+      if (rows.length && !$$('input[name=dx_primary]:checked', dxRows).length) rows[0].querySelector('input[name=dx_primary]').checked = true;
+      rows.forEach(function (r) { r.querySelector('[data-dx-primary]').value = r.querySelector('input[name=dx_primary]').checked ? '1' : '0'; });
+      if (dxEmpty) dxEmpty.hidden = rows.length > 0;
+    };
+    var nextIndex = function () {
+      var max = -1;
+      $$('[data-dx-row] input[name=dx_primary]', dxRows).forEach(function (i) { max = Math.max(max, +i.value); });
+      return max + 1;
+    };
+    var addDx = function (c) {
+      if (!dxRows || !dxTpl) return;
+      var exists = $$('input[name$="[cid_code_id]"]', dxRows).some(function (i) { return i.value === c.id; });
+      if (exists) return;
+      var idx = String(nextIndex());
+      var frag = dxTpl.content.cloneNode(true);
+      $$('[name]', frag).forEach(function (el) { el.name = el.name.replace('__I__', idx); });
+      $$('input[name=dx_primary]', frag).forEach(function (el) { el.value = idx; });
+      frag.querySelector('[data-dx-id]').value = c.id;
+      frag.querySelector('[data-dx-code]').textContent = c.code;
+      frag.querySelector('[data-dx-desc]').textContent = c.description;
+      dxRows.appendChild(frag);
+      syncPrimary(); markDirty();
+    };
+
+    if (cidInput) {
+      var cidTimer = null;
+      cidInput.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') ev.preventDefault(); });
+      cidInput.addEventListener('input', function () {
+        clearTimeout(cidTimer);
+        var term = cidInput.value.trim();
+        if (term.length < 2) { cidResults.classList.add('hidden'); return; }
+        cidTimer = setTimeout(function () {
+          fetch(enc.getAttribute('data-cid-url') + '?q=' + encodeURIComponent(term), { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+            .then(function (j) {
+              cidResults.innerHTML = '';
+              var items = j.data || [];
+              if (!items.length) cidResults.innerHTML = '<div class="lookup__item muted">Nenhum CID encontrado.</div>';
+              items.forEach(function (c) {
+                var row = document.createElement('div'); row.className = 'lookup__row';
+                var b = document.createElement('button');
+                b.type = 'button'; b.className = 'lookup__item';
+                b.textContent = c.code + ' — ' + c.description;
+                b.addEventListener('click', function () { addDx(c); cidInput.value = ''; cidResults.classList.add('hidden'); cidInput.focus(); });
+                var fav = document.createElement('button');
+                fav.type = 'button'; fav.className = 'lookup__fav' + (c.favorite ? ' is-on' : '');
+                fav.textContent = c.favorite ? '★' : '☆'; fav.title = 'Favorito'; fav.setAttribute('aria-label', 'Favoritar ' + c.code);
+                fav.addEventListener('click', function () {
+                  fetch(enc.getAttribute('data-cid-favorite-url').replace('__ID__', c.id), { method: 'POST', headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf }, credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) { fav.textContent = res.favorite ? '★' : '☆'; fav.classList.toggle('is-on', res.favorite); });
+                });
+                row.appendChild(b); row.appendChild(fav); cidResults.appendChild(row);
+              });
+              cidResults.classList.remove('hidden');
+            });
+        }, 250);
+      });
+    }
+
+    enc.addEventListener('click', function (ev) {
+      var add = ev.target.closest('[data-cid-add]');
+      if (add) { addDx({ id: add.getAttribute('data-id'), code: add.getAttribute('data-code'), description: add.getAttribute('data-description') }); return; }
+      var rm = ev.target.closest('[data-dx-remove]');
+      if (rm) { rm.closest('[data-dx-row]').remove(); syncPrimary(); markDirty(); return; }
+      if (ev.target.closest('[data-save-now]')) { save(); }
+    });
+    enc.addEventListener('change', function (ev) { if (ev.target.name === 'dx_primary') syncPrimary(); });
+
+    // Monta {seção: texto, diagnoses: [...], return_in_days} a partir dos campos data[...]
+    var collect = function () {
+      var data = {}, dx = {};
+      $$('[name^="data["]', enc).forEach(function (el) {
+        var parts = el.name.replace(/\]/g, '').split('[').slice(1);
+        if (parts[0] === 'diagnoses') { (dx[parts[1]] = dx[parts[1]] || {})[parts[2]] = el.value; }
+        else data[parts[0]] = el.value;
+      });
+      data.diagnoses = Object.keys(dx).map(function (k) { return dx[k]; });
+      return data;
+    };
+
+    var save = function () {
+      if (!autosaveUrl || saving) return Promise.resolve();
+      clearTimeout(timer);
+      saving = true; dirty = false; setStatus('Salvando…');
+      return fetch(autosaveUrl, {
+        method: 'PUT', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ revision: +revisionInput.value, data: collect() })
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.ok) {
+            revisionInput.value = j.revision;
+            var d = new Date(j.saved_at);
+            setStatus('Salvo às ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2), 'text-success');
+          } else if (r.status === 409) {
+            setStatus(j.message || 'Alterado em outra janela — recarregue a página.', 'text-danger'); autosaveUrl = null;
+            window.alert(j.message || 'Este atendimento foi alterado em outra janela. Recarregue a página.');
+          } else if (r.status === 419 || r.status === 401) {
+            setStatus('Sessão expirada — faça login novamente (copie o texto antes).', 'text-danger'); dirty = true;
+          } else { setStatus('Falha ao salvar — tentaremos de novo.', 'text-danger'); dirty = true; }
+        });
+      }).catch(function () { setStatus('Sem conexão — tentaremos de novo.', 'text-danger'); dirty = true; })
+        .then(function () {
+          saving = false;
+          if (pendingSubmit) { var s = pendingSubmit; pendingSubmit = null; enc.requestSubmit(s === true ? undefined : s); }
+          else if (dirty) schedule();
+        });
+    };
+    var schedule = function () { clearTimeout(timer); timer = setTimeout(save, 8000); };
+    function markDirty() { dirty = true; if (autosaveUrl) { setStatus('Alterações não salvas'); schedule(); } }
+
+    enc.addEventListener('input', function (ev) { if (ev.target !== cidInput) markDirty(); });
+    // Finalizar: garante que o último autosave terminou (a revisão enviada precisa ser a atual).
+    enc.addEventListener('submit', function (ev) {
+      if (saving) { ev.preventDefault(); pendingSubmit = ev.submitter || true; return; }
+      clearTimeout(timer); dirty = false;
+    });
+    // Outros formulários (ex.: nova alergia) recarregam a página: salva o rascunho antes.
+    $$('[data-save-first]').forEach(function (b) {
+      b.form.addEventListener('submit', function (ev) {
+        if (!autosaveUrl || (!dirty && !saving)) return;
+        ev.preventDefault();
+        var f = b.form;
+        (saving ? new Promise(function (res) { var i = setInterval(function () { if (!saving) { clearInterval(i); res(); } }, 100); }) : Promise.resolve())
+          .then(function () { return dirty ? save() : null; }).then(function () { f.submit(); });
+      });
+    });
+    window.addEventListener('beforeunload', function (ev) { if (dirty || saving) { ev.preventDefault(); ev.returnValue = ''; } });
+    syncPrimary();
   }
 
   // Página de teste de impressão abre o diálogo automaticamente

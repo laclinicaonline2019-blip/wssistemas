@@ -3,6 +3,10 @@
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\UtilityController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
+use App\Modules\Clinical\Http\Controllers\Platform\ClinicalCatalogController;
+use App\Modules\Clinical\Http\Controllers\Web\ClinicalSupportController;
+use App\Modules\Clinical\Http\Controllers\Web\DoctorWorkspaceController;
+use App\Modules\Clinical\Http\Controllers\Web\EncounterWebController;
 use App\Modules\Doctors\Http\Controllers\Web\DoctorWebController;
 use App\Modules\Doctors\Http\Controllers\Web\SpecialtyWebController;
 use App\Modules\Identity\Http\Controllers\Web\AccountController;
@@ -144,6 +148,33 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::put('painel', [QueueWebController::class, 'updatePanel'])->middleware('permission:fila.painel')->name('panel.update');
     });
 
+    // Fase 5 — área do médico, prontuário, triagem e bases clínicas
+    Route::get('atendimento', [DoctorWorkspaceController::class, 'index'])->middleware('permission:prontuario.editar')->name('workspace');
+    Route::post('atendimento/agendamentos/{appointment}/iniciar', [DoctorWorkspaceController::class, 'start'])->middleware('permission:prontuario.editar')->name('workspace.start');
+    Route::post('atendimento/agendamentos/{appointment}/chamar', [DoctorWorkspaceController::class, 'call'])->middleware('permission:fila.chamar|fila.gerenciar')->name('workspace.call');
+    Route::post('atendimento/pacientes/{patient}/avulso', [DoctorWorkspaceController::class, 'walkIn'])->middleware('permission:prontuario.editar')->name('workspace.walk_in');
+
+    Route::prefix('prontuario')->name('encounters.')->group(function () {
+        Route::get('{encounter}', [EncounterWebController::class, 'show'])->middleware('permission:prontuario.visualizar')->name('show');
+        Route::get('{encounter}/editar', [EncounterWebController::class, 'edit'])->middleware('permission:prontuario.editar')->name('edit');
+        Route::put('{encounter}/rascunho', [EncounterWebController::class, 'autosave'])->middleware(['permission:prontuario.editar', 'throttle:120,1'])->name('autosave');
+        Route::post('{encounter}/finalizar', [EncounterWebController::class, 'finalize'])->middleware('permission:prontuario.finalizar')->name('finalize');
+        Route::get('{encounter}/adendo', [EncounterWebController::class, 'addendumForm'])->middleware('permission:prontuario.editar')->name('addendum');
+        Route::post('{encounter}/adendo', [EncounterWebController::class, 'storeAddendum'])->middleware('permission:prontuario.editar')->name('addendum.store');
+    });
+
+    Route::get('triagem', [ClinicalSupportController::class, 'triageIndex'])->middleware('permission:triagem.registrar')->name('triage.index');
+    Route::get('triagem/nova', [ClinicalSupportController::class, 'triageCreate'])->middleware('permission:triagem.registrar')->name('triage.create');
+    Route::post('triagem', [ClinicalSupportController::class, 'triageStore'])->middleware('permission:triagem.registrar')->name('triage.store');
+    Route::post('pacientes/{patient}/alergias', [ClinicalSupportController::class, 'allergyStore'])->middleware('permission:prontuario.editar|triagem.registrar')->name('allergies.store');
+    Route::patch('alergias/{allergy}/inativar', [ClinicalSupportController::class, 'allergyDeactivate'])->middleware('permission:prontuario.editar')->name('allergies.deactivate');
+    Route::get('clinico/cid', [ClinicalSupportController::class, 'cidSearch'])->middleware(['permission:prontuario.editar', 'throttle:120,1'])->name('clinical.cid');
+    Route::post('clinico/cid/{cid}/favorito', [ClinicalSupportController::class, 'cidFavorite'])->middleware('permission:prontuario.editar')->name('clinical.cid.favorite');
+    Route::get('clinico/medicamentos/busca', [ClinicalSupportController::class, 'medicationSearch'])->middleware(['permission:prontuario.editar|medicamento.gerenciar', 'throttle:120,1'])->name('clinical.medications.search');
+    Route::get('medicamentos', [ClinicalSupportController::class, 'medications'])->middleware('permission:medicamento.gerenciar')->name('medications.index');
+    Route::post('medicamentos', [ClinicalSupportController::class, 'medicationStore'])->middleware('permission:medicamento.gerenciar')->name('medications.store');
+    Route::put('medicamentos/{medication}', [ClinicalSupportController::class, 'medicationUpdate'])->middleware('permission:medicamento.gerenciar')->name('medications.update');
+
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');
     Route::put('especialidades/{specialty}', [SpecialtyWebController::class, 'update'])->middleware('permission:especialidade.gerenciar')->name('specialties.update');
@@ -160,4 +191,7 @@ Route::middleware(['auth', 'platform', '2fa.enrolled'])->prefix('plataforma')->n
     Route::get('planos', [PlatformWebController::class, 'plans'])->name('plans.index');
     Route::post('planos', [PlatformWebController::class, 'storePlan'])->name('plans.store');
     Route::put('planos/{plan}', [PlatformWebController::class, 'updatePlan'])->name('plans.update');
+    Route::get('bases-clinicas', [ClinicalCatalogController::class, 'index'])->name('catalog.index');
+    Route::post('bases-clinicas/cid', [ClinicalCatalogController::class, 'importCid'])->name('catalog.cid');
+    Route::post('bases-clinicas/medicamentos', [ClinicalCatalogController::class, 'importMedications'])->name('catalog.medications');
 });

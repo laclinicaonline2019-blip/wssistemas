@@ -28,7 +28,9 @@
 | Anonimização / eliminação | ✅ anonimização irreversível de dados cadastrais (`paciente.anonimizar`, empresa toda, com motivo/protocolo); mantém nº de prontuário, ano de nascimento, sexo e cidade/UF. **Prontuário não é eliminado** antes do prazo legal (20 anos — Lei 13.787/2018) | 3 |
 | Registro de acesso ao cadastro | ✅ auditoria `patient.viewed` (web e API) | 3 |
 | Minimização em listas | ✅ CPF mascarado em listagens e busca | 3 |
-| Registro de acesso a prontuário | auditoria `medical_record.viewed` | 5 |
+| Registro de acesso a prontuário | ✅ auditoria `medical_record.viewed` (web e API), início, finalização e adendos — **sem conteúdo clínico** na trilha (apenas versão e hash) | 5 |
+| Sigilo do prontuário | ✅ recepção/financeiro não veem dados clínicos; somente o médico autor edita; Super Admin não acessa prontuários | 5 |
+| Integridade e guarda (Lei 13.787/2018, CFM 1.821/2007) | ✅ versões imutáveis com hash encadeado; correções apenas por adendo; sem exclusão | 5 |
 | Minimização | painel de chamadas mostra só senha/nome parcial; IA recebe o mínimo necessário | 4/12 |
 | Retenção | políticas configuráveis por tipo de dado, com rotinas agendadas | 17 |
 | Incidentes | procedimento em SECURITY.md | — |

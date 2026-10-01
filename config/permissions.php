@@ -112,6 +112,7 @@ return [
             'permissions' => [
                 'fila.visualizar' => 'Visualizar fila de atendimento',
                 'fila.gerenciar' => 'Registrar chegada, gerar e chamar senhas',
+                'fila.chamar' => 'Chamar os próprios pacientes para o consultório (médico)',
                 'fila.painel' => 'Configurar painel de chamadas',
             ],
         ],
@@ -289,7 +290,7 @@ return [
             'description' => 'Atendimento clínico, prontuário e documentos médicos.',
             'locked' => false,
             'permissions' => [
-                'dashboard.visualizar', 'paciente.visualizar', 'agenda.visualizar', 'fila.visualizar',
+                'dashboard.visualizar', 'paciente.visualizar', 'agenda.visualizar', 'fila.visualizar', 'fila.chamar',
                 'triagem.visualizar', 'prontuario.visualizar', 'prontuario.editar', 'prontuario.finalizar',
                 'receita.emitir', 'receita.imprimir', 'receita.cancelar',
                 'atestado.emitir', 'atestado.imprimir', 'atestado.cancelar',

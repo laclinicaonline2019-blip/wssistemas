@@ -1,6 +1,8 @@
 <?php
 
 use App\Modules\Audit\Http\Controllers\Api\AuditLogController;
+use App\Modules\Clinical\Http\Controllers\Api\ClinicalController;
+use App\Modules\Clinical\Http\Controllers\Api\EncounterController;
 use App\Modules\Doctors\Http\Controllers\Api\DoctorController;
 use App\Modules\Doctors\Http\Controllers\Api\SpecialtyController;
 use App\Modules\Identity\Http\Controllers\Api\AuthController;
@@ -116,6 +118,20 @@ Route::prefix('v1')->name('api.')->group(function () {
                 Route::post('rooms', [ScheduleConfigController::class, 'storeRoom'])->name('rooms.store');
                 Route::patch('rooms/{room}', [ScheduleConfigController::class, 'updateRoom'])->name('rooms.update');
             });
+
+            // Fase 5 — prontuário, triagem, alergias, CID e medicamentos
+            Route::get('encounters', [EncounterController::class, 'index'])->middleware('permission:prontuario.visualizar')->name('encounters.index');
+            Route::post('encounters', [EncounterController::class, 'store'])->middleware('permission:prontuario.editar')->name('encounters.store');
+            Route::get('encounters/{encounter}', [EncounterController::class, 'show'])->middleware('permission:prontuario.visualizar')->name('encounters.show');
+            Route::put('encounters/{encounter}/draft', [EncounterController::class, 'draft'])->middleware('permission:prontuario.editar')->name('encounters.draft');
+            Route::post('encounters/{encounter}/finalize', [EncounterController::class, 'finalize'])->middleware('permission:prontuario.finalizar')->name('encounters.finalize');
+            Route::post('encounters/{encounter}/addenda', [EncounterController::class, 'addendum'])->middleware('permission:prontuario.editar')->name('encounters.addendum');
+            Route::get('triages', [ClinicalController::class, 'triages'])->middleware('permission:triagem.visualizar|prontuario.visualizar')->name('triages.index');
+            Route::post('triages', [ClinicalController::class, 'storeTriage'])->middleware('permission:triagem.registrar')->name('triages.store');
+            Route::get('patients/{patient}/allergies', [ClinicalController::class, 'allergies'])->middleware('permission:prontuario.visualizar|triagem.visualizar')->name('allergies.index');
+            Route::post('patients/{patient}/allergies', [ClinicalController::class, 'storeAllergy'])->middleware('permission:prontuario.editar|triagem.registrar')->name('allergies.store');
+            Route::get('cid', [ClinicalController::class, 'cid'])->middleware('permission:prontuario.editar|prontuario.visualizar')->name('cid.search');
+            Route::get('medications', [ClinicalController::class, 'medications'])->middleware('permission:prontuario.editar|medicamento.gerenciar')->name('medications.search');
 
             Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
             Route::middleware('permission:fila.gerenciar')->group(function () {

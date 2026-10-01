@@ -314,3 +314,24 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
 .lookup__item:hover, .lookup__item:focus { background: var(--primary-soft); }
 .selected-patient { padding: .7rem .85rem; border: 1px solid var(--primary); border-radius: var(--radius-sm); background: var(--primary-soft); }
 .print-frame { position: absolute; width: 0; height: 0; border: 0; }
+
+/* Prontuário (Fase 5) */
+.encounter-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; align-items: start; }
+.encounter-layout > aside { position: sticky; top: 84px; max-height: calc(100vh - 100px); overflow: auto; }
+@media (max-width: 1100px) { .encounter-layout { grid-template-columns: 1fr; } .encounter-layout > aside { position: static; max-height: none; } }
+.encounter-layout textarea.input { resize: vertical; line-height: 1.45; }
+.prewrap { white-space: pre-wrap; }
+.dl-clinical { grid-template-columns: 220px 1fr; }
+.dl-clinical dt { font-weight: 600; }
+@media (max-width: 700px) { .dl-clinical { grid-template-columns: 1fr; } }
+.version-old { opacity: .85; }
+.text-success { color: var(--success); } .text-danger { color: var(--danger); }
+.lookup__row { display: flex; align-items: stretch; }
+.lookup__row .lookup__item { flex: 1; }
+.lookup__fav { border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--text-2); padding: 0 .7rem; cursor: pointer; font-size: 1.1rem; }
+.lookup__fav.is-on { color: var(--warning); }
+.badge.risk-vermelho { background: #dc2626; color: #fff; } .badge.risk-laranja { background: #ea580c; color: #fff; }
+.badge.risk-amarelo { background: #facc15; color: #1f2937; } .badge.risk-verde { background: #16a34a; color: #fff; }
+.badge.risk-azul { background: #2563eb; color: #fff; }
+details > summary { cursor: pointer; list-style: none; } details > summary::-webkit-details-marker { display: none; }
+.encounter-layout aside .input { width: 100%; }

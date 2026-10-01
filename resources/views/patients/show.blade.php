@@ -112,6 +112,57 @@
     </section>
 </div>
 
+@if ($encounters !== null || $allergies !== null)
+<div class="grid grid-2 mt-2">
+    @if ($encounters !== null)
+        <section class="card">
+            <div class="card__head"><h2>Atendimentos (prontuário)</h2>
+                @if (! $patient->isAnonymized() && $patient->status === 'active' && $me->hasPermission('prontuario.editar'))
+                    <form method="post" action="{{ route('workspace.walk_in', $patient) }}" data-confirm="Iniciar um atendimento avulso (sem agendamento) para este paciente?">@csrf<button class="btn btn-sm btn-primary" type="submit">Iniciar atendimento avulso</button></form>
+                @endif
+            </div>
+            <div class="card__body"><ul class="timeline">
+                @forelse ($encounters as $e)
+                    <li><a href="{{ route('encounters.show', $e) }}"><strong>{{ $e->started_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}</strong></a>
+                        · {{ $e->doctor->displayName() }} · {{ $e->branch->name }}
+                        @if ($e->isDraft())<span class="badge badge-warning">em andamento</span>@elseif ($e->current_version > 1)<span class="badge">{{ $e->current_version - 1 }} adendo(s)</span>@endif
+                        @if ($e->diagnoses->isNotEmpty())<div class="small">{{ $e->diagnoses->where('version', $e->current_version)->map(fn ($d) => $d->code.' '.$d->description)->implode('; ') }}</div>@endif
+                    </li>
+                @empty
+                    <li class="muted small">Nenhum atendimento registrado.</li>
+                @endforelse
+            </ul></div>
+        </section>
+    @endif
+    @if ($allergies !== null)
+        <section class="card">
+            <div class="card__head"><h2>Alergias</h2></div>
+            <div class="card__body stack">
+                @forelse ($allergies as $al)
+                    <div class="spread small {{ $al->status === 'active' ? '' : 'muted' }}">
+                        <span><strong>{{ $al->substance }}</strong>{{ $al->reaction ? ' — '.$al->reaction : '' }} <span class="badge {{ $al->severity === 'severe' ? 'badge-danger' : '' }}">{{ \App\Modules\Clinical\Models\PatientAllergy::SEVERITIES[$al->severity] }}</span>{{ $al->status === 'active' ? '' : ' (inativa)' }}</span>
+                        @if ($al->status === 'active' && $me->hasPermission('prontuario.editar'))
+                            <form method="post" action="{{ route('allergies.deactivate', $al) }}" data-confirm="Marcar esta alergia como inativa?">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">Inativar</button></form>
+                        @endif
+                    </div>
+                @empty
+                    <p class="small muted">Nenhuma alergia registrada.</p>
+                @endforelse
+                @unless ($patient->isAnonymized())
+                    <form method="post" action="{{ route('allergies.store', $patient) }}" class="row">
+                        @csrf
+                        <label class="sr-only" for="al-sub">Substância</label><input id="al-sub" name="substance" class="input input-sm w-auto" placeholder="Substância" maxlength="150" required>
+                        <label class="sr-only" for="al-rea">Reação</label><input id="al-rea" name="reaction" class="input input-sm w-auto" placeholder="Reação" maxlength="255">
+                        <label class="sr-only" for="al-sev">Gravidade</label><select id="al-sev" name="severity" class="input input-sm w-auto">@foreach (\App\Modules\Clinical\Models\PatientAllergy::SEVERITIES as $k => $l)<option value="{{ $k }}" @selected($k === 'unknown')>{{ $l }}</option>@endforeach</select>
+                        <button class="btn btn-sm" type="submit">Adicionar</button>
+                    </form>
+                @endunless
+            </div>
+        </section>
+    @endif
+</div>
+@endif
+
 <section class="card mt-2">
     <div class="card__head"><h2>Histórico de alterações do cadastro</h2></div>
     <div class="card__body">

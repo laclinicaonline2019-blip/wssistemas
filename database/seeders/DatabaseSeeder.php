@@ -12,5 +12,6 @@ class DatabaseSeeder extends Seeder
     {
         $registry->sync();
         $this->call(PlanSeeder::class);
+        $this->call(ClinicalCatalogSeeder::class);
     }
 }

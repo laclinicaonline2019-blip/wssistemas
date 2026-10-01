@@ -2,6 +2,40 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.6.0] — 2026-10-01 — Fase 5: prontuário eletrônico, CID e medicamentos
+
+### Adicionado
+- **Área do médico ("Meu dia")**: pacientes do dia em ordem de prioridade (em atendimento → chegou →
+  agendado), chamar o paciente para o consultório (painel da TV), iniciar/continuar atendimentos,
+  rascunhos em aberto; atendimento **avulso** (sem agendamento) pela ficha do paciente.
+- **Prontuário eletrônico**: queixa principal, anamnese, antecedentes, medicamentos em uso, sinais vitais
+  (pré-preenchidos pela triagem), exame físico, avaliação, **diagnósticos CID-10** (busca sem acento, por
+  código ou descrição, favoritos e mais usados, um principal), conduta, exames solicitados, orientações,
+  retorno.
+- **Salvamento automático** do rascunho (a cada ~8 s e ao clicar em "Salvar"), com controle de revisão:
+  outra aba/dispositivo não sobrescreve o que já foi salvo; aviso ao sair com alterações pendentes.
+- **Finalização imutável**: o registro vira uma versão assinada por **hash HMAC encadeado**; nada é
+  editado ou apagado depois (bloqueio na aplicação e, quando o banco permite, por trigger). Correções são
+  **adendos** com justificativa, data/hora e autor — o original permanece visível. Selo
+  "Integridade verificada" na tela; adulteração direta no banco é detectada.
+- Diagnósticos guardam **cópia do código e do texto** da CID: atualizar a base nunca altera registros antigos.
+- Somente o **médico responsável** edita, finaliza ou registra adendo; recepção não vê dados clínicos;
+  enfermagem visualiza. Cada acesso ao prontuário é auditado **sem conteúdo clínico** na trilha.
+- **Triagem** (enfermagem): fila de pacientes que chegaram, sinais vitais (PA, FC, FR, Tax, SpO₂, peso,
+  altura, IMC, glicemia, dor), classificação de risco por cores; registro imutável.
+- **Alergias** do paciente com alerta em destaque no atendimento; inativação mantém o histórico;
+  duplicidade bloqueada.
+- **Bases clínicas**: CID-10 global com importação do CSV oficial do DATASUS (tela do Super Admin ou
+  `php artisan aivexa:catalog:import cid arquivo.csv`); medicamentos globais (somente leitura para as
+  clínicas) + cadastro próprio de cada clínica, com **tipo de controle da Portaria 344/98** (A1–C5,
+  antimicrobianos) para as receitas da Fase 6. Amostra inicial marcada como "exemplo".
+- Ficha do paciente: linha do tempo de atendimentos e alergias (somente para quem tem acesso ao prontuário).
+- API REST: `/encounters` (iniciar, rascunho, finalizar, adendos, histórico), `/triages`, alergias, `/cid`,
+  `/medications`. 132 testes (MariaDB e PostgreSQL).
+
+### Corrigido
+- Triagem aceita vírgula decimal ("36,5") nos campos de temperatura e peso.
+
 ## [0.5.0] — 2026-09-30 — Fase 4: agenda inteligente, fila e painel de chamadas
 
 ### Adicionado

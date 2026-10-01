@@ -29,6 +29,7 @@
                 {!! $nav('platform.dashboard', 'platform.dashboard', 'chart', 'Visão geral') !!}
                 {!! $nav('platform.companies.index', 'platform.companies.*', 'building', 'Empresas') !!}
                 {!! $nav('platform.plans.index', 'platform.plans.*', 'layers', 'Planos SaaS') !!}
+                {!! $nav('platform.catalog.index', 'platform.catalog.*', 'file', 'Bases clínicas') !!}
             </ul>
         @else
             <div class="sidebar__section">Clínica</div>
@@ -39,7 +40,8 @@
                 {!! $nav('queue.index', 'queue.*', 'list', 'Fila e senhas', $can('fila.visualizar')) !!}
                 {!! $nav('doctors.index', 'doctors.*', 'stethoscope', 'Médicos', $can('medico.visualizar')) !!}
                 {!! $nav('specialties.index', 'specialties.*', 'tag', 'Especialidades', $can('medico.visualizar')) !!}
-                {!! $soon('heart', 'Atendimento', 'Fase 5') !!}
+                {!! $nav('workspace', ['workspace', 'encounters.*'], 'heart', 'Atendimento', $can('prontuario.editar')) !!}
+                {!! $nav('triage.index', 'triage.*', 'activity', 'Triagem', $can('triagem.registrar')) !!}
                 {!! $soon('file', 'Documentos', 'Fase 6') !!}
                 {!! $soon('cash', 'Financeiro', 'Fase 7') !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
@@ -49,6 +51,7 @@
                     $nav('branches.index', 'branches.*', 'building', 'Filiais', $can('filial.visualizar')),
                     $nav('rooms.index', 'rooms.*', 'layers', 'Salas', $can('agenda.configurar')),
                     $nav('agenda.holidays', 'agenda.holidays', 'calendar', 'Feriados e bloqueios', $can('agenda.configurar')),
+                    $nav('medications.index', 'medications.*', 'tag', 'Medicamentos', $can('medicamento.gerenciar')),
                     $nav('users.index', 'users.*', 'users', 'Usuários', $can('usuario.visualizar')),
                     $nav('roles.index', 'roles.*', 'shield', 'Perfis de acesso', $can('perfil.visualizar')),
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
@@ -62,7 +65,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.5.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.6.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

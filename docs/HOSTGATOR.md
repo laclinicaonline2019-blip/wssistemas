@@ -152,6 +152,18 @@ fila ficar parada (cron não configurado).
 4. Impressão de senhas: impressora térmica instalada no computador da recepção como impressora
    padrão, papel 80 mm (ou 58 mm em *Configurações → Impressão*), margens "nenhuma".
 
+## Base CID-10 oficial (recomendado após instalar)
+
+O sistema vem com uma **amostra** de CIDs e medicamentos (marcada como "exemplo"). Para a tabela completa:
+
+1. Baixe no site do DATASUS (*CID-10 → arquivos em CSV*) e descompacte.
+2. Entre como Super Admin → **Bases clínicas** → envie `CID-10-SUBCATEGORIAS.CSV` (e, se quiser,
+   `CID-10-CATEGORIAS.CSV`). O arquivo pode ir como está (ISO-8859-1, separador `;`).
+3. Medicamentos: CSV `;` com cabeçalho
+   `principio_ativo;nome_comercial;apresentacao;concentracao;fabricante;via;posologia;controle`.
+
+Diagnósticos já registrados guardam uma cópia do texto e não mudam com a importação.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

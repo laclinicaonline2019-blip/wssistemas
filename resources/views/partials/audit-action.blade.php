@@ -21,6 +21,11 @@
         'doctor.created' => 'Médico cadastrado', 'doctor.updated' => 'Médico alterado',
         'doctor.specialties_changed' => 'Especialidades do médico alteradas', 'doctor.branches_changed' => 'Filiais do médico alteradas',
         'specialty.created' => 'Especialidade criada', 'specialty.updated' => 'Especialidade alterada',
+        'medical_record.started' => 'Atendimento iniciado', 'medical_record.viewed' => 'Prontuário acessado',
+        'medical_record.finalized' => 'Atendimento finalizado (prontuário)', 'medical_record.addendum' => 'Adendo ao prontuário',
+        'triage.recorded' => 'Triagem registrada', 'patient_allergy.created' => 'Alergia registrada', 'patient_allergy.updated' => 'Alergia alterada',
+        'medication.created' => 'Medicamento cadastrado', 'medication.updated' => 'Medicamento alterado',
+        'catalog.cid_imported' => 'Base CID importada', 'catalog.medications_imported' => 'Base de medicamentos importada',
     ];
     $cls = ['success' => 'badge-success', 'failure' => 'badge-danger', 'denied' => 'badge-warning'][$log->result] ?? '';
 @endphp

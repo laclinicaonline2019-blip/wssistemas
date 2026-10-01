@@ -208,3 +208,29 @@ paths:
   /patients/{id}/anonymize:
     parameters: [{ $ref: '#/components/parameters/Id' }]
     post: { summary: Anonimiza (irreversível), responses: { '200': { description: OK } } }
+  /encounters:
+    get: { summary: Atendimentos finalizados do paciente (patient_id), responses: { '200': { description: OK }, '403': { description: Sem acesso ao prontuário } } }
+    post: { summary: Inicia atendimento (appointment_id ou patient_id + branch_id), responses: { '201': { description: Rascunho criado }, '403': { description: not_a_doctor / not_your_patient } } }
+  /encounters/{id}:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Atendimento com versões, hash e integridade (acesso auditado), responses: { '200': { description: OK }, '404': { description: Inexistente ou de outra empresa } } }
+  /encounters/{id}/draft:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    put: { summary: Salva rascunho (revision + data), responses: { '200': { description: Nova revisão }, '409': { description: stale_draft / already_finalized }, '403': { description: not_author } } }
+  /encounters/{id}/finalize:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { summary: Finaliza (versão 1 imutável), responses: { '200': { description: Finalizado }, '422': { description: incomplete_record }, '409': { description: Já finalizado ou revisão desatualizada } } }
+  /encounters/{id}/addenda:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    post: { summary: Adendo com justificativa (nova versão), responses: { '201': { description: Registrado } } }
+  /triages:
+    get: { summary: Triagens do paciente (patient_id), responses: { '200': { description: OK } } }
+    post: { summary: Registra triagem (imutável), responses: { '201': { description: Registrada } } }
+  /patients/{id}/allergies:
+    parameters: [{ $ref: '#/components/parameters/Id' }]
+    get: { summary: Alergias do paciente, responses: { '200': { description: OK } } }
+    post: { summary: Registra alergia, responses: { '201': { description: Registrada }, '422': { description: duplicate_allergy } } }
+  /cid:
+    get: { summary: Busca CID-10 (q), responses: { '200': { description: OK } } }
+  /medications:
+    get: { summary: Busca medicamentos (q), responses: { '200': { description: OK } } }

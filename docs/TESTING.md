@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (113 testes; 1 ignorado conforme o banco)
+## Cobertura atual (132 testes; 1–2 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -31,9 +31,11 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Scheduling/BookingTest` | disponibilidade real, **mesmo horário não pode ser marcado duas vezes** (serviço e banco), duração que ocupa vários horários, **limite do período** e próximo horário, limite diário, **encaixes** (permissão e limite), feriado, bloqueio, horário passado/fora da grade, conflito do paciente, médico fora da unidade, regras de convênio, cancelamento libera horário, remarcação mantém protocolo, **idempotência**, grades sobrepostas entre unidades, bloqueio lista afetados, isolamento entre clínicas e filiais |
 | `Scheduling/ConcurrentBookingTest` | **concorrência real com processos paralelos** (8 × mesmo horário → 1 sucesso; 8 horários × limite 2 → 2 sucessos). Verificado que o teste falha sem o lock |
 | `Scheduling/QueueTest` | senha na chegada com tipo sugerido (60+ → prioridade), numeração por dia/tipo, chamar próxima priorizando, rechamar, iniciar/finalizar atualizando o agendamento, **painel com nome reduzido e token** (rotação invalida; token nunca vai à auditoria), isolamento, telas web e impressão |
+| `Clinical/EncounterTest` | pré-preenchimento pela triagem, **autosave com revisão (aba antiga não sobrescreve)**, finalização exige conteúdo mínimo, **versão finalizada imutável** (aplicação e trigger), **adendo mantém o original**, **cadeia de hash detecta adulteração no banco**, somente o médico autor, diagnósticos com cópia do texto e um principal, recepção sem acesso, acesso auditado sem conteúdo clínico, isolamento entre clínicas, atendimento avulso |
+| `Clinical/ClinicalCatalogTest` | importação da CID-10 no formato DATASUS (ISO-8859-1), busca sem acento/por código, favoritos primeiro, base global de medicamentos somente leitura e cadastros isolados por clínica, importação CSV de medicamentos, triagem imutável/validada, alergia duplicada bloqueada |
+| `Clinical/ClinicalWebTest` | fluxo web completo do médico (iniciar → autosave → finalizar → adendo), telas de triagem/medicamentos/plataforma, dados clínicos ocultos para a recepção |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)
 
 - Pagamentos: confirmação falsa (webhook sem assinatura/valor divergente), **duplicação de cobrança** (idempotência), webhook repetido.
-- Prontuário: alteração indevida (versões imutáveis, somente autor/perfil permitido), sem exclusão física.
