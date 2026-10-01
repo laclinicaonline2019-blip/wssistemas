@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
-    public const SAME_ORIGIN_FRAME_ROUTES = ['queue.print', 'print.test'];
+    public const SAME_ORIGIN_FRAME_ROUTES = ['queue.print', 'print.test', 'documents.print', 'documents.print_group', 'documents.pdf', 'patient_files.download'];
 
     public function handle(Request $request, Closure $next): Response
     {

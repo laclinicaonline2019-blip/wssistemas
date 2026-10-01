@@ -86,6 +86,20 @@ assessment, conduct, exam_requests, guidance, notes` (texto), `return_in_days` e
 `diagnoses: [{cid_code_id, is_primary?, notes?}]` (código/descrição copiados da base; exatamente um principal).
 Campos desconhecidos são descartados.
 
+### Documentos médicos (Fase 6)
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| POST | `/documents` | por tipo: `prescription` → `receita.emitir`; `certificate` → `atestado.emitir`; `exam_request` → `exame.solicitar`; `report` → `prontuario.editar`. Somente médico ativo (`403 not_a_doctor`). Comuns: `patient_id`, `encounter_id?` (do próprio médico), `branch_id?`. Devolve **lista** (uma receita pode virar até 3 documentos do mesmo `group_id`) |
+| | prescription | `items[]: {medication_id? \| name, quantity, posology, route?, control_type?, notification_number?}`, `notes?`. Erros: `notification_required` (listas A/B/C2/C3), `quantity_required` (controle especial), `incomplete_item` |
+| | certificate | `subtype: leave` (`days`, `start_date?`) ou `attendance` (`start_time`, `end_time`); `cid_code_id?` + `cid_authorized` (`cid_not_authorized`), `purpose?`, `notes?`; `invalid_start_date` |
+| | exam_request | `exams[]`, `indication?`, `cid_code_id?`, `urgent?` |
+| | report | `subtype: report \| declaration \| referral`, `title?`, `recipient?`, `body` |
+| GET | `/documents?patient_id=` · `/documents/{id}` | permissão de impressão do tipo; `show` traz `content` e `intact` (selo HMAC) |
+| POST | `/documents/{id}/cancel` | permissão de cancelamento do tipo + ser o médico emitente (`403 not_author`); `{reason ≥ 10}`; `409 already_cancelled` |
+| GET | `/documents/{id}/pdf?format=a4\|a5` | PDF (conta como impressão; cancelado → `409 document_cancelled`) |
+| GET | `/validar/{código}` (fora de `/api`, público) | validação pelo código/QR: tipo, número, data, médico, situação, iniciais do paciente, itens da receita |
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |

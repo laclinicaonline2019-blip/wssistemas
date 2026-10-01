@@ -91,6 +91,13 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 (3) cadeia HMAC verificada a cada visualização — qualquer alteração direta no banco aparece como
 "FALHA DE INTEGRIDADE" na tela e em `integrity.ok=false` na API.
 
+### Fase 6 — documentos e anexos
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `medical_documents` | Receitas, controle especial, registro de notificação, atestados, exames, relatórios. Conteúdo JSON com **cabeçalho congelado** (clínica, médico/CRM/RQE, paciente) no momento da emissão; número sequencial; grupo (emitidos juntos); validade; situação; impressões; campos de assinatura ICP-Brasil | `UNIQUE(company_id, number)`, `UNIQUE(verification_code)`; CHECK de tipo/situação; **imutável** (só situação, contadores e assinatura mudam); selo HMAC `content_hash` |
+| `patient_files` | Anexos (PDF/imagens) em disco privado: categoria, título, nome original, tipo detectado, tamanho, SHA-256, situação `active/archived` | nunca excluído; limite `storage_mb` do plano |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

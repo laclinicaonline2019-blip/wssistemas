@@ -335,3 +335,12 @@ fieldset.plain { border: 0; margin: 0; padding: 0; min-width: 0; }
 .badge.risk-azul { background: #2563eb; color: #fff; }
 details > summary { cursor: pointer; list-style: none; } details > summary::-webkit-details-marker { display: none; }
 .encounter-layout aside .input { width: 100%; }
+
+/* Documentos (Fase 6) */
+.doc-preview { display: block; width: 100%; height: 78vh; border: 0; background: #e9edf2; border-radius: var(--radius-sm); }
+.rx-row { border-left: 3px solid var(--primary); }
+.rx-row[data-control="antimicrobial"], .rx-row[data-control="C1"], .rx-row[data-control="C4"], .rx-row[data-control="C5"] { border-left-color: var(--warning); }
+.rx-row[data-control="A1"], .rx-row[data-control="A2"], .rx-row[data-control="A3"], .rx-row[data-control="B1"], .rx-row[data-control="B2"], .rx-row[data-control="C2"], .rx-row[data-control="C3"] { border-left-color: var(--danger); }
+.rx-row [data-rx-hint]:empty { display: none; }
+.rx-row [data-rx-hint] { color: var(--text-2); }
+.strong { font-weight: 700; }

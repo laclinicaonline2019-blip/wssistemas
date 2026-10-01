@@ -164,6 +164,23 @@ O sistema vem com uma **amostra** de CIDs e medicamentos (marcada como "exemplo"
 
 Diagnósticos já registrados guardam uma cópia do texto e não mudam com a importação.
 
+## Impressão de receitas e atestados
+
+- **A4 ou A5** (impressora comum/laser): ao emitir, o documento abre e o diálogo de impressão aparece.
+  No navegador, deixe **margens "nenhuma"**, escala 100% e desmarque "cabeçalhos e rodapés".
+- **Térmica (58/80 mm)**: receita simples, atestado e exames. Receita de controle especial sai só em
+  A4/A5 (2 vias com quadros de comprador/fornecedor).
+- **PDF**: botão "PDF" (gerado no servidor, não precisa de extensão extra do PHP além de `dom`,
+  `mbstring` e `gd`, já ativas na HostGator).
+- O QR Code do rodapé leva a `https://seu-dominio/validar/CÓDIGO` — a farmácia/empresa confere a
+  autenticidade sem login. Por isso o `APP_URL` do `.env` precisa ser o domínio real com `https`.
+
+## Anexos (exames, imagens)
+
+Limite padrão de 10 MB por arquivo (`UPLOAD_MAX_KB`). No cPanel → *Select PHP Version → Options*,
+ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os arquivos ficam em
+`storage/app/private` (fora do `public_html`) — inclua essa pasta no backup.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

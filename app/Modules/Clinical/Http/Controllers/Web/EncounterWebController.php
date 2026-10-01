@@ -9,6 +9,7 @@ use App\Modules\Clinical\Models\PatientAllergy;
 use App\Modules\Clinical\Models\Triage;
 use App\Modules\Clinical\Services\CidService;
 use App\Modules\Clinical\Services\EncounterService;
+use App\Modules\Documents\Models\MedicalDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -95,6 +96,7 @@ class EncounterWebController extends Controller
                 ->where('patient_id', $encounter->patient_id)->where('status', 'finalized')->whereKeyNot($encounter->id)
                 ->orderByDesc('started_at')->limit(10)->get(),
             'controlTypes' => Medication::CONTROL_TYPES,
+            'documents' => MedicalDocument::query()->where('encounter_id', $encounter->id)->orderBy('number')->get(),
         ];
     }
 }

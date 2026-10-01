@@ -1,0 +1,95 @@
+/*
+ * Documentos médicos (receita, atestado, exames…) — A4, A5 e térmica.
+ * Usado pelo navegador E pelo gerador de PDF (dompdf): apenas tabelas e blocos,
+ * sem flex/grid.
+ */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-serif; color: #000; font-size: 10pt; line-height: 1.4; background: #e9edf2; }
+.screen-only { }
+.print-toolbar { position: sticky; top: 0; padding: 10px 16px; background: #0b1220; color: #cfd8e6; font-size: 13px; z-index: 5; }
+.print-toolbar button, .print-toolbar a { display: inline-block; background: #1a6fe6; color: #fff; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 600; cursor: pointer; text-decoration: none; margin-right: 6px; font-size: 13px; }
+.print-toolbar a.secondary { background: #2a3550; }
+.print-toolbar span { margin-left: 8px; }
+
+/* Folha */
+.doc { background: #fff; position: relative; }
+.fmt-a4 .doc { width: 210mm; min-height: 297mm; padding: 14mm 16mm; margin: 16px auto; }
+.fmt-a5 .doc { width: 148mm; min-height: 210mm; padding: 9mm 10mm; margin: 16px auto; font-size: 9pt; }
+.doc + .doc { page-break-before: always; }
+.is-pdf body, body.is-pdf { background: #fff; }
+.is-pdf .doc { width: auto; min-height: 0; margin: 0; padding: 0; }
+.is-pdf .text { line-height: 1.55; }
+
+.hdr { width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; margin-bottom: 4mm; }
+.hdr td { vertical-align: top; padding: 0 0 2mm; }
+.hdr .r { text-align: right; }
+.clinic { font-size: 13pt; font-weight: bold; }
+.fmt-a5 .clinic { font-size: 11pt; }
+.muted { color: #333; font-size: 8pt; }
+.doctor-name { font-weight: bold; font-size: 10.5pt; }
+
+.title { text-align: center; font-size: 13pt; letter-spacing: 1px; text-transform: uppercase; margin: 2mm 0 1mm; }
+.via { text-align: center; font-size: 8.5pt; font-weight: bold; margin-bottom: 3mm; }
+.box { border: 1px solid #000; padding: 1.5mm 3mm; margin-bottom: 2.5mm; }
+.box-title { font-size: 7.5pt; font-weight: bold; text-transform: uppercase; margin-bottom: 1mm; }
+.kv { width: 100%; border-collapse: collapse; }
+.kv td { padding: .3mm 0; vertical-align: top; }
+.kv .k { width: 22mm; font-weight: bold; }
+
+.items { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; }
+.items td { padding: 1.5mm 0; vertical-align: top; }
+.items .n { width: 7mm; font-weight: bold; }
+.items .q { width: 38mm; text-align: right; font-weight: bold; }
+.items .posology { padding-top: 0; padding-left: 7mm; }
+.route { font-weight: bold; text-decoration: underline; margin-top: 3mm; }
+.text { text-align: justify; font-size: 11pt; line-height: 1.7; margin: 8mm 0; white-space: pre-line; }
+.fmt-a5 .text { font-size: 10pt; margin: 5mm 0; }
+.notes { margin-top: 3mm; white-space: pre-line; }
+.exams { margin: 3mm 0 3mm 2mm; padding-left: 5mm; }
+.exams li { margin-bottom: 1mm; }
+
+.place-date { margin-top: 5mm; text-align: right; }
+.sign { margin-top: 12mm; text-align: center; }
+.fmt-a5 .sign { margin-top: 11mm; }
+.sign-line { width: 75mm; margin: 0 auto 1mm; border-top: 1px solid #000; }
+.buyer { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+.buyer td { width: 50%; border: 1px solid #000; padding: 2mm; vertical-align: top; font-size: 8pt; height: 26mm; }
+
+.ftr { width: 100%; border-collapse: collapse; border-top: 1px solid #999; margin-top: 4mm; page-break-inside: avoid; font-size: 7.5pt; color: #222; }
+.ftr td { vertical-align: middle; padding-top: 2mm; }
+.ftr .qr { width: 21mm; }
+.ftr .qr img { width: 19mm; height: 19mm; }
+.stamp-cancelled { border: 3px solid #c00; color: #c00; font-weight: bold; font-size: 16pt; text-align: center; padding: 2mm; margin-bottom: 3mm; }
+.warning { border: 2px solid #000; padding: 3mm; font-weight: bold; margin: 3mm 0; }
+
+/* Térmica */
+.fmt-thermal { background: #fff; }
+.fmt-thermal .doc { margin: 0 auto; padding: 2mm; font-family: "DejaVu Sans Mono", "Courier New", monospace; font-size: 8.5pt; }
+.fmt-thermal.w80 .doc { width: 72mm; }
+.fmt-thermal.w58 .doc { width: 48mm; font-size: 7.5pt; }
+.fmt-thermal .clinic { font-size: 10pt; text-align: center; }
+.fmt-thermal .hdr td, .fmt-thermal .hdr .r { display: block; text-align: center; }
+.fmt-thermal .title { font-size: 10pt; }
+.fmt-thermal .text { font-size: 8.5pt; margin: 3mm 0; text-align: left; }
+.fmt-thermal .items .q { width: auto; }
+.fmt-thermal .sign { margin-top: 12mm; }
+.fmt-thermal .sign-line { width: 90%; }
+.fmt-thermal .ftr td { display: block; text-align: center; }
+.fmt-thermal .ftr .qr { width: auto; }
+
+@page { margin: 0; }
+@page a4 { size: A4; margin: 0; }
+@page a5 { size: A5; margin: 0; }
+@page thermal { margin: 0; }
+.fmt-a4 .doc { page: a4; } .fmt-a5 .doc { page: a5; } .fmt-thermal .doc { page: thermal; }
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .doc { margin: 0 !important; box-shadow: none; }
+  .fmt-a4 .doc { width: 210mm; min-height: 0; }
+  .fmt-a5 .doc { width: 148mm; min-height: 0; }
+}
+
+/* Pré-visualização dentro da tela do sistema (iframe mais estreito que a folha). */
+.is-preview .doc { zoom: .82; margin-top: 8px; }
+.is-preview.fmt-a5 .doc, .is-preview.fmt-thermal .doc { zoom: 1; }

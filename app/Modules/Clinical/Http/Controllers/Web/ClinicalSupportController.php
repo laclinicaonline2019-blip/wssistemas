@@ -131,7 +131,7 @@ class ClinicalSupportController extends Controller
         $q = $request->validate(['q' => ['required', 'string', 'min:2', 'max:80']])['q'];
 
         return response()->json(['data' => Medication::query()->search($q)->orderBy('active_ingredient')->limit(20)->get()->map(fn (Medication $m) => [
-            'id' => $m->id, 'label' => $m->label(), 'default_posology' => $m->default_posology,
+            'id' => $m->id, 'label' => $m->label(), 'default_posology' => $m->default_posology, 'route' => $m->route,
             'control_type' => $m->control_type, 'controlled' => $m->isControlled(),
         ])]);
     }

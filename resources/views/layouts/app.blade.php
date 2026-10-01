@@ -42,7 +42,7 @@
                 {!! $nav('specialties.index', 'specialties.*', 'tag', 'Especialidades', $can('medico.visualizar')) !!}
                 {!! $nav('workspace', ['workspace', 'encounters.*'], 'heart', 'Atendimento', $can('prontuario.editar')) !!}
                 {!! $nav('triage.index', 'triage.*', 'activity', 'Triagem', $can('triagem.registrar')) !!}
-                {!! $soon('file', 'Documentos', 'Fase 6') !!}
+                {!! $nav('documents.index', ['documents.*'], 'file', 'Documentos', $can('receita.imprimir') || $can('atestado.imprimir') || $can('documento.visualizar') || $can('exame.solicitar') || $can('prontuario.visualizar')) !!}
                 {!! $soon('cash', 'Financeiro', 'Fase 7') !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
             </ul>
@@ -65,7 +65,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.6.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.7.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

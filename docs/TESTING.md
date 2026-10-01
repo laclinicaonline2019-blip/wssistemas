@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (132 testes; 1–2 ignorados conforme o banco)
+## Cobertura atual (143 testes; 1–2 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -34,6 +34,8 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Clinical/EncounterTest` | pré-preenchimento pela triagem, **autosave com revisão (aba antiga não sobrescreve)**, finalização exige conteúdo mínimo, **versão finalizada imutável** (aplicação e trigger), **adendo mantém o original**, **cadeia de hash detecta adulteração no banco**, somente o médico autor, diagnósticos com cópia do texto e um principal, recepção sem acesso, acesso auditado sem conteúdo clínico, isolamento entre clínicas, atendimento avulso |
 | `Clinical/ClinicalCatalogTest` | importação da CID-10 no formato DATASUS (ISO-8859-1), busca sem acento/por código, favoritos primeiro, base global de medicamentos somente leitura e cadastros isolados por clínica, importação CSV de medicamentos, triagem imutável/validada, alergia duplicada bloqueada |
 | `Clinical/ClinicalWebTest` | fluxo web completo do médico (iniciar → autosave → finalizar → adendo), telas de triagem/medicamentos/plataforma, dados clínicos ocultos para a recepção |
+| `Documents/DocumentTest` | **receita separada pela Portaria 344/98** (simples, controle especial com validade, registro de notificação), quantidade/notificação obrigatórias, **documento imutável e adulteração detectada** (inclusive na validação pública), texto do atestado com dias por extenso, **CID só com autorização**, data retroativa bloqueada, permissões por perfil (recepção reimprime mas não emite), **cancelamento só pelo emitente**, contagem de vias, A4/A5/térmica/PDF, térmica proibida para controle especial, validação pública com iniciais, isolamento entre clínicas e atendimento de outro médico |
+| `Documents/DocumentWebTest` | emissão web dos 4 tipos (linhas em branco ignoradas, exames por linha), telas, cancelamento, menu por permissão, **anexos privados com tipo detectado pelo conteúdo**, download auditado, arquivar sem apagar, **limite de armazenamento do plano**, isolamento |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)

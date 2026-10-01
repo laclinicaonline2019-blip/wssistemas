@@ -31,6 +31,9 @@
 | Registro de acesso a prontuário | ✅ auditoria `medical_record.viewed` (web e API), início, finalização e adendos — **sem conteúdo clínico** na trilha (apenas versão e hash) | 5 |
 | Sigilo do prontuário | ✅ recepção/financeiro não veem dados clínicos; somente o médico autor edita; Super Admin não acessa prontuários | 5 |
 | Integridade e guarda (Lei 13.787/2018, CFM 1.821/2007) | ✅ versões imutáveis com hash encadeado; correções apenas por adendo; sem exclusão | 5 |
+| Validação pública de documentos | ✅ mostra só tipo, data, médico, situação e **iniciais** do paciente; código aleatório de 12 caracteres (não enumerável) e limite de consultas | 6 |
+| Anexos do paciente | ✅ área privada fora da pasta pública, por clínica; download somente autenticado, com permissão e auditado; nunca excluídos (arquivamento) | 6 |
+| CID em atestado | ✅ somente com autorização expressa do paciente (registrada no documento) | 6 |
 | Minimização | painel de chamadas mostra só senha/nome parcial; IA recebe o mínimo necessário | 4/12 |
 | Retenção | políticas configuráveis por tipo de dado, com rotinas agendadas | 17 |
 | Incidentes | procedimento em SECURITY.md | — |

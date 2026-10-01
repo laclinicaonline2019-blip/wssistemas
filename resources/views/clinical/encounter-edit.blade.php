@@ -151,6 +151,23 @@
         </section>
 
         <section class="card">
+            <div class="card__head"><h2>Documentos</h2></div>
+            <div class="card__body stack">
+                <div class="row">
+                    @if ($me->hasPermission('receita.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'prescription', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}" target="_blank" rel="noopener">Receita</a>@endif
+                    @if ($me->hasPermission('atestado.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'certificate', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}" target="_blank" rel="noopener">Atestado</a>@endif
+                    @if ($me->hasPermission('exame.solicitar'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'exam_request', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}" target="_blank" rel="noopener">Exames</a>@endif
+                    <a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'report', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}" target="_blank" rel="noopener">Outro</a>
+                </div>
+                @forelse ($documents as $d)
+                    <div class="spread small {{ $d->isCancelled() ? 'muted' : '' }}"><a href="{{ route('documents.show', $d) }}" target="_blank" rel="noopener">{{ $d->typeLabel() }} {{ $d->displayNumber() }}</a>@if ($d->isCancelled())<span class="badge badge-danger">cancelado</span>@endif</div>
+                @empty
+                    <p class="small muted">Nenhum documento emitido neste atendimento. Os documentos abrem em nova aba — o atendimento continua salvo aqui.</p>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="card">
             <div class="card__head"><h2>Histórico</h2></div>
             <div class="card__body">
                 <ul class="timeline">

@@ -2,6 +2,37 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.7.0] — 2026-10-01 — Fase 6: receitas, atestados, exames, documentos e impressão
+
+### Adicionado
+- **Receitas** com busca na base de medicamentos (posologia e via sugeridas) ou item digitado, separadas
+  automaticamente conforme a **Portaria SVS/MS 344/98**:
+  - venda livre → receita simples;
+  - antimicrobianos (RDC 471/2021) e listas C1/C4/C5 → **receituário de controle especial em 2 vias**
+    (identificação do emitente, endereço do paciente, quadros de comprador e fornecedor, validade de
+    10 ou 30 dias, quantidade obrigatória);
+  - listas A, B, C2 e C3 → exigem a **Notificação de Receita oficial** (talão): o sistema não imprime
+    receita para elas, apenas registra o número da notificação.
+- **Atestados** de afastamento (dias por extenso, período) e de comparecimento (horários); **CID somente
+  com autorização expressa do paciente** (Res. CFM 1.658/2002); data de início limitada (sem retroativo).
+- **Solicitação de exames** (lista com exames comuns em um clique, indicação clínica, CID, urgente) e
+  **relatório / declaração / encaminhamento** em texto livre.
+- **Impressão em A4, A5 e impressora térmica (58/80 mm) e PDF** (dompdf, funciona na HostGator).
+  Cabeçalho com clínica, unidade, CNPJ, médico, CRM, especialidade e RQE; data por extenso; linha de
+  assinatura; impressão automática ao abrir; "imprimir todos" para documentos emitidos juntos.
+- **Documento emitido é imutável**: número sequencial, selo HMAC do conteúdo e **código de verificação
+  com QR Code**. Página pública `/validar/{código}` mostra autenticidade, situação (válido/cancelado) e
+  dados mínimos (iniciais do paciente); detecta adulteração. Correção = **cancelamento com motivo**
+  (somente o médico emitente) + nova emissão.
+- Reimpressões contadas e auditadas ("Reimpressão — via nº N"); recepção pode reimprimir receitas e
+  atestados, mas não emitir nem cancelar; exames/relatórios só para quem tem acesso clínico.
+- **Arquivos do paciente** (resultados de exames, imagens, documentos): PDF/JPG/PNG/WEBP com tipo
+  detectado pelo conteúdo, área privada por clínica, acesso auditado, arquivar sem apagar, limite de
+  armazenamento do plano.
+- Documentos na tela do atendimento (abre em nova aba sem perder o rascunho), na ficha do paciente e no
+  menu **Documentos**. Arquitetura para assinatura digital ICP-Brasil (sem simulação).
+- API: `/documents` (emitir, listar, consultar, cancelar, PDF). 143 testes (MariaDB e PostgreSQL).
+
 ## [0.6.0] — 2026-10-01 — Fase 5: prontuário eletrônico, CID e medicamentos
 
 ### Adicionado

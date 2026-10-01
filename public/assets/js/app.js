@@ -290,6 +290,123 @@
     syncPrimary();
   }
 
+  // Documentos (Fase 6): receita com busca de medicamentos, seletor de CID, atestado e exames.
+  var jsonGet = function (url) {
+    return fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }).then(function (r) { return r.ok ? r.json() : { data: [] }; });
+  };
+  var NOTIF = ['A1', 'A2', 'A3', 'B1', 'B2', 'C2', 'C3'], SPECIAL = ['antimicrobial', 'C1', 'C4', 'C5'];
+  var rxHint = function (row) {
+    var ctl = row.getAttribute('data-control') || 'none';
+    var hint = $('[data-rx-hint]', row), notif = $('[data-rx-notification]', row);
+    notif.classList.toggle('hidden', NOTIF.indexOf(ctl) < 0);
+    hint.textContent = NOTIF.indexOf(ctl) >= 0 ? 'Lista ' + ctl + ': exige Notificação de Receita oficial (talão). Informe o número e a quantidade — não sai na receita impressa.'
+      : SPECIAL.indexOf(ctl) >= 0 ? 'Controle especial (' + (ctl === 'antimicrobial' ? 'antimicrobiano' : ctl) + '): sai em receita de controle especial, 2 vias. Quantidade obrigatória.' : '';
+  };
+  var rxForm = $('[data-rx-form]');
+  if (rxForm) {
+    var rows = $('[data-rx-rows]', rxForm), tpl = $('#rx-template'), seq = 1000;
+    var addRow = function (m) {
+      var frag = tpl.content.cloneNode(true), idx = String(seq++);
+      $$('[name]', frag).forEach(function (el) { el.name = el.name.replace('__I__', idx); });
+      var row = frag.querySelector('[data-rx-row]');
+      if (m) {
+        $('[data-rx-med-id]', row).value = m.id;
+        var name = $('[data-rx-name]', row); name.value = m.label; name.readOnly = true;
+        var ctl = $('[data-rx-control]', row); ctl.value = m.control_type; ctl.disabled = true;
+        $('[data-rx-posology]', row).value = m.default_posology || '';
+        $('[data-rx-route]', row).value = m.route || '';
+        row.setAttribute('data-control', m.control_type);
+      }
+      // remove a linha vazia inicial
+      $$('[data-rx-row]', rows).forEach(function (r) {
+        if (!$('[data-rx-med-id]', r).value && !$('[data-rx-name]', r).value && !$('[data-rx-posology]', r).value) r.remove();
+      });
+      rows.appendChild(frag); rxHint(row);
+      (m ? $('[data-rx-quantity]', row) : $('[data-rx-name]', row)).focus();
+    };
+    $$('[data-rx-row]', rows).forEach(rxHint);
+    var mq = $('[data-med-q]', rxForm), ml = $('[data-med-list]', rxForm), mt = null;
+    mq.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') ev.preventDefault(); });
+    mq.addEventListener('input', function () {
+      clearTimeout(mt);
+      var term = mq.value.trim();
+      if (term.length < 2) { ml.classList.add('hidden'); return; }
+      mt = setTimeout(function () {
+        jsonGet(rxForm.getAttribute('data-med-url') + '?q=' + encodeURIComponent(term)).then(function (j) {
+          ml.innerHTML = '';
+          var items = j.data || [];
+          if (!items.length) ml.innerHTML = '<div class="lookup__item muted">Nenhum medicamento na base — use "item digitado manualmente".</div>';
+          items.forEach(function (m) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'lookup__item';
+            b.textContent = m.label + (m.controlled ? '  [' + (m.control_type === 'antimicrobial' ? 'antimicrobiano' : m.control_type) + ']' : '');
+            b.addEventListener('click', function () { addRow(m); mq.value = ''; ml.classList.add('hidden'); });
+            ml.appendChild(b);
+          });
+          ml.classList.remove('hidden');
+        });
+      }, 250);
+    });
+    rxForm.addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-rx-add]')) addRow(null);
+      var rm = ev.target.closest('[data-rx-remove]');
+      if (rm) { rm.closest('[data-rx-row]').remove(); if (!$$('[data-rx-row]', rows).length) addRow(null); }
+    });
+    rxForm.addEventListener('change', function (ev) {
+      if (ev.target.matches('[data-rx-control]')) { var r = ev.target.closest('[data-rx-row]'); r.setAttribute('data-control', ev.target.value); rxHint(r); }
+    });
+  }
+
+  $$('[data-cid-picker]').forEach(function (box) {
+    var q = $('[data-cid-q]', box), list = $('[data-cid-list]', box), val = $('[data-cid-value]', box);
+    var sel = $('[data-cid-selected]', box), wrap = $('[data-cid-search-wrap]', box), t = null;
+    q.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') ev.preventDefault(); });
+    q.addEventListener('input', function () {
+      clearTimeout(t);
+      if (q.value.trim().length < 2) { list.classList.add('hidden'); return; }
+      t = setTimeout(function () {
+        jsonGet(box.getAttribute('data-cid-picker') + '?q=' + encodeURIComponent(q.value.trim())).then(function (j) {
+          list.innerHTML = '';
+          (j.data || []).forEach(function (c) {
+            var b = document.createElement('button');
+            b.type = 'button'; b.className = 'lookup__item'; b.textContent = c.code + ' — ' + c.description;
+            b.addEventListener('click', function () {
+              val.value = c.id; $('[data-cid-label]', box).textContent = c.code + ' — ' + c.description;
+              sel.classList.remove('hidden'); wrap.classList.add('hidden'); list.classList.add('hidden'); q.value = '';
+            });
+            list.appendChild(b);
+          });
+          list.classList.remove('hidden');
+        });
+      }, 250);
+    });
+    box.addEventListener('click', function (ev) {
+      if (ev.target.closest('[data-cid-clear]')) { val.value = ''; sel.classList.add('hidden'); wrap.classList.remove('hidden'); q.focus(); }
+    });
+  });
+
+  // Mostra/oculta blocos por opção (ex.: atestado afastamento × comparecimento)
+  var syncToggles = function () {
+    $$('[data-toggle-show]').forEach(function (el) {
+      var parts = el.getAttribute('data-toggle-show').split(':');
+      var checked = $('[data-toggle-group="' + parts[0] + '"]:checked');
+      var on = checked && checked.value === parts[1];
+      el.classList.toggle('hidden', !on);
+      $$('input, select, textarea', el).forEach(function (i) { i.disabled = !on; });
+    });
+  };
+  if ($('[data-toggle-show]')) { syncToggles(); document.addEventListener('change', function (ev) { if (ev.target.matches('[data-toggle-group]')) syncToggles(); }); }
+
+  // Acrescenta uma linha a um textarea (ex.: exames comuns)
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-append-line]');
+    if (!b) return;
+    var ta = $(b.getAttribute('data-append-line')), v = b.getAttribute('data-value');
+    var lines = ta.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.indexOf(v) < 0) lines.push(v);
+    ta.value = lines.join('\n') + '\n'; ta.focus();
+  });
+
   // Página de teste de impressão abre o diálogo automaticamente
   if (document.body.hasAttribute('data-autoprint')) {
     window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });

@@ -9,6 +9,8 @@ use App\Modules\Clinical\Http\Controllers\Web\DoctorWorkspaceController;
 use App\Modules\Clinical\Http\Controllers\Web\EncounterWebController;
 use App\Modules\Doctors\Http\Controllers\Web\DoctorWebController;
 use App\Modules\Doctors\Http\Controllers\Web\SpecialtyWebController;
+use App\Modules\Documents\Http\Controllers\Web\DocumentWebController;
+use App\Modules\Documents\Http\Controllers\Web\PatientFileController;
 use App\Modules\Identity\Http\Controllers\Web\AccountController;
 use App\Modules\Identity\Http\Controllers\Web\LoginController;
 use App\Modules\Identity\Http\Controllers\Web\RoleWebController;
@@ -174,6 +176,19 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::get('medicamentos', [ClinicalSupportController::class, 'medications'])->middleware('permission:medicamento.gerenciar')->name('medications.index');
     Route::post('medicamentos', [ClinicalSupportController::class, 'medicationStore'])->middleware('permission:medicamento.gerenciar')->name('medications.store');
     Route::put('medicamentos/{medication}', [ClinicalSupportController::class, 'medicationUpdate'])->middleware('permission:medicamento.gerenciar')->name('medications.update');
+
+    // Fase 6 — documentos médicos e anexos do paciente (permissão por tipo verificada no controller)
+    Route::get('documentos', [DocumentWebController::class, 'index'])->name('documents.index');
+    Route::get('documentos/novo', [DocumentWebController::class, 'create'])->name('documents.create');
+    Route::post('documentos', [DocumentWebController::class, 'store'])->middleware('throttle:60,1')->name('documents.store');
+    Route::get('documentos/grupo/{group}/imprimir', [DocumentWebController::class, 'printGroup'])->where('group', '[0-9A-Za-z]{26}')->name('documents.print_group');
+    Route::get('documentos/{document}', [DocumentWebController::class, 'show'])->name('documents.show');
+    Route::get('documentos/{document}/imprimir', [DocumentWebController::class, 'print'])->name('documents.print');
+    Route::get('documentos/{document}/pdf', [DocumentWebController::class, 'pdf'])->middleware('throttle:30,1')->name('documents.pdf');
+    Route::post('documentos/{document}/cancelar', [DocumentWebController::class, 'cancel'])->name('documents.cancel');
+    Route::post('pacientes/{patient}/arquivos', [PatientFileController::class, 'store'])->middleware(['permission:documento.anexar', 'throttle:30,1'])->name('patient_files.store');
+    Route::get('arquivos/{file}', [PatientFileController::class, 'download'])->middleware('permission:documento.visualizar|prontuario.visualizar')->name('patient_files.download');
+    Route::patch('arquivos/{file}/arquivar', [PatientFileController::class, 'archive'])->middleware('permission:documento.anexar')->name('patient_files.archive');
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');

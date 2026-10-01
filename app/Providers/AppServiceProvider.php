@@ -6,6 +6,8 @@ use App\Core\Access\PermissionRegistry;
 use App\Core\Access\PermissionService;
 use App\Core\Install\Installer;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Documents\Signature\DocumentSigner;
+use App\Modules\Documents\Signature\NoSigner;
 use App\Modules\Identity\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(PermissionService::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->bind(DocumentSigner::class, NoSigner::class);
     }
 
     public function boot(): void

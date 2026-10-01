@@ -36,6 +36,15 @@ WhatsApp Business **Cloud API (Meta)**. Webhook `GET` (verify token) e `POST` (a
 `X-Hub-Signature-256` com App Secret) → evento enfileirado → IA/atendente. Mensagens proativas
 (lembretes, confirmações) somente com **templates aprovados** e opt-in. Idempotência por `wamid`.
 
+## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)
+
+Receita e atestado **digitais** só valem com assinatura qualificada ICP-Brasil (MP 2.200-2/2001,
+Lei 14.063/2020, Res. CFM 2.299/2021). Interface `App\Modules\Documents\Signature\DocumentSigner`
+(`sign(document, pdf) → {pdf, reference}`), driver em `SIGNATURE_DRIVER` (padrão `none`). Integração
+prevista com certificados em nuvem (BirdID, VIDaaS, SafeID, Certillion) gerando PDF PAdES; os campos
+`signature_*` de `medical_documents` já existem. **Nada é simulado**: sem provedor configurado, o
+documento é impresso e assinado de próprio punho.
+
 ## Outras
 
 - **E-mail:** SMTP/SES; **SMS:** adapter (Zenvia/Twilio).

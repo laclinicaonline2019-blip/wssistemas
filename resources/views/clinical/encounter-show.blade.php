@@ -65,6 +65,26 @@
     </section>
 @endforeach
 
+@if ($documents->isNotEmpty() || $isAuthor)
+    <section class="card mb-2">
+        <div class="card__head"><h2>Documentos emitidos</h2>
+            @if ($isAuthor)<div class="row">
+                @if (auth()->user()->hasPermission('receita.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'prescription', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}">Receita</a>@endif
+                @if (auth()->user()->hasPermission('atestado.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'certificate', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}">Atestado</a>@endif
+                @if (auth()->user()->hasPermission('exame.solicitar'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'exam_request', 'patient_id' => $patient->id, 'encounter_id' => $encounter->id]) }}">Exames</a>@endif
+            </div>@endif
+        </div>
+        <div class="card__body">
+            @forelse ($documents as $d)
+                <div class="spread {{ $d->isCancelled() ? 'muted' : '' }}"><a href="{{ route('documents.show', $d) }}">{{ $d->typeLabel() }} {{ $d->displayNumber() }}</a>
+                    <span class="small">{{ $d->issued_at->timezone($tz)->format('d/m/Y H:i') }} @if ($d->isCancelled())<span class="badge badge-danger">cancelado</span>@endif</span></div>
+            @empty
+                <p class="small muted">Nenhum documento emitido neste atendimento.</p>
+            @endforelse
+        </div>
+    </section>
+@endif
+
 @if ($history->isNotEmpty())
     <section class="card">
         <div class="card__head"><h2>Outros atendimentos do paciente</h2></div>

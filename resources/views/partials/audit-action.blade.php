@@ -25,7 +25,9 @@
         'medical_record.finalized' => 'Atendimento finalizado (prontuário)', 'medical_record.addendum' => 'Adendo ao prontuário',
         'triage.recorded' => 'Triagem registrada', 'patient_allergy.created' => 'Alergia registrada', 'patient_allergy.updated' => 'Alergia alterada',
         'medication.created' => 'Medicamento cadastrado', 'medication.updated' => 'Medicamento alterado',
-        'catalog.cid_imported' => 'Base CID importada', 'catalog.medications_imported' => 'Base de medicamentos importada',
+        'catalog.cid_imported' => 'Base CID importada',
+        'document.issued' => 'Documento médico emitido', 'document.printed' => 'Documento impresso', 'document.cancelled' => 'Documento cancelado',
+        'patient_file.created' => 'Arquivo anexado ao paciente', 'patient_file.updated' => 'Arquivo do paciente arquivado/restaurado', 'patient_file.downloaded' => 'Arquivo do paciente acessado', 'catalog.medications_imported' => 'Base de medicamentos importada',
     ];
     $cls = ['success' => 'badge-success', 'failure' => 'badge-danger', 'denied' => 'badge-warning'][$log->result] ?? '';
 @endphp

@@ -54,4 +54,36 @@ final class Format
     {
         return $name === null ? null : Str::of($name)->squish()->toString();
     }
+
+    /** Número por extenso (0–999), ex.: 15 → "quinze" — usado em atestados ("3 (três) dias"). */
+    public static function numberInWords(int $n): string
+    {
+        $units = ['zero', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze', 'treze',
+            'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+        $tens = [2 => 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+        $hundreds = [1 => 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+
+        if ($n < 0 || $n > 999) {
+            return (string) $n;
+        }
+        if ($n < 20) {
+            return $units[$n];
+        }
+        if ($n < 100) {
+            return $tens[intdiv($n, 10)].($n % 10 ? ' e '.$units[$n % 10] : '');
+        }
+        if ($n === 100) {
+            return 'cem';
+        }
+
+        return $hundreds[intdiv($n, 100)].($n % 100 ? ' e '.self::numberInWords($n % 100) : '');
+    }
+
+    /** Iniciais do nome ("Maria da Silva Souza" → "M. S. S.") — exibição pública mínima. */
+    public static function initials(?string $name): string
+    {
+        return collect(preg_split('/\s+/', trim((string) $name)))
+            ->reject(fn ($w) => $w === '' || in_array(mb_strtolower($w), ['da', 'de', 'do', 'das', 'dos', 'e'], true))
+            ->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)).'.')->implode(' ');
+    }
 }

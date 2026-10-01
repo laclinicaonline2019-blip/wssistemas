@@ -163,6 +163,71 @@
 </div>
 @endif
 
+@if ($documents !== null || $files !== null)
+<div class="grid grid-2 mt-2">
+    @if ($documents !== null)
+        <section class="card">
+            <div class="card__head"><h2>Documentos emitidos</h2><a class="btn btn-sm" href="{{ route('documents.index', ['patient_id' => $patient->id]) }}">Ver todos</a></div>
+            <div class="card__body stack">
+                @if (! $patient->isAnonymized() && $patient->status === 'active')
+                    <div class="row">
+                        @if ($me->hasPermission('receita.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'prescription', 'patient_id' => $patient->id]) }}">Receita</a>@endif
+                        @if ($me->hasPermission('atestado.emitir'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'certificate', 'patient_id' => $patient->id]) }}">Atestado</a>@endif
+                        @if ($me->hasPermission('exame.solicitar'))<a class="btn btn-sm" href="{{ route('documents.create', ['type' => 'exam_request', 'patient_id' => $patient->id]) }}">Exames</a>@endif
+                    </div>
+                @endif
+                @forelse ($documents as $d)
+                    <div class="spread small {{ $d->isCancelled() ? 'muted' : '' }}">
+                        <span><a href="{{ route('documents.show', $d) }}">{{ $d->typeLabel() }} {{ $d->displayNumber() }}</a> · {{ $d->doctor->displayName() }}</span>
+                        <span>{{ $d->issued_at->timezone('America/Sao_Paulo')->format('d/m/Y') }} @if ($d->isCancelled())<span class="badge badge-danger">cancelado</span>@endif</span>
+                    </div>
+                @empty
+                    <p class="small muted">Nenhum documento emitido.</p>
+                @endforelse
+            </div>
+        </section>
+    @endif
+    @if ($files !== null)
+        <section class="card">
+            <div class="card__head"><h2>Arquivos e exames anexados</h2></div>
+            <div class="card__body stack">
+                @php $canView = $me->hasPermission('documento.visualizar') || $me->hasPermission('prontuario.visualizar'); @endphp
+                @forelse ($files as $f)
+                    <div class="spread small {{ $f->status === 'archived' ? 'muted' : '' }}">
+                        <span>@if ($canView)<a href="{{ route('patient_files.download', [$f, 'inline' => 1]) }}" target="_blank" rel="noopener">{{ $f->title }}</a>@else{{ $f->title }}@endif
+                            <span class="muted">· {{ \App\Modules\Documents\Models\PatientFile::CATEGORIES[$f->category] }} · {{ $f->sizeLabel() }} · {{ $f->created_at->timezone('America/Sao_Paulo')->format('d/m/Y') }} · {{ $f->uploader?->name }}</span>
+                            @if ($f->status === 'archived')<span class="badge">arquivado</span>@endif</span>
+                        @if ($me->hasPermission('documento.anexar'))
+                            <form method="post" action="{{ route('patient_files.archive', $f) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $f->status === 'active' ? 'Arquivar' : 'Restaurar' }}</button></form>
+                        @endif
+                    </div>
+                @empty
+                    <p class="small muted">Nenhum arquivo anexado.</p>
+                @endforelse
+                @if (! $patient->isAnonymized() && $me->hasPermission('documento.anexar'))
+                    <form method="post" action="{{ route('patient_files.store', $patient) }}" enctype="multipart/form-data" class="stack">
+                        @csrf
+                        <div class="row">
+                            <label class="sr-only" for="pf-file">Arquivo</label>
+                            <input id="pf-file" type="file" name="file" class="input" accept="application/pdf,image/jpeg,image/png,image/webp" required>
+                            <label class="sr-only" for="pf-cat">Categoria</label>
+                            <select id="pf-cat" name="category" class="input w-auto">@foreach (\App\Modules\Documents\Models\PatientFile::CATEGORIES as $k => $l)<option value="{{ $k }}">{{ $l }}</option>@endforeach</select>
+                        </div>
+                        <div class="row">
+                            <label class="sr-only" for="pf-title">Título</label>
+                            <input id="pf-title" name="title" class="input" maxlength="150" placeholder="Título (ex.: Hemograma 10/2026)">
+                            <button class="btn" type="submit">Anexar</button>
+                        </div>
+                        @error('file')<div class="field-error">{{ $message }}</div>@enderror
+                        <p class="help">PDF, JPG, PNG ou WEBP até {{ (int) (config('aivexa.uploads.max_kb', 10240) / 1024) }} MB. Arquivos ficam em área privada e cada acesso é registrado.</p>
+                    </form>
+                @endif
+            </div>
+        </section>
+    @endif
+</div>
+@endif
+
 <section class="card mt-2">
     <div class="card__head"><h2>Histórico de alterações do cadastro</h2></div>
     <div class="card__body">

@@ -6,6 +6,9 @@ use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Modules\Clinical\Models\Encounter;
 use App\Modules\Clinical\Models\PatientAllergy;
+use App\Modules\Documents\Models\MedicalDocument;
+use App\Modules\Documents\Models\PatientFile;
+use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Patients\Http\Requests\PatientRequest;
@@ -13,6 +16,7 @@ use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Services\PatientService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -58,6 +62,9 @@ class PatientWebController extends Controller
             // Dados clínicos só para quem tem acesso ao prontuário (sigilo médico).
             'encounters' => $clinical ? Encounter::query()->with(['doctor:id,name,social_name', 'diagnoses', 'branch:id,name'])
                 ->where('patient_id', $patient->id)->orderByDesc('started_at')->limit(30)->get() : null,
+            'documents' => $this->documentsFor($request->user(), $patient),
+            'files' => $clinical || $request->user()->hasPermission('documento.visualizar') || $request->user()->hasPermission('documento.anexar')
+                ? PatientFile::query()->with('uploader:id,name')->where('patient_id', $patient->id)->orderBy('status')->orderByDesc('created_at')->limit(50)->get() : null,
             'allergies' => $clinical || $request->user()->hasPermission('triagem.registrar')
                 ? PatientAllergy::query()->where('patient_id', $patient->id)->orderBy('status')->orderByDesc('created_at')->get() : null,
         ]);
@@ -115,5 +122,16 @@ class PatientWebController extends Controller
     private function branches()
     {
         return Branch::query()->active()->accessible($this->context->allowedBranchIds())->orderByDesc('is_headquarters')->orderBy('name')->get(['id', 'name']);
+    }
+
+    /** Documentos do paciente que o usuário pode ver/imprimir (por tipo). */
+    private function documentsFor(User $user, Patient $patient): ?Collection
+    {
+        $types = array_values(array_filter(array_keys(MedicalDocument::TYPES), function ($t) use ($user) {
+            return collect((array) MedicalDocument::permissionFor($t, 'print'))->contains(fn ($p) => $user->hasPermission($p));
+        }));
+
+        return $types === [] ? null : MedicalDocument::query()->with('doctor:id,name,social_name')->where('patient_id', $patient->id)
+            ->whereIn('type', $types)->orderByDesc('issued_at')->limit(20)->get();
     }
 }

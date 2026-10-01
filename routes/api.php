@@ -5,6 +5,7 @@ use App\Modules\Clinical\Http\Controllers\Api\ClinicalController;
 use App\Modules\Clinical\Http\Controllers\Api\EncounterController;
 use App\Modules\Doctors\Http\Controllers\Api\DoctorController;
 use App\Modules\Doctors\Http\Controllers\Api\SpecialtyController;
+use App\Modules\Documents\Http\Controllers\Api\DocumentController;
 use App\Modules\Identity\Http\Controllers\Api\AuthController;
 use App\Modules\Identity\Http\Controllers\Api\RoleController;
 use App\Modules\Identity\Http\Controllers\Api\TwoFactorController;
@@ -132,6 +133,13 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::post('patients/{patient}/allergies', [ClinicalController::class, 'storeAllergy'])->middleware('permission:prontuario.editar|triagem.registrar')->name('allergies.store');
             Route::get('cid', [ClinicalController::class, 'cid'])->middleware('permission:prontuario.editar|prontuario.visualizar')->name('cid.search');
             Route::get('medications', [ClinicalController::class, 'medications'])->middleware('permission:prontuario.editar|medicamento.gerenciar')->name('medications.search');
+
+            // Fase 6 — documentos médicos (permissão por tipo verificada no controller)
+            Route::get('documents', [DocumentController::class, 'index'])->name('documents.index');
+            Route::post('documents', [DocumentController::class, 'store'])->middleware('throttle:60,1')->name('documents.store');
+            Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
+            Route::post('documents/{document}/cancel', [DocumentController::class, 'cancel'])->name('documents.cancel');
+            Route::get('documents/{document}/pdf', [DocumentController::class, 'pdf'])->middleware('throttle:30,1')->name('documents.pdf');
 
             Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
             Route::middleware('permission:fila.gerenciar')->group(function () {

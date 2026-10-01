@@ -44,4 +44,20 @@ return [
         'retorno' => ['prefix' => 'R', 'label' => 'Retorno', 'priority' => false],
         'prioridade' => ['prefix' => 'P', 'label' => 'Prioridade (Lei 10.048/2000)', 'priority' => true],
     ],
+
+    /*
+    | Anexos do paciente (PDF/imagens) — disco privado. Na HostGator confirme no
+    | "Select PHP Version → Options" que upload_max_filesize/post_max_size ≥ este valor.
+    */
+    'uploads' => [
+        'max_kb' => (int) env('UPLOAD_MAX_KB', 10240),
+    ],
+
+    /*
+    | Assinatura digital ICP-Brasil (receita/atestado digitais). "none" = documentos
+    | impressos e assinados de próprio punho. Provedores em nuvem: integração futura.
+    */
+    'signature' => [
+        'driver' => env('SIGNATURE_DRIVER', 'none'),
+    ],
 ];
