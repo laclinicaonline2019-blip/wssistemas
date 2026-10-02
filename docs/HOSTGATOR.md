@@ -194,6 +194,20 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
    subordinado Cielo** de cada médico. Não precisa de nada instalado no servidor (o cartão é tokenizado
    no navegador do paciente).
 
+## Convênios e faturamento TISS
+
+1. *Convênios → Procedimentos (TUSS)*: importe a planilha TUSS da ANS (salve como CSV `codigo;descricao`)
+   ou cadastre os procedimentos usados. Os exemplos da demonstração estão marcados "confira na TUSS".
+2. *Convênios e tabelas*: cadastre a operadora com o **registro ANS** e o **código do prestador** que a
+   operadora deu à clínica; crie a tabela de valores contratada; marque os médicos credenciados.
+3. *Filiais*: informe o **CNES** de cada unidade. *Médicos → Agenda*: vincule o procedimento TUSS ao tipo de
+   atendimento (ex.: Consulta → 10101012).
+4. No cadastro do paciente, escolha o convênio cadastrado na carteirinha.
+5. Fluxo: chegada gera a guia → conferir → "pronta" → *Lotes* → fechar (XML validado) → baixar e enviar no
+   portal da operadora → registrar protocolo → registrar o retorno e tratar glosas.
+6. Nada disso precisa de recurso extra no servidor: a validação usa a extensão `libxml`/`dom` do PHP,
+   presente na HostGator.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

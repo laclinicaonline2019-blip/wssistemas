@@ -72,6 +72,8 @@
                     <div class="field col-3"><label class="label" for="sp-{{ $s->id }}">Valor (R$)</label><input id="sp-{{ $s->id }}" name="price" class="input" value="{{ number_format($s->price_cents / 100, 2, ',', '.') }}" inputmode="decimal"></div>
                     <div class="field col-2"><label class="label" for="sd-{{ $s->id }}">Min</label><input id="sd-{{ $s->id }}" name="duration_minutes" type="number" class="input" value="{{ $s->duration_minutes }}" min="5"></div>
                     <div class="col-3 form-actions"><button class="btn btn-sm" type="submit">Salvar</button></div>
+                    <div class="field col-12"><label class="label" for="spr-{{ $s->id }}">Procedimento faturado no convênio (TUSS)</label>
+                        <select id="spr-{{ $s->id }}" name="procedure_id" class="input"><option value="">—</option>@foreach ($procedures as $p)<option value="{{ $p->id }}" @selected($s->procedure_id === $p->id)>{{ $p->code }} — {{ $p->name }}</option>@endforeach</select></div>
                     <div class="col-12 row small">
                         <label class="check"><input type="checkbox" name="accepts_private" value="1" @checked($s->accepts_private)><span>Particular</span></label>
                         <label class="check"><input type="checkbox" name="accepts_insurance" value="1" @checked($s->accepts_insurance)><span>Convênio</span></label>
@@ -87,6 +89,8 @@
                 <x-field name="name" label="Nome" col="col-5" placeholder="Consulta, Retorno…" required />
                 <x-field name="price" label="Valor particular (R$)" col="col-4" placeholder="250,00" inputmode="decimal" />
                 <x-field name="duration_minutes" label="Duração (min)" type="number" col="col-3" help="Vazio = da grade" />
+                <div class="field col-12"><label class="label" for="spr-new">Procedimento faturado no convênio (TUSS)</label>
+                    <select id="spr-new" name="procedure_id" class="input"><option value="">—</option>@foreach ($procedures as $p)<option value="{{ $p->id }}">{{ $p->code }} — {{ $p->name }}</option>@endforeach</select></div>
                 <div class="col-12 row small">
                     <label class="check"><input type="checkbox" name="accepts_private" value="1" checked><span>Particular</span></label>
                     <label class="check"><input type="checkbox" name="accepts_insurance" value="1"><span>Convênio</span></label>

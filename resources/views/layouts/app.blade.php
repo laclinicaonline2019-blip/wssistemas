@@ -45,6 +45,7 @@
                 {!! $nav('documents.index', ['documents.*'], 'file', 'Documentos', $can('receita.imprimir') || $can('atestado.imprimir') || $can('documento.visualizar') || $can('exame.solicitar') || $can('prontuario.visualizar')) !!}
                 {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
                 {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
+                {!! $nav($can('convenio.faturar') ? 'guides.index' : ($can('convenio.autorizar') ? 'authorizations.index' : 'insurers.index'), ['insurers.*', 'procedures.*', 'authorizations.*', 'guides.*', 'batches.*'], 'shield', 'Convênios', $can('convenio.visualizar') || $can('convenio.gerenciar') || $can('convenio.autorizar') || $can('convenio.faturar')) !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
             </ul>
             @php
@@ -67,7 +68,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.9.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.10.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

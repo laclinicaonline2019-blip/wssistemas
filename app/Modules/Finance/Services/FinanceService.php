@@ -172,7 +172,8 @@ class FinanceService
                 throw new BusinessRuleViolation('Valor maior que o saldo ('.Format::money($balance).'). Para dinheiro, informe o valor da conta e devolva o troco.', 'amount_exceeds_balance');
             }
 
-            $session = $this->sessionFor($actor, $data['method']);
+            // Pagamento de convênio (transferência da operadora) não passa pelo caixa do operador.
+            $session = ! empty($data['outside_cash']) && $data['method'] !== 'cash' ? null : $this->sessionFor($actor, $data['method']);
             $txn = null;
 
             if ($amount > 0) {
@@ -353,6 +354,9 @@ class FinanceService
 
             if ($o->gateway && $actor !== null) {
                 throw new BusinessRuleViolation('Recebimento online: use "Estornar no gateway" na cobrança (o dinheiro precisa voltar pelo gateway).', 'use_gateway_refund');
+            }
+            if ($o->receivable_id && $o->kind === 'receipt' && Receivable::query()->whereKey($o->receivable_id)->value('origin') === 'insurance') {
+                throw new BusinessRuleViolation('Pagamento de lote de convênio é registrado pelo retorno do lote (guias, glosas e repasses dependem dele) e não pode ser estornado por aqui.', 'insurance_payment_not_reversible');
             }
             if ($o->kind === 'fee') {
                 throw new BusinessRuleViolation('Tarifa do gateway é lançada automaticamente e não pode ser estornada.', 'fee_not_reversible');

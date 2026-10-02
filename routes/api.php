@@ -11,6 +11,7 @@ use App\Modules\Identity\Http\Controllers\Api\AuthController;
 use App\Modules\Identity\Http\Controllers\Api\RoleController;
 use App\Modules\Identity\Http\Controllers\Api\TwoFactorController;
 use App\Modules\Identity\Http\Controllers\Api\UserController;
+use App\Modules\Insurance\Http\Controllers\Api\InsuranceController;
 use App\Modules\Organization\Http\Controllers\Api\BranchController;
 use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Payments\Http\Controllers\Api\ChargeController;
@@ -166,6 +167,26 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::post('charges/{charge}/sync', [ChargeController::class, 'sync'])->middleware(['permission:pagamento.visualizar|pagamento.cobrar', 'throttle:30,1'])->name('charges.sync');
             Route::post('charges/{charge}/cancel', [ChargeController::class, 'cancel'])->middleware('permission:pagamento.cobrar')->name('charges.cancel');
             Route::post('charges/{charge}/refund', [ChargeController::class, 'refund'])->middleware('permission:pagamento.estornar')->name('charges.refund');
+
+            // Fase 9 — convênios
+            Route::middleware('permission:convenio.visualizar|convenio.gerenciar|convenio.autorizar|convenio.faturar')->group(function () {
+                Route::get('insurers', [InsuranceController::class, 'insurers'])->name('insurers.index');
+                Route::get('procedures', [InsuranceController::class, 'procedures'])->name('procedures.index');
+                Route::get('insurance/price', [InsuranceController::class, 'price'])->name('insurance.price');
+            });
+            Route::middleware('permission:convenio.autorizar|convenio.faturar')->group(function () {
+                Route::get('insurance/authorizations', [InsuranceController::class, 'authorizations'])->name('insurance.authorizations.index');
+                Route::post('insurance/authorizations', [InsuranceController::class, 'storeAuthorization'])->name('insurance.authorizations.store');
+                Route::post('insurance/authorizations/{authorization}/decision', [InsuranceController::class, 'decideAuthorization'])->name('insurance.authorizations.decide');
+            });
+            Route::middleware('permission:convenio.faturar')->group(function () {
+                Route::get('insurance/guides', [InsuranceController::class, 'guides'])->name('insurance.guides.index');
+                Route::get('insurance/guides/{guide}', [InsuranceController::class, 'guide'])->name('insurance.guides.show');
+                Route::post('insurance/guides/{guide}/ready', [InsuranceController::class, 'ready'])->name('insurance.guides.ready');
+                Route::get('insurance/batches', [InsuranceController::class, 'batches'])->name('insurance.batches.index');
+                Route::get('insurance/batches/{batch}', [InsuranceController::class, 'batchShow'])->name('insurance.batches.show');
+                Route::get('insurance/batches/{batch}/xml', [InsuranceController::class, 'batchXml'])->name('insurance.batches.xml');
+            });
 
             Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
             Route::middleware('permission:fila.gerenciar')->group(function () {

@@ -9,6 +9,10 @@ use App\Modules\Doctors\Services\DoctorService;
 use App\Modules\Identity\Models\Role;
 use App\Modules\Identity\Models\RoleAssignment;
 use App\Modules\Identity\Models\User;
+use App\Modules\Insurance\Models\Insurer;
+use App\Modules\Insurance\Models\PriceItem;
+use App\Modules\Insurance\Models\PriceTable;
+use App\Modules\Insurance\Models\Procedure;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Services\PatientService;
@@ -34,6 +38,10 @@ use RuntimeException;
 class DemoSeeder extends Seeder
 {
     public const PASSWORD = 'Demo@12345';
+
+    private ?string $demoInsurerId = null;
+
+    private ?string $demoPlanId = null;
 
     public function run(TenantContext $context, CompanyProvisioningService $provisioning): void
     {
@@ -138,7 +146,7 @@ class DemoSeeder extends Seeder
                 'city' => 'São Paulo', 'state' => 'SP',
                 'home_branch_id' => $i % 3 === 0 ? $filial->id : $matriz->id,
                 'contacts' => $isMinor ? [['type' => 'guardian', 'name' => $faker->firstName().' '.$faker->lastName().' '.$faker->lastName(), 'relationship' => 'mãe', 'phone' => '11988887777']] : [],
-                'insurances' => $i % 2 ? [['insurer_name' => 'Convênio Demonstração', 'plan_name' => 'Básico', 'card_number' => 'DEMO'.str_pad((string) $i, 8, '0', STR_PAD_LEFT), 'valid_until' => now()->addYear()->format('Y-m-d'), 'is_primary' => true]] : [],
+                'insurances' => $i % 2 ? [['insurer_id' => $this->demoInsurerId, 'plan_id' => $this->demoPlanId, 'insurer_name' => 'Convênio Demonstração (fictício)', 'plan_name' => 'Básico', 'card_number' => 'DEMO'.str_pad((string) $i, 8, '0', STR_PAD_LEFT), 'valid_until' => now()->addYear()->format('Y-m-d'), 'is_primary' => true]] : [],
             ], confirmDuplicate: true);
         }
 
@@ -161,9 +169,21 @@ class DemoSeeder extends Seeder
 
         $config->saveTemplate($carla, ['branch_id' => $filial->id, 'room_id' => $r3->id, 'weekday' => 1, 'start_time' => '14:00', 'end_time' => '17:00', 'slot_minutes' => 30]);
 
+        // Convênios (Fase 9): operadora FICTÍCIA, tabela de valores e procedimento TUSS de consulta.
+        $consulta = Procedure::create(['table_code' => '22', 'code' => '10101012', 'name' => 'Consulta em consultório (no horário normal ou preestabelecido)', 'kind' => 'consultation', 'is_sample' => true]);
+        $hemograma = Procedure::create(['table_code' => '22', 'code' => '40304361', 'name' => 'Hemograma com contagem de plaquetas ou frações', 'kind' => 'exam', 'is_sample' => true]);
+        $insurer = Insurer::create(['name' => 'Convênio Demonstração (fictício)', 'ans_registry' => '999999', 'provider_code' => 'DEMO0001',
+            'payment_term_days' => 30, 'notes' => 'Operadora fictícia para demonstração — não envie XML deste convênio.']);
+        $this->demoPlanId = $insurer->plans()->create(['name' => 'Básico'])->id;
+        $this->demoInsurerId = $insurer->id;
+        $table = PriceTable::create(['insurer_id' => $insurer->id, 'name' => 'Tabela demonstração', 'valid_from' => now()->startOfYear()->toDateString()]);
+        PriceItem::create(['price_table_id' => $table->id, 'procedure_id' => $consulta->id, 'price_cents' => 12000]);
+        PriceItem::create(['price_table_id' => $table->id, 'procedure_id' => $hemograma->id, 'price_cents' => 1500, 'requires_authorization' => true, 'copay_type' => 'percent', 'copay_value' => 3000]);
+        $matriz->update(['cnes' => '9999999']);
+
         foreach ([[$carla, 35000], [$rafael, 28000], [$beatriz, 30000]] as [$doctor, $price]) {
-            $config->saveService($doctor, ['name' => 'Consulta', 'price_cents' => $price, 'accepts_insurance' => true]);
-            $config->saveService($doctor, ['name' => 'Retorno', 'price_cents' => 0, 'is_return' => true, 'accepts_insurance' => true]);
+            $config->saveService($doctor, ['name' => 'Consulta', 'price_cents' => $price, 'accepts_insurance' => true, 'procedure_id' => $consulta->id]);
+            $config->saveService($doctor, ['name' => 'Retorno', 'price_cents' => 0, 'is_return' => true, 'accepts_insurance' => true, 'procedure_id' => $consulta->id]);
         }
 
         foreach ([$matriz, $filial] as $branch) {

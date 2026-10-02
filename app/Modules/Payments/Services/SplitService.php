@@ -20,8 +20,7 @@ use Illuminate\Support\Facades\DB;
  * Split / repasse médico.
  *
  * Para cada recebimento de conta com médico, a regra mais específica (tipo de
- * atendimento + pagador > tipo de atendimento > pagador > geral) define a parte do
- * médico. Se a cobrança foi feita no ASAAS com a carteira do médico, o próprio
+ * atendimento > convênio > pagador > geral) define a parte do médico. Se a cobrança foi feita no ASAAS com a carteira do médico, o próprio
  * gateway separa o dinheiro (split NATIVO, já liquidado). Caso contrário (dinheiro,
  * maquininha, Cielo), a parte vira REPASSE INTERNO pendente, pago no fechamento.
  * Estorno do recebimento desfaz o split (ou gera devolução, se já foi repassado).
@@ -38,11 +37,50 @@ class SplitService
 
         $serviceId = $r->appointment_id ? DB::table('appointments')->where('id', $r->appointment_id)->value('service_id') : null;
 
-        return SplitRule::query()->where('doctor_id', $r->doctor_id)->where('is_active', true)->get()
+        return $this->ruleForDoctor($r->doctor_id, $serviceId, $r->payer_type, null);
+    }
+
+    /** Regra mais específica: tipo de atendimento > convênio > pagador > geral (empate: a mais recente). */
+    public function ruleForDoctor(string $doctorId, ?string $serviceId, ?string $payerType, ?string $insurerId): ?SplitRule
+    {
+        return SplitRule::query()->where('doctor_id', $doctorId)->where('is_active', true)->get()
             ->filter(fn (SplitRule $rule) => ($rule->doctor_service_id === null || $rule->doctor_service_id === $serviceId)
-                && ($rule->payer_type === null || $rule->payer_type === $r->payer_type))
-            ->sortByDesc(fn (SplitRule $rule) => [($rule->doctor_service_id ? 2 : 0) + ($rule->payer_type ? 1 : 0), $rule->created_at?->timestamp])
+                && ($rule->payer_type === null || $rule->payer_type === $payerType)
+                && ($rule->insurer_id === null || $rule->insurer_id === $insurerId))
+            ->sortByDesc(fn (SplitRule $rule) => [($rule->doctor_service_id ? 4 : 0) + ($rule->insurer_id ? 2 : 0) + ($rule->payer_type ? 1 : 0), $rule->created_at?->timestamp])
             ->first();
+    }
+
+    /**
+     * Pagamento de lote de convênio: um recebimento cobre guias de vários médicos. A parte de
+     * cada médico é calculada guia a guia (regra da guia) e somada num repasse interno por médico.
+     *
+     * @param  iterable<array{doctor_id: string, service_id: ?string, insurer_id: string, paid_cents: int}>  $guides
+     */
+    public function applyForInsurance(FinancialTransaction $txn, iterable $guides): void
+    {
+        $byDoctor = [];
+
+        foreach ($guides as $g) {
+            if ($g['paid_cents'] <= 0 || ! ($rule = $this->ruleForDoctor($g['doctor_id'], $g['service_id'], 'insurance', $g['insurer_id']))) {
+                continue;
+            }
+            $byDoctor[$g['doctor_id']] ??= ['base' => 0, 'amount' => 0, 'rules' => []];
+            $byDoctor[$g['doctor_id']]['base'] += $g['paid_cents'];
+            $byDoctor[$g['doctor_id']]['amount'] += $rule->shareOf($g['paid_cents']);
+            $byDoctor[$g['doctor_id']]['rules'][$rule->id] = true;
+        }
+
+        foreach ($byDoctor as $doctorId => $d) {
+            if ($d['amount'] <= 0) {
+                continue;
+            }
+            PaymentSplit::create([
+                'doctor_id' => $doctorId, 'receivable_id' => $txn->receivable_id, 'transaction_id' => $txn->id,
+                'split_rule_id' => count($d['rules']) === 1 ? array_key_first($d['rules']) : null,
+                'base_cents' => $d['base'], 'amount_cents' => $d['amount'], 'mode' => 'internal', 'status' => 'pending', 'source' => null,
+            ]);
+        }
     }
 
     /**
@@ -109,25 +147,24 @@ class SplitService
     /** Estorno: desfaz o split pendente ou registra devolução do que já foi repassado. */
     public function reverseFor(FinancialTransaction $reversal): void
     {
-        $split = PaymentSplit::query()->where('transaction_id', $reversal->reversal_of)->lockForUpdate()->first();
+        // Um recebimento pode ter splits de vários médicos (lote de convênio).
+        $splits = PaymentSplit::query()->where('transaction_id', $reversal->reversal_of)->where('status', '!=', 'reversed')->lockForUpdate()->get();
 
-        if (! $split || $split->status === 'reversed') {
-            return;
+        foreach ($splits as $split) {
+            if ($split->status === 'pending' || $split->mode === 'native') {
+                // Pendente: simplesmente não será repassado. Nativo: o estorno no gateway desfaz o split.
+                $split->update(['status' => 'reversed']);
+
+                continue;
+            }
+
+            // Já repassado internamente: devolução descontada no próximo fechamento.
+            PaymentSplit::create([
+                'doctor_id' => $split->doctor_id, 'receivable_id' => $split->receivable_id, 'transaction_id' => $reversal->id,
+                'split_rule_id' => $split->split_rule_id, 'base_cents' => -$split->base_cents, 'amount_cents' => -$split->amount_cents,
+                'mode' => 'internal', 'status' => 'pending',
+            ]);
         }
-
-        if ($split->status === 'pending' || $split->mode === 'native') {
-            // Pendente: simplesmente não será repassado. Nativo: o estorno no gateway desfaz o split.
-            $split->update(['status' => 'reversed']);
-
-            return;
-        }
-
-        // Já repassado internamente: devolução descontada no próximo fechamento.
-        PaymentSplit::create([
-            'doctor_id' => $split->doctor_id, 'receivable_id' => $split->receivable_id, 'transaction_id' => $reversal->id,
-            'split_rule_id' => $split->split_rule_id, 'base_cents' => -$split->base_cents, 'amount_cents' => -$split->amount_cents,
-            'mode' => 'internal', 'status' => 'pending',
-        ]);
     }
 
     /**

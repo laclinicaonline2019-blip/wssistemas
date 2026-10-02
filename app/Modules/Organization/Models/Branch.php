@@ -16,7 +16,7 @@ class Branch extends Model
     protected string $auditName = 'branch';
 
     protected $fillable = [
-        'name', 'code', 'is_headquarters', 'document', 'email', 'phone', 'zip_code', 'street',
+        'name', 'code', 'is_headquarters', 'document', 'cnes', 'email', 'phone', 'zip_code', 'street',
         'number', 'complement', 'district', 'city', 'state', 'timezone', 'status', 'settings',
     ];
 

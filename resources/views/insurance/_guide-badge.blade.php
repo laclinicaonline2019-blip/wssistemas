@@ -1,0 +1,2 @@
+<span class="badge {{ ['draft' => 'badge-warning', 'ready' => 'badge-info', 'billed' => 'badge-primary', 'paid' => 'badge-success', 'partial' => 'badge-warning', 'denied' => 'badge-danger'][$g->status] ?? '' }}">{{ $g->statusLabel() }}</span>
+@if ($g->glosa_status)<span class="badge {{ in_array($g->glosa_status, ['pending', 'appealed'], true) ? 'badge-danger' : '' }}">{{ \App\Modules\Insurance\Models\Guide::GLOSA_STATUSES[$g->glosa_status] }}</span>@endif

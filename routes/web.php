@@ -20,6 +20,9 @@ use App\Modules\Identity\Http\Controllers\Web\AccountController;
 use App\Modules\Identity\Http\Controllers\Web\LoginController;
 use App\Modules\Identity\Http\Controllers\Web\RoleWebController;
 use App\Modules\Identity\Http\Controllers\Web\UserWebController;
+use App\Modules\Insurance\Http\Controllers\Web\BatchWebController;
+use App\Modules\Insurance\Http\Controllers\Web\GuideWebController;
+use App\Modules\Insurance\Http\Controllers\Web\InsurerWebController;
 use App\Modules\Organization\Http\Controllers\Web\BranchWebController;
 use App\Modules\Patients\Http\Controllers\Web\PatientWebController;
 use App\Modules\Payments\Http\Controllers\Web\ChargeWebController;
@@ -242,6 +245,59 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::patch('financeiro/repasses/regras/{rule}', [SplitWebController::class, 'toggleRule'])->middleware('permission:financeiro.repasse')->name('splits.rules.toggle');
     Route::put('financeiro/repasses/medicos/{doctor}/carteira', [SplitWebController::class, 'wallet'])->middleware('permission:financeiro.repasse')->name('splits.wallet');
     Route::post('financeiro/repasses/medicos/{doctor}/fechar', [SplitWebController::class, 'settle'])->middleware('permission:financeiro.repasse')->name('splits.settle');
+
+    // Fase 9 — convênios: cadastro, tabelas, autorizações, guias, lotes TISS e glosas
+    Route::middleware('permission:convenio.visualizar|convenio.gerenciar')->group(function () {
+        Route::get('convenios', [InsurerWebController::class, 'index'])->name('insurers.index');
+        Route::get('convenios/{insurer}', [InsurerWebController::class, 'show'])->name('insurers.show');
+        Route::get('convenios/tabelas/{table}', [InsurerWebController::class, 'showTable'])->name('insurers.tables.show');
+    });
+    Route::middleware('permission:convenio.gerenciar')->group(function () {
+        Route::post('convenios', [InsurerWebController::class, 'store'])->name('insurers.store');
+        Route::put('convenios/{insurer}', [InsurerWebController::class, 'update'])->name('insurers.update');
+        Route::post('convenios/{insurer}/planos', [InsurerWebController::class, 'storePlan'])->name('insurers.plans.store');
+        Route::patch('convenios/planos/{plan}', [InsurerWebController::class, 'togglePlan'])->name('insurers.plans.toggle');
+        Route::put('convenios/{insurer}/medicos', [InsurerWebController::class, 'doctors'])->name('insurers.doctors');
+        Route::post('convenios/{insurer}/tabelas', [InsurerWebController::class, 'storeTable'])->name('insurers.tables.store');
+        Route::put('convenios/tabelas/{table}', [InsurerWebController::class, 'updateTable'])->name('insurers.tables.update');
+        Route::post('convenios/tabelas/{table}/itens', [InsurerWebController::class, 'storeItem'])->name('insurers.tables.items.store');
+        Route::delete('convenios/tabelas/{table}/itens/{item}', [InsurerWebController::class, 'destroyItem'])->name('insurers.tables.items.destroy');
+        Route::get('procedimentos', [InsurerWebController::class, 'procedures'])->name('procedures.index');
+        Route::post('procedimentos', [InsurerWebController::class, 'storeProcedure'])->name('procedures.store');
+        Route::patch('procedimentos/{procedure}', [InsurerWebController::class, 'toggleProcedure'])->name('procedures.toggle');
+        Route::post('procedimentos/importar', [InsurerWebController::class, 'importProcedures'])->middleware('throttle:10,1')->name('procedures.import');
+    });
+    Route::middleware('permission:convenio.autorizar|convenio.faturar')->group(function () {
+        Route::get('autorizacoes', [GuideWebController::class, 'authorizations'])->name('authorizations.index');
+        Route::post('autorizacoes', [GuideWebController::class, 'storeAuthorization'])->name('authorizations.store');
+        Route::post('autorizacoes/{authorization}/resposta', [GuideWebController::class, 'decideAuthorization'])->name('authorizations.decide');
+        Route::post('autorizacoes/{authorization}/cancelar', [GuideWebController::class, 'cancelAuthorization'])->name('authorizations.cancel');
+    });
+    Route::middleware('permission:convenio.faturar')->group(function () {
+        Route::get('guias', [GuideWebController::class, 'index'])->name('guides.index');
+        Route::get('guias/nova', [GuideWebController::class, 'create'])->name('guides.create');
+        Route::post('guias', [GuideWebController::class, 'store'])->name('guides.store');
+        Route::post('agenda/{appointment}/guia', [GuideWebController::class, 'fromAppointment'])->name('guides.from_appointment');
+        Route::get('guias/{guide}', [GuideWebController::class, 'show'])->name('guides.show');
+        Route::put('guias/{guide}', [GuideWebController::class, 'update'])->name('guides.update');
+        Route::post('guias/{guide}/itens', [GuideWebController::class, 'addItem'])->name('guides.items.store');
+        Route::delete('guias/{guide}/itens/{item}', [GuideWebController::class, 'removeItem'])->name('guides.items.destroy');
+        Route::post('guias/{guide}/pronta', [GuideWebController::class, 'ready'])->name('guides.ready');
+        Route::post('guias/{guide}/rascunho', [GuideWebController::class, 'draft'])->name('guides.draft');
+        Route::post('guias/{guide}/cancelar', [GuideWebController::class, 'cancel'])->name('guides.cancel');
+        Route::post('guias/{guide}/cobrar-paciente', [GuideWebController::class, 'chargePatient'])->name('guides.charge_patient');
+        Route::get('guias/{guide}/imprimir', [GuideWebController::class, 'print'])->name('guides.print');
+        Route::post('guias/{guide}/glosa', [BatchWebController::class, 'glosa'])->name('guides.glosa');
+        Route::get('lotes', [BatchWebController::class, 'index'])->name('batches.index');
+        Route::post('lotes', [BatchWebController::class, 'store'])->name('batches.store');
+        Route::get('lotes/{batch}', [BatchWebController::class, 'show'])->name('batches.show');
+        Route::delete('lotes/{batch}/guias/{guide}', [BatchWebController::class, 'removeGuide'])->name('batches.guides.destroy');
+        Route::post('lotes/{batch}/fechar', [BatchWebController::class, 'close'])->name('batches.close');
+        Route::get('lotes/{batch}/xml', [BatchWebController::class, 'xml'])->name('batches.xml');
+        Route::post('lotes/{batch}/envio', [BatchWebController::class, 'sent'])->name('batches.sent');
+        Route::post('lotes/{batch}/cancelar', [BatchWebController::class, 'cancel'])->name('batches.cancel');
+        Route::post('lotes/{batch}/retorno', [BatchWebController::class, 'registerReturn'])->name('batches.return');
+    });
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');

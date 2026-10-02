@@ -6,6 +6,7 @@ use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRuleViolation;
 use App\Modules\Finance\Services\FinanceService;
 use App\Modules\Identity\Models\User;
+use App\Modules\Insurance\Services\GuideService;
 use App\Modules\Queue\Models\QueueTicket;
 use App\Modules\Queue\Services\QueueService;
 use App\Modules\Scheduling\Models\Appointment;
@@ -18,6 +19,7 @@ class AppointmentService
         private readonly QueueService $queue,
         private readonly AuditLogger $audit,
         private readonly FinanceService $finance,
+        private readonly GuideService $guides,
     ) {}
 
     public function confirm(User $actor, Appointment $appointment, string $channel = 'reception'): Appointment
@@ -60,6 +62,12 @@ class AppointmentService
             $this->transition($appointment, 'arrived', ['arrived_at' => now()]);
             // Particular com valor: gera a conta a receber para o caixa cobrar.
             $this->finance->receivableForAppointment($appointment, $actor);
+            // Convênio: abre a guia do atendimento. Pendência de cadastro (convênio não cadastrado,
+            // médico não credenciado…) não impede a chegada — a guia é gerada depois, na tela do agendamento.
+            try {
+                $this->guides->forAppointment($appointment, $actor);
+            } catch (BusinessRuleViolation) {
+            }
 
             return $this->queue->issue($actor, [
                 'branch_id' => $appointment->branch_id,

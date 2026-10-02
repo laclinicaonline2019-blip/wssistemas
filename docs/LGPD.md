@@ -27,6 +27,7 @@
 | Correção | ✅ edição com histórico de alterações (tela do paciente) | 3 |
 | Anonimização / eliminação | ✅ anonimização irreversível de dados cadastrais (`paciente.anonimizar`, empresa toda, com motivo/protocolo); mantém nº de prontuário, ano de nascimento, sexo e cidade/UF. **Prontuário não é eliminado** antes do prazo legal (20 anos — Lei 13.787/2018) | 3 |
 | Registro de acesso ao cadastro | ✅ auditoria `patient.viewed` (web e API) | 3 |
+| Faturamento ao convênio (Fase 9) | Guias e lotes guardam a carteirinha do beneficiário pelo prazo legal de guarda (cumprimento de obrigação legal/contratual — art. 7º, II e V; art. 11, II, "a"). Na anonimização, a carteirinha usada em guia fica inativa e mascarada no cadastro; a guia faturada é preservada | 9 |
 | Minimização em listas | ✅ CPF mascarado em listagens e busca | 3 |
 | Registro de acesso a prontuário | ✅ auditoria `medical_record.viewed` (web e API), início, finalização e adendos — **sem conteúdo clínico** na trilha (apenas versão e hash) | 5 |
 | Sigilo do prontuário | ✅ recepção/financeiro não veem dados clínicos; somente o médico autor edita; Super Admin não acessa prontuários | 5 |

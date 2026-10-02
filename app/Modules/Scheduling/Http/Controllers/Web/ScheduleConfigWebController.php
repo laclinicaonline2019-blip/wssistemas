@@ -6,6 +6,7 @@ use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Models\Specialty;
+use App\Modules\Insurance\Models\Procedure;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Scheduling\Http\Requests\DoctorServiceRequest;
 use App\Modules\Scheduling\Http\Requests\HolidayRequest;
@@ -37,6 +38,7 @@ class ScheduleConfigWebController extends Controller
             'rooms' => Room::query()->active()->whereIn('branch_id', $doctor->branches->pluck('id'))->orderBy('name')->get(),
             'blocks' => ScheduleBlock::query()->where('doctor_id', $doctor->id)->where('ends_at', '>=', now())->orderBy('starts_at')->get(),
             'branches' => $this->branches()->whereIn('id', $doctor->branches->pluck('id')),
+            'procedures' => Procedure::query()->where('is_active', true)->orderBy('code')->get(['id', 'code', 'name']),
         ]);
     }
 

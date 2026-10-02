@@ -8,6 +8,7 @@ use App\Core\Support\SequenceGenerator;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Identity\Models\User;
+use App\Modules\Insurance\Services\InsuranceCatalog;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Models\PatientInsurance;
@@ -32,6 +33,7 @@ class BookingService
     public function __construct(
         private readonly AvailabilityService $availability,
         private readonly SequenceGenerator $sequences,
+        private readonly InsuranceCatalog $insuranceCatalog,
         private readonly TenantContext $context,
         private readonly AuditLogger $audit,
     ) {}
@@ -65,7 +67,7 @@ class BookingService
 
                 [$start, $end, $template] = $this->validateTime($doctor, $branch, $data['starts_at'], $service, $overbook);
                 $this->ensurePatientFree($patient, $start, $end);
-                [$payer, $insuranceId, $price] = $this->pricing($patient, $service, $data['payer_type'] ?? 'private', $data['patient_insurance_id'] ?? null);
+                [$payer, $insuranceId, $price] = $this->pricing($patient, $service, $data['payer_type'] ?? 'private', $data['patient_insurance_id'] ?? null, $doctor->id, $start->timezone($branch->timezone ?: 'America/Sao_Paulo')->toDateString());
 
                 $appointment = new Appointment([
                     'branch_id' => $branch->id,
@@ -206,14 +208,14 @@ class BookingService
     }
 
     /** @return array{0: string, 1: ?string, 2: int} */
-    private function pricing(Patient $patient, ?DoctorService $service, string $payer, ?string $insuranceId): array
+    private function pricing(Patient $patient, ?DoctorService $service, string $payer, ?string $insuranceId, string $doctorId, string $date): array
     {
         if ($payer === 'insurance') {
             if ($service && ! $service->accepts_insurance) {
                 throw new BusinessRuleViolation('Este atendimento não é realizado por convênio.', 'insurance_not_accepted');
             }
 
-            $insurance = PatientInsurance::query()->where('patient_id', $patient->id)->whereKey($insuranceId)->first();
+            $insurance = PatientInsurance::query()->where('patient_id', $patient->id)->where('is_active', true)->whereKey($insuranceId)->first();
 
             if (! $insurance) {
                 throw new BusinessRuleViolation('Selecione o convênio do paciente.', 'insurance_required');
@@ -223,7 +225,12 @@ class BookingService
                 throw new BusinessRuleViolation('Carteirinha do convênio vencida.', 'insurance_expired');
             }
 
-            // Valor do convênio é definido pela tabela do convênio (Fase 9).
+            // Convênio cadastrado: ativo, médico credenciado e carteirinha válida na data da consulta.
+            if ($insurance->insurer_id) {
+                $this->insuranceCatalog->assertCoverage($insurance, $doctorId, $date);
+            }
+
+            // Valor do convênio vem da tabela do convênio, na guia (Fase 9); o paciente não paga no balcão.
             return ['insurance', $insurance->id, 0];
         }
 

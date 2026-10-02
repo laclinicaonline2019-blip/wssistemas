@@ -15,6 +15,7 @@
             <x-field name="name" label="Nome" :value="$branch->name" col="col-8" required maxlength="150" />
             <x-field name="code" label="Código" :value="$branch->code" col="col-4" required maxlength="30" help="Ex.: CENTRO, FIL02" />
             <x-field name="document" label="CNPJ da filial" :value="$branch->document" col="col-4" mask="cnpj" />
+            <x-field name="cnes" label="CNES" :value="$branch->cnes" col="col-4" maxlength="7" inputmode="numeric" help="Cadastro Nacional de Estabelecimentos de Saúde (guias TISS)" />
             <x-field name="phone" label="Telefone" :value="$branch->phone" col="col-4" mask="phone" />
             <x-field name="email" label="E-mail" type="email" :value="$branch->email" col="col-4" />
             <x-field name="zip_code" label="CEP" :value="$branch->zip_code" col="col-3" mask="cep" />

@@ -2,6 +2,8 @@
 
 namespace App\Modules\Scheduling\Http\Requests;
 
+use App\Core\Validation\ExistsInTenant;
+use App\Modules\Insurance\Models\Procedure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,11 +37,12 @@ class DoctorServiceRequest extends FormRequest
             'is_telemedicine' => ['sometimes', 'boolean'],
             'is_return' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
+            'procedure_id' => ['sometimes', 'nullable', 'string', 'size:26', new ExistsInTenant(Procedure::class)],
         ];
     }
 
     public function attributes(): array
     {
-        return ['name' => 'nome', 'price_cents' => 'valor', 'duration_minutes' => 'duração'];
+        return ['name' => 'nome', 'price_cents' => 'valor', 'duration_minutes' => 'duração', 'procedure_id' => 'procedimento do convênio'];
     }
 }

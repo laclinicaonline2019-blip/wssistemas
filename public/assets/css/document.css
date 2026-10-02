@@ -93,3 +93,13 @@ body { margin: 0; font-family: "DejaVu Sans", "Helvetica Neue", Arial, sans-seri
 /* Pré-visualização dentro da tela do sistema (iframe mais estreito que a folha). */
 .is-preview .doc { zoom: .82; margin-top: 8px; }
 .is-preview.fmt-a5 .doc, .is-preview.fmt-thermal .doc { zoom: 1; }
+
+/* Guia de convênio (espelho TISS) */
+.grid-items { width: 100%; border-collapse: collapse; margin: 3mm 0 4mm; font-size: 9pt; }
+.grid-items th, .grid-items td { border: .2mm solid #999; padding: 1.2mm 1.5mm; text-align: left; vertical-align: top; }
+.grid-items th { background: #f2f2f2; }
+.grid-items .r { text-align: right; }
+.sign-row { display: flex; gap: 10mm; justify-content: space-between; }
+.sign-row .sign { flex: 1; }
+.guide-kv .k { width: 30mm; padding-right: 2mm; }
+.grid-items .r { white-space: nowrap; }

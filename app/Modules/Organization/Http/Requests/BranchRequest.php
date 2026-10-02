@@ -44,6 +44,7 @@ class BranchRequest extends FormRequest
                     ->whereNull('deleted_at')
                     ->ignore($branch?->id)],
             'document' => ['nullable', new Cnpj],
+            'cnes' => ['nullable', 'regex:/^\d{7}$/'],
             'email' => ['nullable', 'email:rfc', 'max:190'],
             'phone' => ['nullable', 'string', 'max:20'],
             'zip_code' => ['nullable', 'digits:8'],
@@ -59,6 +60,6 @@ class BranchRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['name' => 'nome', 'code' => 'código', 'document' => 'CNPJ', 'zip_code' => 'CEP', 'state' => 'UF'];
+        return ['name' => 'nome', 'code' => 'código', 'document' => 'CNPJ', 'cnes' => 'CNES', 'zip_code' => 'CEP', 'state' => 'UF'];
     }
 }

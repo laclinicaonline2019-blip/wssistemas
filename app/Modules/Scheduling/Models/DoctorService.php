@@ -16,7 +16,7 @@ class DoctorService extends Model
 
     protected string $auditName = 'doctor_service';
 
-    protected $fillable = ['doctor_id', 'name', 'duration_minutes', 'price_cents', 'accepts_private', 'accepts_insurance', 'is_telemedicine', 'is_return', 'is_active'];
+    protected $fillable = ['doctor_id', 'name', 'duration_minutes', 'price_cents', 'accepts_private', 'accepts_insurance', 'is_telemedicine', 'is_return', 'is_active', 'procedure_id'];
 
     protected $attributes = ['is_active' => true, 'accepts_private' => true, 'accepts_insurance' => false, 'is_telemedicine' => false, 'is_return' => false, 'price_cents' => 0];
 

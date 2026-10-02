@@ -64,11 +64,17 @@
     </section>
 
     <section class="card">
-        <div class="card__head"><h2>Convênios</h2></div>
+        <div class="card__head"><h2>Convênios</h2>
+            @if ($patient->insurances->whereNotNull('insurer_id')->isNotEmpty())
+                <div class="row">
+                    @if (auth()->user()->hasPermission('convenio.autorizar') || auth()->user()->hasPermission('convenio.faturar'))<a class="btn btn-sm" href="{{ route('authorizations.index', ['patient_id' => $patient->id]) }}">Solicitar autorização</a>@endif
+                    @if (auth()->user()->hasPermission('convenio.faturar'))<a class="btn btn-sm" href="{{ route('guides.create', ['patient_id' => $patient->id]) }}">Guia avulsa</a>@endif
+                </div>
+            @endif</div>
         <div class="card__body stack">
             @forelse ($patient->insurances as $i)
                 <div class="spread">
-                    <div><strong>{{ $i->insurer_name }}</strong> {{ $i->plan_name ? '· '.$i->plan_name : '' }} @if ($i->is_primary)<span class="badge badge-primary">principal</span>@endif
+                    <div><strong>{{ $i->insurer_name }}</strong> {{ $i->plan_name ? '· '.$i->plan_name : '' }} @unless ($i->insurer_id)<span class="badge" title="Vincule ao convênio cadastrado para faturar">não vinculado</span>@endunless @if ($i->is_primary)<span class="badge badge-primary">principal</span>@endif
                         <div class="small muted mono">{{ $i->card_number }}</div></div>
                     <div class="small">@if ($i->valid_until)
                         @if ($i->isExpired())<span class="badge badge-danger">vencida {{ $i->valid_until->format('d/m/Y') }}</span>@else<span class="muted">válida até {{ $i->valid_until->format('d/m/Y') }}</span>@endif

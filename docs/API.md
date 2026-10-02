@@ -132,6 +132,22 @@ e `POST /pagar/{token}/cartao` recebem apenas o `PaymentToken`).
 Situações: `pending`, `paid`, `overdue`, `cancelled`, `refunded`, `failed`, `review` (valor divergente,
 duplicidade, chargeback — exige conferência).
 
+### Convênios (Fase 9)
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| GET | `/insurers` | `convenio.*` — convênios ativos com planos e médicos credenciados |
+| GET | `/procedures?q=` | `convenio.*` — procedimentos ativos (código/descrição) |
+| GET | `/insurance/price?insurer_id=&plan_id=&procedure_id=&date=` | `convenio.*` — valor vigente (`price_cents`, `requires_authorization`, coparticipação) ou `null` |
+| GET/POST | `/insurance/authorizations` | `convenio.autorizar\|convenio.faturar` — `{patient_id, patient_insurance_id, branch_id, procedure_id, doctor_id?, quantity?}` |
+| POST | `/insurance/authorizations/{id}/decision` | `{decision: authorized\|denied, password?, operator_guide_number?, valid_until?, denial_reason?}` — `authorization_decided` (409) |
+| GET | `/insurance/guides` · `/insurance/guides/{id}` | `convenio.faturar` — detalhe com itens e `issues` (pendências) |
+| POST | `/insurance/guides/{id}/ready` | `guide_incomplete`, `guide_locked` (409) |
+| GET | `/insurance/batches` · `/{id}` · `/{id}/xml` | `convenio.faturar` — XML TISS (ISO-8859-1) |
+
+Agendamento por convênio (`payer_type: insurance`) passa a retornar `insurance_expired`, `insurer_inactive`,
+`doctor_not_credentialed`. Montagem/fechamento de lote, retorno e glosas são feitos pela interface web.
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |

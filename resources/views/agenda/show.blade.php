@@ -40,6 +40,17 @@
                         @endif
                     @elseif ($appointment->payer_type === 'private' && $appointment->price_cents > 0)
                         <span class="small muted">· a cobrança é gerada na chegada</span>
+                    @endif
+                    @if ($appointment->payer_type === 'insurance')
+                        <span class="small muted mono">· carteirinha {{ $appointment->insurance?->card_number }}</span>
+                        @if ($guide)
+                            @include('insurance._guide-badge', ['g' => $guide])
+                            @if (auth()->user()->hasPermission('convenio.faturar'))<a class="btn btn-sm" href="{{ route('guides.show', $guide) }}">Guia {{ $guide->number }}</a>@endif
+                        @elseif ($appointment->arrived_at && auth()->user()->hasPermission('convenio.faturar'))
+                            <form method="post" action="{{ route('guides.from_appointment', $appointment) }}" class="inline">@csrf<button class="btn btn-sm btn-primary" type="submit">Gerar guia do convênio</button></form>
+                        @else
+                            <span class="small muted">· a guia do convênio é gerada na chegada</span>
+                        @endif
                     @endif</dd>
                 <dt>Paciente</dt><dd><a href="{{ route('patients.show', $appointment->patient) }}">#{{ $appointment->patient->record_number }} {{ $appointment->patient->displayName() }}</a>
                     <div class="small muted">{{ Format::phone($appointment->patient->whatsapp ?? $appointment->patient->phone) }}</div></dd>

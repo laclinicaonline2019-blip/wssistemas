@@ -5,6 +5,7 @@ namespace App\Modules\Payments\Models;
 use App\Core\Audit\Auditable;
 use App\Core\Tenancy\BelongsToCompany;
 use App\Modules\Doctors\Models\Doctor;
+use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Scheduling\Models\DoctorService;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ class SplitRule extends Model
 
     protected string $auditName = 'split_rule';
 
-    protected $fillable = ['doctor_id', 'doctor_service_id', 'payer_type', 'type', 'value', 'is_active'];
+    protected $fillable = ['doctor_id', 'doctor_service_id', 'payer_type', 'insurer_id', 'type', 'value', 'is_active'];
 
     protected $attributes = ['is_active' => true];
 
@@ -29,6 +30,11 @@ class SplitRule extends Model
     public function doctor(): BelongsTo
     {
         return $this->belongsTo(Doctor::class);
+    }
+
+    public function insurer(): BelongsTo
+    {
+        return $this->belongsTo(Insurer::class);
     }
 
     public function service(): BelongsTo

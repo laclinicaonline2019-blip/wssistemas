@@ -6,8 +6,13 @@ use App\Core\Support\Format;
 use App\Core\Tenancy\TenantContext;
 use App\Core\Validation\BrazilianStates;
 use App\Core\Validation\Cpf;
+use App\Core\Validation\ExistsInTenant;
+use App\Modules\Insurance\Models\InsurancePlan;
+use App\Modules\Insurance\Models\Insurer;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class PatientRequest extends FormRequest
 {
@@ -32,7 +37,7 @@ class PatientRequest extends FormRequest
         }
 
         if ($this->has('insurances')) {
-            $merge['insurances'] = array_values(array_filter((array) $this->input('insurances'), fn ($i) => is_array($i) && filled($i['insurer_name'] ?? null)));
+            $merge['insurances'] = array_values(array_filter((array) $this->input('insurances'), fn ($i) => is_array($i) && (filled($i['insurer_name'] ?? null) || filled($i['insurer_id'] ?? null))));
         }
 
         $this->merge($merge);
@@ -79,12 +84,27 @@ class PatientRequest extends FormRequest
             'contacts.*.email' => ['nullable', 'email:rfc', 'max:190'],
 
             'insurances' => ['sometimes', 'array', 'max:5'],
-            'insurances.*.insurer_name' => ['required', 'string', 'max:120'],
+            'insurances.*.id' => ['nullable', 'string', 'size:26'],
+            'insurances.*.insurer_id' => ['nullable', 'string', 'size:26', new ExistsInTenant(Insurer::class)],
+            'insurances.*.plan_id' => ['nullable', 'string', 'size:26', new ExistsInTenant(InsurancePlan::class)],
+            'insurances.*.insurer_name' => ['required_without:insurances.*.insurer_id', 'nullable', 'string', 'max:120'],
             'insurances.*.plan_name' => ['nullable', 'string', 'max:120'],
             'insurances.*.card_number' => ['required', 'string', 'max:40'],
             'insurances.*.valid_until' => ['nullable', 'date'],
             'insurances.*.is_primary' => ['sometimes', 'boolean'],
         ];
+    }
+
+    /** Plano escolhido precisa ser do convênio escolhido. */
+    public function after(): array
+    {
+        return [function (Validator $validator) {
+            foreach ((array) $this->input('insurances', []) as $i => $row) {
+                if (! empty($row['plan_id']) && DB::table('insurance_plans')->where('id', $row['plan_id'])->value('insurer_id') !== ($row['insurer_id'] ?? null)) {
+                    $validator->errors()->add("insurances.{$i}.plan_id", 'O plano não pertence ao convênio selecionado.');
+                }
+            }
+        }];
     }
 
     public function messages(): array

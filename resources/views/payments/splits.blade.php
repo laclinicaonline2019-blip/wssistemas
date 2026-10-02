@@ -57,7 +57,7 @@
             @forelse ($rules as $rule)
                 <div class="spread small {{ $rule->is_active ? '' : 'muted' }}">
                     <span><strong>{{ $rule->doctor->displayName() }}</strong>: {{ $rule->label() }}
-                        · {{ $rule->service?->name ?? 'todos os atendimentos' }} · {{ ['private' => 'particular', 'insurance' => 'convênio'][$rule->payer_type] ?? 'qualquer pagador' }}
+                        · {{ $rule->service?->name ?? 'todos os atendimentos' }} · {{ $rule->insurer ? 'convênio '.$rule->insurer->name : (['private' => 'particular', 'insurance' => 'convênio'][$rule->payer_type] ?? 'qualquer pagador') }}
                         {{ $rule->is_active ? '' : '(inativa)' }}</span>
                     <form method="post" action="{{ route('splits.rules.toggle', $rule) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $rule->is_active ? 'Desativar' : 'Reativar' }}</button></form>
                 </div>
@@ -72,10 +72,12 @@
                     <select id="sr-s" name="doctor_service_id" class="input"><option value="">Todos</option>@foreach ($services as $s)<option value="{{ $s->id }}">{{ $byDoctor[$s->doctor_id]?->displayName() }} — {{ $s->name }}</option>@endforeach</select></div>
                 <div class="field col-4"><label for="sr-p">Pagador</label>
                     <select id="sr-p" name="payer_type" class="input"><option value="">Qualquer</option><option value="private">Particular</option><option value="insurance">Convênio</option></select></div>
+                <div class="field col-12"><label for="sr-i">Convênio específico</label>
+                    <select id="sr-i" name="insurer_id" class="input"><option value="">Qualquer convênio</option>@foreach ($insurers as $i)<option value="{{ $i->id }}">{{ $i->name }}</option>@endforeach</select></div>
                 <div class="field col-4"><label for="sr-t">Tipo</label>
                     <select id="sr-t" name="type" class="input"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (R$)</option></select></div>
                 <x-field name="value" label="Valor" col="col-4" placeholder="60,00" required />
-                <p class="help col-12">A regra mais específica vale (tipo de atendimento + pagador &gt; tipo de atendimento &gt; pagador &gt; geral). Percentual sobre o valor recebido (no split nativo do ASAAS, sobre o valor líquido). Na <strong>maquininha Cielo</strong>, a divisão é a configurada pela Cielo no terminal — mantenha a regra igual para os relatórios baterem.</p>
+                <p class="help col-12">A regra mais específica vale (tipo de atendimento &gt; convênio específico &gt; pagador &gt; geral). Convênio: o repasse é calculado guia a guia quando o convênio paga o lote. Percentual sobre o valor recebido (no split nativo do ASAAS, sobre o valor líquido). Na <strong>maquininha Cielo</strong>, a divisão é a configurada pela Cielo no terminal — mantenha a regra igual para os relatórios baterem.</p>
                 <div class="col-12 form-actions"><button class="btn btn-primary" type="submit">Adicionar regra</button></div>
             </form>
         </div>

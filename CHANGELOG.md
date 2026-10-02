@@ -2,6 +2,48 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.10.0] — 2026-10-02 — Fase 9: convênios e faturamento TISS
+
+### Adicionado
+- **Convênios (operadoras)**: registro ANS, CNPJ, código do prestador na operadora, versão TISS, prazo de
+  pagamento, limite de guias por lote, portal; **planos**; **médicos credenciados** (nenhum marcado = todos);
+  desativação sem exclusão.
+- **Procedimentos** (TUSS — tabela 22 — ou tabela própria), com importação de CSV (UTF-8 ou ISO-8859-1) e
+  vínculo do procedimento ao tipo de atendimento do médico.
+- **Tabelas de valores** por convênio e por plano, com vigência (sem sobreposição; a do plano tem prioridade),
+  exigência de **autorização prévia** e **coparticipação** (percentual ou valor fixo) por procedimento.
+- **Carteirinha ligada ao convênio/plano cadastrados** no cadastro do paciente; carteirinha usada em guia
+  não é apagada (fica inativa) e, na anonimização LGPD, o número é mascarado.
+- **Agenda**: agendamento por convênio valida convênio ativo, médico credenciado e validade da carteirinha
+  **na data da consulta**.
+- **Guias** (consulta e SP/SADT): criadas automaticamente na **chegada** do paciente (uma por agendamento),
+  com o procedimento e o valor da tabela vigente; guia avulsa; itens, autorização, dados TISS (tipo de
+  consulta/atendimento, acidente, caráter, CBO, indicação clínica); conferência de pendências antes de
+  "pronta para faturar"; espelho A4 para assinatura do beneficiário; guia faturada é **imutável**.
+- **Autorizações prévias**: solicitação, resposta da operadora (senha, nº da guia, validade) ou negativa;
+  vínculo automático na guia; marcadas como utilizadas ao faturar.
+- **Atendimento misto**: coparticipação vira cobrança **particular** do paciente; itens não cobertos podem
+  ser cobrados do paciente pela guia.
+- **Lotes de faturamento TISS 4.01.00**: montagem por convênio/unidade/tipo (máx. 100 guias), **XML
+  ENVIO_LOTE_GUIAS gerado e validado contra os schemas oficiais da ANS** (lote com XML inválido não fecha),
+  hash MD5 do epílogo, download em ISO-8859-1, protocolo de envio, cancelamento (guias voltam a ficar prontas).
+- **Conta a receber do convênio** criada no fechamento do lote (vencimento pelo prazo do convênio).
+- **Retorno da operadora**: valor pago por guia; a diferença é **glosa** (código TISS/motivo obrigatório);
+  pagamento lançado fora do caixa; **repasse médico calculado guia a guia** (regra por convênio).
+- **Glosas**: recurso (justificativa), aceite (baixa do saldo sem movimentar dinheiro) e conclusão do recurso
+  (valor recuperado recebido; o restante é baixado).
+- **Repasse por convênio**: regra de split específica de um convênio (prioridade: tipo de atendimento >
+  convênio > pagador > geral).
+- CNES da unidade; permissão `convenio.faturar`; telas de Convênios, Procedimentos, Autorizações, Guias e
+  Lotes; API `/insurers`, `/procedures`, `/insurance/price`, `/insurance/authorizations`,
+  `/insurance/guides`, `/insurance/batches` (+ XML).
+- Demo: convênio **fictício** com tabela e procedimentos de exemplo (marcados para conferência na TUSS).
+
+### Alterado
+- Recebimento de lote de convênio não pode ser estornado manualmente (`insurance_payment_not_reversible`):
+  guias, glosas e repasses dependem do retorno.
+- Carteirinhas do paciente são atualizadas pelo id (antes eram recriadas a cada edição).
+
 ## [0.9.1] — 2026-10-02 — Fase 8.1: split da Cielo (online e maquininha)
 
 ### Adicionado

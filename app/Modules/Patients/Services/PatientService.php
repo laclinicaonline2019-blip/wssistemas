@@ -10,6 +10,8 @@ use App\Core\Tenancy\TenantContext;
 use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Identity\Models\User;
 use App\Modules\Identity\Services\AccessGuard;
+use App\Modules\Insurance\Models\InsurancePlan;
+use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Models\PatientConsent;
@@ -169,7 +171,13 @@ class PatientService
             });
 
             $patient->contacts()->delete();
-            $patient->insurances()->delete();
+            // Carteirinhas usadas em guias ficam (faturamento ao convênio é obrigação legal — LGPD art. 16, I),
+            // mas desativadas e com o número mascarado no cadastro; as demais são apagadas.
+            foreach ($patient->allInsurances()->get() as $insurance) {
+                $insurance->isReferenced()
+                    ? $insurance->update(['is_active' => false, 'is_primary' => false, 'card_number' => '***'.substr($insurance->card_number, -4), 'valid_until' => null])
+                    : $insurance->delete();
+            }
         });
 
         $this->audit->record('patient.anonymized', $patient, metadata: ['reason' => $reason]);
@@ -290,19 +298,43 @@ class PatientService
         }
     }
 
+    /**
+     * Atualiza as carteirinhas pelo id (mantém o vínculo com agendamentos/guias). Carteirinha
+     * removida do formulário é apagada, ou só desativada se já foi usada em guia/autorização/agenda.
+     */
     private function syncInsurances(Patient $patient, array $insurances, bool $isNew): void
     {
-        $old = $isNew ? [] : $patient->insurances()->get(['insurer_name', 'card_number'])->toArray();
-        $patient->insurances()->delete();
+        $current = $isNew ? collect() : $patient->insurances()->get()->keyBy('id');
+        $old = $current->map(fn ($i) => ['insurer_name' => $i->insurer_name, 'card_number' => $i->card_number])->values()->all();
         $hasPrimary = false;
+        $kept = [];
 
         foreach ($insurances as $insurance) {
             $primary = ! $hasPrimary && ! empty($insurance['is_primary']);
             $hasPrimary = $hasPrimary || $primary;
-            $patient->insurances()->create([
-                ...array_intersect_key($insurance, array_flip(['insurer_name', 'plan_name', 'card_number', 'valid_until'])),
+            $values = [
+                ...array_intersect_key($insurance, array_flip(['insurer_id', 'plan_id', 'insurer_name', 'plan_name', 'card_number', 'valid_until'])),
                 'is_primary' => $primary,
-            ]);
+            ];
+            $values['insurer_id'] = ($values['insurer_id'] ?? null) ?: null;
+            $values['plan_id'] = ($values['plan_id'] ?? null) ?: null;
+            $values['valid_until'] = ($values['valid_until'] ?? null) ?: null;
+            // Convênio cadastrado: o nome exibido vem do cadastro (não do formulário).
+            if ($values['insurer_id']) {
+                $values['insurer_name'] = Insurer::query()->whereKey($values['insurer_id'])->value('name');
+                $values['plan_name'] = $values['plan_id'] ? InsurancePlan::query()->whereKey($values['plan_id'])->value('name') : ($values['plan_name'] ?? null);
+            }
+
+            if (! empty($insurance['id']) && $current->has($insurance['id'])) {
+                $current[$insurance['id']]->update($values);
+                $kept[] = $insurance['id'];
+            } else {
+                $kept[] = $patient->insurances()->create($values)->id;
+            }
+        }
+
+        foreach ($current->except($kept) as $removed) {
+            $removed->isReferenced() ? $removed->update(['is_active' => false, 'is_primary' => false]) : $removed->delete();
         }
 
         $new = collect($insurances)->map(fn ($i) => ['insurer_name' => $i['insurer_name'], 'card_number' => $i['card_number']])->all();

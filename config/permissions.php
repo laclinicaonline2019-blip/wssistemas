@@ -175,6 +175,7 @@ return [
                 'convenio.visualizar' => 'Visualizar convênios',
                 'convenio.gerenciar' => 'Gerenciar convênios, planos e tabelas',
                 'convenio.autorizar' => 'Registrar autorizações',
+                'convenio.faturar' => 'Guias, lotes de faturamento (TISS), retorno e glosas',
             ],
         ],
 
@@ -279,7 +280,7 @@ return [
                 'paciente.visualizar', 'paciente.criar', 'paciente.editar',
                 'medico.visualizar', 'agenda.visualizar', 'agenda.criar', 'agenda.editar', 'agenda.cancelar',
                 'agenda.encaixe', 'agenda.configurar', 'fila.visualizar', 'fila.gerenciar', 'fila.painel',
-                'convenio.visualizar', 'financeiro.visualizar', 'caixa.operar', 'caixa.conferir',
+                'convenio.visualizar', 'convenio.faturar', 'financeiro.visualizar', 'caixa.operar', 'caixa.conferir',
                 'pagamento.visualizar', 'pagamento.cobrar', 'convenio.autorizar', 'documento.anexar',
                 'receita.imprimir', 'atestado.imprimir', 'ia.conversas',
                 'relatorio.operacional', 'relatorio.financeiro', 'impressao.configurar',
@@ -318,7 +319,7 @@ return [
                 'dashboard.visualizar', 'dashboard.financeiro', 'financeiro.visualizar', 'financeiro.editar',
                 'financeiro.repasse', 'financeiro.conciliar', 'financeiro.fechamento',
                 'caixa.operar', 'caixa.conferir', 'pagamento.visualizar', 'pagamento.cobrar',
-                'pagamento.estornar', 'convenio.visualizar', 'relatorio.financeiro',
+                'pagamento.estornar', 'convenio.visualizar', 'convenio.faturar', 'relatorio.financeiro',
             ],
         ],
         'enfermagem' => [

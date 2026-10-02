@@ -6,6 +6,7 @@ use App\Core\Support\Format;
 use App\Core\Validation\ExistsInTenant;
 use App\Http\Controllers\Controller;
 use App\Modules\Doctors\Models\Doctor;
+use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Payments\Models\PaymentSplit;
 use App\Modules\Payments\Models\SplitRule;
 use App\Modules\Payments\Services\SplitService;
@@ -39,7 +40,8 @@ class SplitWebController extends Controller
         return view('payments.splits', [
             'from' => $from, 'to' => $to, 'summary' => $summary,
             'doctors' => Doctor::query()->where('status', 'active')->orderBy('name')->get(),
-            'rules' => SplitRule::query()->with(['doctor:id,name,social_name', 'service:id,name'])->orderBy('doctor_id')->get(),
+            'rules' => SplitRule::query()->with(['doctor:id,name,social_name', 'service:id,name', 'insurer:id,name'])->orderBy('doctor_id')->get(),
+            'insurers' => Insurer::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'services' => DoctorService::query()->orderBy('name')->get(['id', 'doctor_id', 'name']),
             'recent' => PaymentSplit::query()->with(['doctor:id,name,social_name', 'receivable:id,description'])->latest()->limit(30)->get(),
         ]);
@@ -51,6 +53,7 @@ class SplitWebController extends Controller
             'doctor_id' => ['required', 'string', 'size:26', new ExistsInTenant(Doctor::class)],
             'doctor_service_id' => ['nullable', 'string', 'size:26', new ExistsInTenant(DoctorService::class)],
             'payer_type' => ['nullable', Rule::in(['private', 'insurance'])],
+            'insurer_id' => ['nullable', 'string', 'size:26', new ExistsInTenant(Insurer::class)],
             'type' => ['required', Rule::in(['percent', 'fixed'])],
             'value' => ['required', 'string', 'max:20'],
         ], [], ['value' => 'valor']);
@@ -63,8 +66,10 @@ class SplitWebController extends Controller
             throw ValidationException::withMessages(['doctor_service_id' => 'O tipo de atendimento não pertence a este médico.']);
         }
 
+        // Regra de um convênio específico vale só para atendimentos por convênio.
+        $insurerId = ($data['insurer_id'] ?? null) ?: null;
         SplitRule::create(['doctor_id' => $data['doctor_id'], 'doctor_service_id' => $data['doctor_service_id'] ?? null,
-            'payer_type' => $data['payer_type'] ?? null, 'type' => $data['type'], 'value' => $cents]);
+            'payer_type' => $insurerId ? 'insurance' : ($data['payer_type'] ?? null), 'insurer_id' => $insurerId, 'type' => $data['type'], 'value' => $cents]);
 
         return back()->with('success', 'Regra de repasse criada.');
     }

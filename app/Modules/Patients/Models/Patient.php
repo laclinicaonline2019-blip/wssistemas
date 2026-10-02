@@ -68,7 +68,13 @@ class Patient extends Model
 
     public function insurances(): HasMany
     {
-        return $this->hasMany(PatientInsurance::class)->orderByDesc('is_primary')->orderBy('insurer_name');
+        return $this->hasMany(PatientInsurance::class)->where('is_active', true)->orderByDesc('is_primary')->orderBy('insurer_name');
+    }
+
+    /** Inclui carteirinhas removidas do cadastro (mantidas por estarem em guias/autorizações). */
+    public function allInsurances(): HasMany
+    {
+        return $this->hasMany(PatientInsurance::class);
     }
 
     public function consents(): HasMany

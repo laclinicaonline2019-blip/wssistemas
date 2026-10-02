@@ -26,7 +26,7 @@ class Receivable extends Model
 
     protected $fillable = [
         'branch_id', 'category_id', 'patient_id', 'appointment_id', 'doctor_id', 'description', 'origin', 'payer_type',
-        'amount_cents', 'due_date', 'notes', 'created_by',
+        'amount_cents', 'due_date', 'notes', 'created_by', 'insurance_guide_id',
     ];
 
     protected $attributes = ['status' => 'open', 'discount_cents' => 0, 'paid_cents' => 0, 'origin' => 'manual', 'payer_type' => 'private'];

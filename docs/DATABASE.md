@@ -124,6 +124,22 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `payment_gateways.provider` | + `cielo_api` (API E-commerce com split) | 8.1 |
 | `financial_transactions.kind` | + `fee` (tarifa do gateway) | |
 
+### Fase 9 — convênios e faturamento TISS
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `insurers` | Convênio: registro ANS, CNPJ, código do prestador, versão TISS, prazo de pagamento | `UNIQUE(company_id, name)`; nunca excluído |
+| `insurance_plans` | Planos do convênio | `UNIQUE(insurer_id, name)` |
+| `insurer_doctor` | Médicos credenciados (vazio = todos) | PK `(insurer_id, doctor_id)` |
+| `procedures` | Procedimentos TUSS (tabela 22) ou próprios | `UNIQUE(company_id, table_code, code)`; CHECK de tabela/tipo |
+| `insurance_price_tables` / `insurance_price_items` | Tabela de valores (geral ou por plano, com vigência) e valor por procedimento, autorização prévia e coparticipação | `UNIQUE(price_table_id, procedure_id)`; CHECK valor > 0 e % ≤ 100 |
+| `insurance_authorizations` | Autorização prévia: senha, nº guia operadora, validade, negativa | CHECK de situação |
+| `insurance_guides` | Guia (consulta/SP-SADT) com **cópia** de carteirinha, CBO e dados TISS; valores pago/glosa; situação da glosa | `UNIQUE(company_id, number)`, **`UNIQUE(company_id, appointment_id)`** (uma guia por atendimento), CHECK pago + glosa ≤ total; imutável após faturar |
+| `insurance_guide_items` | Procedimentos da guia (cópia de código/descrição/valor) | CHECK total = unitário × qtde |
+| `insurance_batches` | Lote: nº sequencial, tipo, competência, XML TISS (imutável), hash, validação, protocolo, conta a receber | `UNIQUE(company_id, number)`, CHECK pago + glosa ≤ total |
+| `patient_insurances` | + `insurer_id`, `plan_id`, `is_active` | FKs compostas para convênio/plano |
+| `doctor_services.procedure_id` · `branches.cnes` · `split_rules.insurer_id` · `receivables.insurance_guide_id` | procedimento faturado · CNES · repasse por convênio · cobrança particular do atendimento misto | CHECK regra de convênio só com pagador "convênio" |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas
@@ -134,8 +150,6 @@ para garantir mesma empresa, e é consultada via `BelongsToCompany`.
   `vital_signs`, `diagnoses`, `cid_codes` (versão da tabela CID), `medications`,
   `prescriptions`, `prescription_items`, `medical_certificates`, `exam_requests`,
   `issued_documents` (snapshot + hash do documento emitido/impresso).
-- **Convênios:** `insurance_companies`, `insurance_plans`, `insurance_price_tables`,
-  `insurance_procedures`, `insurance_authorizations`.
 - **Financeiro:** `financial_accounts`, `accounts_receivable`, `accounts_payable`,
   `cash_registers`, `cash_movements`, `cash_closings` (esperado × informado × diferença ×
   justificativa), `payments`, `payment_transactions`, `payment_splits`, `split_rules`,

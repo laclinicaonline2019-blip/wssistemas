@@ -53,6 +53,22 @@ interface PaymentProviderInterface {
   transação e split registrados → consulta confirmada → comprovante. Nenhum pagamento é confirmado
   por declaração do paciente nem por webhook não autenticado.
 
+## Convênios — padrão TISS (Fase 9) — implementado
+
+| Item | Como está |
+|---|---|
+| Versão | **TISS 4.01.00**. Schemas oficiais da ANS em `resources/tiss/4.01.00/` (fonte: portal da ANS, *Padrões e schemas*; cópia de [renatofagalde/app-tiss-schemas](https://github.com/renatofagalde/app-tiss-schemas)). Nova versão: copiar os XSD para `resources/tiss/<versão>/` e incluir em `Insurer::TISS_VERSIONS` |
+| Mensagem | `ENVIO_LOTE_GUIAS` com `loteGuias` de **guiaConsulta** ou **guiaSP-SADT** (um tipo por lote, até 100 guias) |
+| Validação | **Todo XML é validado contra o XSD antes de fechar o lote** (`TissMessageBuilder::validate`). Erro de schema → o lote não fecha e a mensagem do validador aparece na tela |
+| Hash | Epílogo com MD5 da concatenação dos valores de todos os elementos (sem tags), em ISO-8859-1 |
+| Identificação | Prestador: `codigoPrestadorNaOperadora` (cadastro do convênio) ou CNPJ da unidade; CNES da unidade (sem CNES: `9999999`, conforme o padrão); profissional: CRM (`06`), UF (código IBGE), CBO (especialidade do médico; padrão 225125 — editável na guia) |
+| Envio | **Manual**: baixe o XML no lote e envie no portal da operadora; registre o protocolo. O webservice TISS de cada operadora (SOAP, credenciais próprias) **não** está implementado |
+| Retorno | Demonstrativo digitado por guia (valor pago, código de glosa da tabela TISS 38 ou motivo). Importação automática do XML de demonstrativo: futura |
+| Limitações conhecidas | SP/SADT: o solicitante é a própria clínica/médico executante (pedido externo vai na observação); sem guia de honorários/internação/odonto; sem assinatura digital do XML (opcional no padrão) |
+
+**Homologação:** antes do primeiro envio real, valide o XML no validador/portal da operadora (cada operadora
+pode ter regras próprias além do schema) e confira os códigos TUSS e valores da tabela contratada.
+
 ## WhatsApp (Fase 11)
 
 WhatsApp Business **Cloud API (Meta)**. Webhook `GET` (verify token) e `POST` (assinatura

@@ -3,7 +3,8 @@
 @php
     use App\Core\Support\Format;
     $contacts = old('contacts', $patient->exists ? $patient->contacts->map->only(['type', 'name', 'relationship', 'cpf', 'phone', 'email'])->all() : []);
-    $insurances = old('insurances', $patient->exists ? $patient->insurances->map(fn ($i) => $i->only(['insurer_name', 'plan_name', 'card_number', 'is_primary']) + ['valid_until' => $i->valid_until?->format('Y-m-d')])->all() : []);
+    $insurances = old('insurances', $patient->exists ? $patient->insurances->map(fn ($i) => $i->only(['id', 'insurer_id', 'plan_id', 'insurer_name', 'plan_name', 'card_number', 'is_primary']) + ['valid_until' => $i->valid_until?->format('Y-m-d')])->all() : []);
+    $insurerOptions = $insurers ?? collect();
     $v = fn ($k, $fmt = null) => old($k, $fmt ? $fmt($patient->{$k}) : $patient->{$k});
 @endphp
 
@@ -25,7 +26,7 @@
 @endif
 
 <template id="contact-tpl">@include('patients._contact-row', ['i' => '__INDEX__', 'c' => []])</template>
-<template id="insurance-tpl">@include('patients._insurance-row', ['i' => '__INDEX__', 'n' => []])</template>
+<template id="insurance-tpl">@include('patients._insurance-row', ['i' => '__INDEX__', 'n' => [], 'insurerOptions' => $insurerOptions])</template>
 
 <form method="post" action="{{ $patient->exists ? route('patients.update', $patient) : route('patients.store') }}" novalidate>
     @csrf
@@ -94,7 +95,7 @@
             <button type="button" class="btn btn-sm" data-row-add="#insurance-rows" data-row-template="#insurance-tpl"><svg><use href="#i-plus"/></svg>Adicionar</button></div>
         <div class="card__body">
             <div id="insurance-rows" class="stack">
-                @foreach ($insurances as $i => $n)@include('patients._insurance-row', ['i' => $i, 'n' => $n])@endforeach
+                @foreach ($insurances as $i => $n)@include('patients._insurance-row', ['i' => $i, 'n' => $n, 'insurerOptions' => $insurerOptions])@endforeach
             </div>
             @if (! count($insurances))<p class="help">Sem convênio: atendimento particular.</p>@endif
         </div>

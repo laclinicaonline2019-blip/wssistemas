@@ -9,6 +9,7 @@ use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Doctors\Models\Specialty;
 use App\Modules\Finance\Models\Receivable;
+use App\Modules\Insurance\Models\Guide;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Queue\Services\QueueService;
@@ -113,6 +114,7 @@ class AgendaWebController extends Controller
             'appointment' => $appointment,
             'history' => $history,
             'receivable' => Receivable::query()->where('appointment_id', $appointment->id)->first(),
+            'guide' => $appointment->payer_type === 'insurance' ? Guide::query()->where('appointment_id', $appointment->id)->first() : null,
             'ticketTypes' => app(QueueService::class)->types(),
             'suggestedType' => app(QueueService::class)->suggestType($appointment),
         ]);

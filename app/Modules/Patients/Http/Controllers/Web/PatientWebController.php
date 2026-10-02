@@ -9,6 +9,7 @@ use App\Modules\Clinical\Models\PatientAllergy;
 use App\Modules\Documents\Models\MedicalDocument;
 use App\Modules\Documents\Models\PatientFile;
 use App\Modules\Identity\Models\User;
+use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Patients\Http\Requests\PatientRequest;
@@ -41,7 +42,7 @@ class PatientWebController extends Controller
 
     public function create(): View
     {
-        return view('patients.form', ['patient' => new Patient, 'branches' => $this->branches()]);
+        return view('patients.form', ['patient' => new Patient, 'branches' => $this->branches(), 'insurers' => $this->insurers()]);
     }
 
     public function store(PatientRequest $request): RedirectResponse
@@ -74,7 +75,7 @@ class PatientWebController extends Controller
     {
         abort_if($patient->isAnonymized(), 403, 'Paciente anonimizado: o cadastro não pode ser alterado.');
 
-        return view('patients.form', ['patient' => $patient->load(['contacts', 'insurances']), 'branches' => $this->branches()]);
+        return view('patients.form', ['patient' => $patient->load(['contacts', 'insurances']), 'branches' => $this->branches(), 'insurers' => $this->insurers()]);
     }
 
     public function update(PatientRequest $request, Patient $patient): RedirectResponse
@@ -117,6 +118,11 @@ class PatientWebController extends Controller
         $this->service->anonymize($request->user(), $patient, $data['reason']);
 
         return redirect()->route('patients.show', $patient)->with('success', 'Paciente anonimizado.');
+    }
+
+    private function insurers()
+    {
+        return Insurer::query()->where('is_active', true)->with(['plans' => fn ($q) => $q->where('is_active', true)->orderBy('name')])->orderBy('name')->get();
     }
 
     private function branches()
