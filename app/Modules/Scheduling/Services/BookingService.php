@@ -9,6 +9,7 @@ use App\Core\Tenancy\TenantContext;
 use App\Modules\Doctors\Models\Doctor;
 use App\Modules\Identity\Models\User;
 use App\Modules\Insurance\Services\InsuranceCatalog;
+use App\Modules\Messaging\Services\AppointmentNotifier;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Models\PatientInsurance;
@@ -34,6 +35,7 @@ class BookingService
         private readonly AvailabilityService $availability,
         private readonly SequenceGenerator $sequences,
         private readonly InsuranceCatalog $insuranceCatalog,
+        private readonly AppointmentNotifier $notifier,
         private readonly TenantContext $context,
         private readonly AuditLogger $audit,
     ) {}
@@ -54,14 +56,15 @@ class BookingService
         }
 
         try {
-            return DB::transaction(function () use ($actor, $data) {
+            $booked = DB::transaction(function () use ($actor, $data) {
                 $doctor = $this->lockDoctor($data['doctor_id']);
                 $branch = $this->branch($data['branch_id']);
                 $patient = $this->patient($data['patient_id']);
                 $service = $this->service($doctor, $data['service_id'] ?? null);
                 $overbook = (bool) ($data['is_overbook'] ?? false);
 
-                if ($overbook && $actor !== null && ! $actor->hasPermission('agenda.encaixe', $branch->id)) {
+                // Encaixe só por usuário com permissão — nunca por canais automáticos (portal, WhatsApp, IA).
+                if ($overbook && ($actor === null || ! $actor->hasPermission('agenda.encaixe', $branch->id))) {
                     throw new BusinessRuleViolation('Você não tem permissão para realizar encaixes.', 'overbook_forbidden', 403);
                 }
 
@@ -92,6 +95,9 @@ class BookingService
 
                 return $appointment;
             });
+            $this->notifier->booked($booked);
+
+            return $booked;
         } catch (UniqueConstraintViolationException $e) {
             // Corrida resolvida pelo banco: outro agendamento gravou o mesmo horário/chave.
             if (! empty($data['idempotency_key']) && ($existing = Appointment::query()->where('idempotency_key', $data['idempotency_key'])->first())) {
@@ -110,7 +116,7 @@ class BookingService
         }
 
         try {
-            return DB::transaction(function () use ($appointment, $newStart, $newDoctorId, $newBranchId) {
+            $moved = DB::transaction(function () use ($appointment, $newStart, $newDoctorId, $newBranchId) {
                 $doctor = $this->lockDoctor($newDoctorId ?? $appointment->doctor_id);
                 $branch = $this->branch($newBranchId ?? $appointment->branch_id);
                 $service = $appointment->service_id && $doctor->id === $appointment->doctor_id ? $appointment->service : null;
@@ -129,6 +135,9 @@ class BookingService
 
                 return $appointment;
             });
+            $this->notifier->rescheduled($moved);
+
+            return $moved;
         } catch (UniqueConstraintViolationException) {
             throw new BusinessRuleViolation('Este horário acabou de ser ocupado. Escolha outro horário.', 'slot_taken', 409);
         }

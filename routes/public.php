@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Documents\Http\Controllers\Web\DocumentValidationController;
+use App\Modules\Messaging\Http\Controllers\WhatsAppWebhookController;
 use App\Modules\Payments\Http\Controllers\Web\PublicPaymentController;
 use App\Modules\Payments\Http\Controllers\Web\WebhookController;
 use App\Modules\Queue\Http\Controllers\Web\PanelController;
@@ -26,3 +27,6 @@ Route::get('pagar/{token}', PublicPaymentController::class)->middleware('throttl
 // Cartão tokenizado no navegador (Cielo Silent Order Post): o servidor recebe só o PaymentToken.
 Route::get('pagar/{token}/cartao/sessao', [PublicPaymentController::class, 'cardSession'])->middleware('throttle:20,1')->name('payments.card_session');
 Route::post('pagar/{token}/cartao', [PublicPaymentController::class, 'payCard'])->middleware('throttle:10,1')->name('payments.card_pay');
+
+// Fase 11 — webhook do WhatsApp (GET verificação / POST eventos assinados).
+Route::match(['get', 'post'], 'webhooks/whatsapp/{channel}', WhatsAppWebhookController::class)->middleware('throttle:600,1')->name('messaging.webhook');

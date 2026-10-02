@@ -2,6 +2,32 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.12.0] — 2026-10-02 — Fase 11: WhatsApp, lembretes e notificações
+
+### Adicionado
+- **WhatsApp oficial (Cloud API da Meta)** por clínica: Phone Number ID, token (criptografado), App Secret,
+  versão da Graph API, modelos aprovados por finalidade; webhook com verificação (`hub.verify_token`) e
+  **assinatura `X-Hub-Signature-256` validada**; modo **MOCK** identificado (nada é enviado).
+- **Mensagens automáticas**: agendamento, **lembretes** (24 h e 2 h por padrão ou horários personalizados),
+  cancelamento, remarcação e falta (oferece remarcar). Lembrete com botões **Confirmar / Cancelar / Remarcar**
+  (payload com o agendamento) e respostas de texto "1/2/3". Quem marcou em cima da hora não recebe o lembrete
+  de 24 h. Cada aviso tem chave única — nunca duplica.
+- **Resposta do paciente**: confirma a presença; cancela respeitando o prazo da clínica (fora do prazo, avisa a
+  equipe); "remarcar" e mensagens livres viram aviso para a recepção. Botão de outro paciente é ignorado.
+- **Consentimento (LGPD)**: por padrão só envia pelo WhatsApp/e-mail a quem consentiu; sem consentimento a
+  mensagem fica registrada como "não enviada" com o motivo. **E-mail** como alternativa ao WhatsApp.
+- **Caixa de saída com fila**: envio pela fila (cron da HostGator), novas tentativas com espera crescente em
+  falhas temporárias, falha definitiva avisa a equipe; status enviada/entregue/lida/falhou pelo webhook
+  (fora de ordem não regride); eventos repetidos ignorados (ID único da Meta).
+- **Conversas do WhatsApp** para a recepção (`ia.conversas`): lista, conversa, resposta em texto livre só na
+  **janela de 24 h**, encerrar; simulação de resposta no modo MOCK.
+- **Central de notificações** da equipe (sino no topo) filtrada por unidade e permissão.
+- Link do portal do paciente pelo WhatsApp oficial (modelo aprovado).
+- Comando `aivexa:messaging:run` (a cada 5 min). Demo com canal MOCK.
+
+### Segurança
+- Encaixe nunca é aceito de canais automáticos (portal/WhatsApp/IA): exige usuário com `agenda.encaixe`.
+
 ## [0.11.0] — 2026-10-02 — Fase 10: portal do paciente
 
 ### Adicionado

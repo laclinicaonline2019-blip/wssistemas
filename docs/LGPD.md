@@ -29,6 +29,7 @@
 | Registro de acesso ao cadastro | ✅ auditoria `patient.viewed` (web e API) | 3 |
 | Faturamento ao convênio (Fase 9) | Guias e lotes guardam a carteirinha do beneficiário pelo prazo legal de guarda (cumprimento de obrigação legal/contratual — art. 7º, II e V; art. 11, II, "a"). Na anonimização, a carteirinha usada em guia fica inativa e mascarada no cadastro; a guia faturada é preservada | 9 |
 | Portal do paciente (Fase 10) | Acesso do titular aos próprios dados com login individual; aceite de termos na ativação; acessos e downloads registrados; CPF mascarado; o conteúdo do prontuário não é exibido (cópia por solicitação à clínica); anonimização bloqueia o acesso | 10 |
+| Comunicações (Fase 11) | WhatsApp/e-mail só com consentimento registrado (padrão), revogação respeitada nos envios seguintes; mensagens sem resultados de exames/diagnósticos (orientação na tela); telefone não vinculado a um único paciente é sinalizado | 11 |
 | Minimização em listas | ✅ CPF mascarado em listagens e busca | 3 |
 | Registro de acesso a prontuário | ✅ auditoria `medical_record.viewed` (web e API), início, finalização e adendos — **sem conteúdo clínico** na trilha (apenas versão e hash) | 5 |
 | Sigilo do prontuário | ✅ recepção/financeiro não veem dados clínicos; somente o médico autor edita; Super Admin não acessa prontuários | 5 |

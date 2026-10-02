@@ -13,6 +13,7 @@ use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Insurance\Models\PriceItem;
 use App\Modules\Insurance\Models\PriceTable;
 use App\Modules\Insurance\Models\Procedure;
+use App\Modules\Messaging\Models\MessagingChannel;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Services\PatientService;
@@ -192,6 +193,9 @@ class DemoSeeder extends Seeder
         // Pagamentos (Fase 8): gateway MOCK — identificado como simulação em todas as telas — e regra de repasse.
         PaymentGateway::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'MOCK (demonstração)',
             'webhook_token' => Str::random(40), 'credentials' => [], 'is_default' => true]);
+        // WhatsApp (Fase 11): canal MOCK — nada é enviado; respostas simuladas na tela da conversa.
+        MessagingChannel::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'WhatsApp (MOCK — demonstração)', 'display_phone' => '11900000000',
+            'verify_token' => Str::random(40), 'credentials' => []]);
         foreach ([$carla, $rafael, $beatriz] as $doctor) {
             SplitRule::create(['doctor_id' => $doctor->id, 'type' => 'percent', 'value' => 6000]);
         }

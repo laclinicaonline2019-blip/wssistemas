@@ -5,11 +5,14 @@ namespace App\Modules\Portal\Http\Controllers;
 use App\Core\Audit\AuditLogger;
 use App\Http\Controllers\Controller;
 use App\Modules\Documents\Models\PatientFile;
+use App\Modules\Messaging\Services\MessageService;
 use App\Modules\Patients\Models\Patient;
+use App\Modules\Platform\Models\Company;
 use App\Modules\Portal\Models\PatientAccount;
 use App\Modules\Portal\Services\PortalAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /** Lado da clínica: liberar o portal ao paciente, gerar link, bloquear e compartilhar anexos. */
 class PortalAccessWebController extends Controller
@@ -18,11 +21,20 @@ class PortalAccessWebController extends Controller
 
     public function link(Request $request, Patient $patient): RedirectResponse
     {
-        $data = $request->validate(['email' => ['nullable', 'email:rfc', 'max:190'], 'send_email' => ['nullable', 'boolean']], [], ['email' => 'e-mail']);
+        $data = $request->validate(['email' => ['nullable', 'email:rfc', 'max:190'], 'send_email' => ['nullable', 'boolean'], 'send_whatsapp' => ['nullable', 'boolean']], [], ['email' => 'e-mail']);
         $link = $this->accounts->issueLink($request->user(), $patient, $data['email'] ?? null);
 
         if ($request->boolean('send_email')) {
             $this->accounts->sendLink($link['account'], $link['url'], $link['purpose']);
+        }
+        if ($request->boolean('send_whatsapp')) {
+            // WhatsApp oficial (modelo aprovado "portal_access"); exige o consentimento de WhatsApp do paciente.
+            $message = app(MessageService::class)->queueForPatient('portal_access', $patient, [
+                'nome' => Str::before($patient->displayName(), ' '), 'clinica' => Company::query()->whereKey($patient->company_id)->value('trade_name'), 'link' => $link['url'],
+            ], actor: $request->user());
+            if ($message?->status === 'skipped') {
+                session()->flash('warning', 'Link não enviado pelo WhatsApp: '.$message->error);
+            }
         }
 
         // O link aparece UMA vez (o token não fica gravado) para copiar ou enviar pelo WhatsApp.

@@ -7,6 +7,7 @@ use App\Core\Support\BusinessRuleViolation;
 use App\Modules\Finance\Services\FinanceService;
 use App\Modules\Identity\Models\User;
 use App\Modules\Insurance\Services\GuideService;
+use App\Modules\Messaging\Services\AppointmentNotifier;
 use App\Modules\Queue\Models\QueueTicket;
 use App\Modules\Queue\Services\QueueService;
 use App\Modules\Scheduling\Models\Appointment;
@@ -20,6 +21,7 @@ class AppointmentService
         private readonly AuditLogger $audit,
         private readonly FinanceService $finance,
         private readonly GuideService $guides,
+        private readonly AppointmentNotifier $notifier,
     ) {}
 
     public function confirm(?User $actor, Appointment $appointment, string $channel = 'reception'): Appointment
@@ -29,7 +31,8 @@ class AppointmentService
         return $appointment;
     }
 
-    public function cancel(?User $actor, Appointment $appointment, string $reason): Appointment
+    /** @param bool $notify aviso ao paciente (falso quando o próprio paciente cancelou e já recebe a resposta) */
+    public function cancel(?User $actor, Appointment $appointment, string $reason, bool $notify = true): Appointment
     {
         $this->transition($appointment, 'cancelled', [
             'cancelled_at' => now(), 'cancel_reason' => $reason, 'cancelled_by' => $actor?->id,
@@ -39,6 +42,10 @@ class AppointmentService
         // Senha aberta vinculada deixa de valer.
         QueueTicket::query()->where('appointment_id', $appointment->id)->whereIn('status', QueueTicket::OPEN)
             ->each(fn (QueueTicket $t) => $t->update(['status' => 'cancelled']));
+
+        if ($notify) {
+            $this->notifier->cancelled($appointment);
+        }
 
         return $appointment;
     }
@@ -51,6 +58,7 @@ class AppointmentService
 
         $this->transition($appointment, 'no_show');
         $this->finance->cancelAppointmentReceivable($appointment, $actor, 'Paciente faltou ao agendamento');
+        $this->notifier->noShow($appointment);
 
         return $appointment;
     }

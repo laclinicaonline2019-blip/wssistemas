@@ -23,6 +23,9 @@ use App\Modules\Identity\Http\Controllers\Web\UserWebController;
 use App\Modules\Insurance\Http\Controllers\Web\BatchWebController;
 use App\Modules\Insurance\Http\Controllers\Web\GuideWebController;
 use App\Modules\Insurance\Http\Controllers\Web\InsurerWebController;
+use App\Modules\Messaging\Http\Controllers\ChannelWebController;
+use App\Modules\Messaging\Http\Controllers\InboxWebController;
+use App\Modules\Messaging\Http\Controllers\NotificationWebController;
 use App\Modules\Organization\Http\Controllers\Web\BranchWebController;
 use App\Modules\Patients\Http\Controllers\Web\PatientWebController;
 use App\Modules\Payments\Http\Controllers\Web\ChargeWebController;
@@ -334,6 +337,24 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('lotes/{batch}/cancelar', [BatchWebController::class, 'cancel'])->name('batches.cancel');
         Route::post('lotes/{batch}/retorno', [BatchWebController::class, 'registerReturn'])->name('batches.return');
     });
+
+    // Fase 11 — WhatsApp, mensagens automáticas e notificações
+    Route::middleware('permission:integracao.gerenciar')->group(function () {
+        Route::get('configuracoes/whatsapp', [ChannelWebController::class, 'index'])->name('messaging.settings');
+        Route::put('configuracoes/whatsapp/canal', [ChannelWebController::class, 'saveChannel'])->name('messaging.channel.save');
+        Route::post('configuracoes/whatsapp/novo-token', [ChannelWebController::class, 'rotate'])->name('messaging.channel.rotate');
+        Route::put('configuracoes/whatsapp/automacoes', [ChannelWebController::class, 'saveAutomation'])->name('messaging.automation.save');
+    });
+    Route::middleware('permission:ia.conversas')->group(function () {
+        Route::get('conversas', [InboxWebController::class, 'index'])->name('messaging.inbox');
+        Route::get('conversas/{thread}', [InboxWebController::class, 'show'])->name('messaging.threads.show');
+        Route::post('conversas/{thread}/responder', [InboxWebController::class, 'reply'])->middleware('throttle:30,1')->name('messaging.threads.reply');
+        Route::post('conversas/{thread}/encerrar', [InboxWebController::class, 'close'])->name('messaging.threads.close');
+        Route::post('conversas/{thread}/simular', [InboxWebController::class, 'simulate'])->name('messaging.threads.simulate');
+    });
+    Route::get('notificacoes', [NotificationWebController::class, 'index'])->name('notifications.index');
+    Route::get('notificacoes/{notification}', [NotificationWebController::class, 'open'])->name('notifications.open');
+    Route::post('notificacoes/lidas', [NotificationWebController::class, 'readAll'])->name('notifications.read_all');
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');

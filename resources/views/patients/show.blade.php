@@ -114,6 +114,7 @@
                     @csrf
                     <x-field name="email" label="E-mail do paciente (login e envio do link)" type="email" col="col-12" :value="$portalAccount?->email ?? $patient->email" />
                     <label class="check col-12 small"><input type="checkbox" name="send_email" value="1"><span>Enviar o link por e-mail</span></label>
+                    <label class="check col-12 small"><input type="checkbox" name="send_whatsapp" value="1"><span>Enviar pelo WhatsApp da clínica (modelo aprovado; exige consentimento de WhatsApp)</span></label>
                     <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">{{ $portalAccount?->isActive() ? 'Gerar link de nova senha' : 'Gerar link de ativação' }}</button></div>
                 </form>
             @endif

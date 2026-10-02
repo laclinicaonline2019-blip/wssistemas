@@ -69,11 +69,23 @@ interface PaymentProviderInterface {
 **Homologação:** antes do primeiro envio real, valide o XML no validador/portal da operadora (cada operadora
 pode ter regras próprias além do schema) e confira os códigos TUSS e valores da tabela contratada.
 
-## WhatsApp (Fase 11)
+## WhatsApp (Fase 11) — implementado
 
-WhatsApp Business **Cloud API (Meta)**. Webhook `GET` (verify token) e `POST` (assinatura
-`X-Hub-Signature-256` com App Secret) → evento enfileirado → IA/atendente. Mensagens proativas
-(lembretes, confirmações) somente com **templates aprovados** e opt-in. Idempotência por `wamid`.
+Configuração: *Administração → WhatsApp e mensagens* (permissão `integracao.gerenciar`).
+
+| Item | Como está |
+|---|---|
+| Provedor | **WhatsApp Business Platform — Cloud API (Meta)**, `POST https://graph.facebook.com/{versão}/{phone_number_id}/messages` com token de System User (Bearer). **MOCK** para demonstração (nada sai) |
+| Webhook | `GET/POST /webhooks/whatsapp/{canal}` — verificação `hub.mode=subscribe` + `hub.verify_token`; eventos com **`X-Hub-Signature-256`** (HMAC-SHA256 do corpo com o App Secret, comparação em tempo constante). Assine o campo **messages** no app da Meta |
+| Mensagens da clínica | Só com **modelos aprovados** (categoria Utilidade, pt_BR). Nomes e textos sugeridos em `config/messaging.php` (variáveis na mesma ordem); lembrete com 3 botões de resposta rápida, o sistema envia o payload `CONFIRM/CANCEL/RESCHEDULE:{agendamento}` |
+| Texto livre | Só na **janela de 24 h** após a última mensagem do paciente (respostas automáticas e da recepção) |
+| Recebido | Status `sent/delivered/read/failed`; mensagens de texto e botões. Áudio/imagem/documento são registrados como "[tipo]" — o tratamento chega na Fase 13 |
+| Idempotência | `messages.provider_message_id` único (wamid); chave de deduplicação por aviso (`reminder:24:{agendamento}:{horário}`) |
+| E-mail | Mesmo texto, via SMTP, quando não há WhatsApp (com consentimento de e-mail) |
+| SMS | **Não integrado** nesta versão |
+
+**Homologação:** use o número de teste da Meta (modo "Teste"), cadastre os modelos e aguarde a aprovação,
+configure o webhook e valide: agendamento → mensagem; lembrete → botão Confirmar → agenda confirmada.
 
 ## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)
 

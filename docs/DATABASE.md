@@ -148,6 +148,15 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `patient_account_tokens` | Links de ativação/redefinição: **somente o SHA-256** do token, expiração, uso único | `UNIQUE(token_hash)` |
 | `patient_files.visible_to_patient` | Arquivo liberado no portal (padrão: não) | |
 
+### Fase 11 — WhatsApp e notificações
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `messaging_channels` | Número de WhatsApp da clínica: provedor (meta/mock), modo, Phone Number ID, credenciais e token de verificação **criptografados**, modelos por finalidade | `UNIQUE(phone_number_id)`; CHECK provedor/modo |
+| `message_threads` | Conversa por telefone: paciente identificado, janela de 24 h, não lidas | `UNIQUE(channel_id, phone)` |
+| `messages` | Caixa de saída/entrada (WhatsApp/e-mail): finalidade, modelo, parâmetros, texto, status, tentativas, próxima tentativa | **`UNIQUE(company_id, dedupe_key)`** (aviso nunca duplica), **`UNIQUE(provider_message_id)`** (webhook idempotente) |
+| `staff_notifications` / `staff_notification_reads` | Avisos internos por unidade/permissão e leitura por usuário | |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

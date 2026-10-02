@@ -19,3 +19,5 @@ Schedule::command('queue:prune-failed --hours=720')->daily()->onOneServer();
 Schedule::command('auth:clear-resets')->everyFifteenMinutes();
 // Pagamentos online: consulta periódica cobre webhooks perdidos (gateway fora do ar, erro de rede).
 Schedule::command('aivexa:payments:sync')->everyTenMinutes()->withoutOverlapping(15)->onOneServer();
+// WhatsApp/e-mail (Fase 11): lembretes de consulta e reenvio de mensagens pendentes.
+Schedule::command('aivexa:messaging:run')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();

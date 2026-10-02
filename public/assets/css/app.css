@@ -373,3 +373,13 @@ body.portal { background: var(--bg); }
 .portal-list > li:last-child { border-bottom: 0; }
 .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
 .slot-grid .btn { justify-content: center; }
+
+/* Conversas do WhatsApp (Fase 11) */
+.chat { list-style: none; margin: 0; padding: 1rem; display: flex; flex-direction: column; gap: .6rem; max-height: 60vh; overflow-y: auto; }
+.chat__msg { max-width: 75%; }
+.chat__msg.is-in { align-self: flex-start; }
+.chat__msg.is-out { align-self: flex-end; text-align: right; }
+.chat__bubble { display: inline-block; padding: .55rem .8rem; border-radius: 12px; white-space: pre-wrap; text-align: left; background: var(--surface-2); border: 1px solid var(--border); }
+.chat__msg.is-out .chat__bubble { background: var(--success-soft); }
+.bell { position: relative; }
+.bell .count { position: absolute; top: -4px; right: -4px; background: #d92d20; color: #fff; border-radius: 999px; font-size: .68rem; padding: 0 .35rem; line-height: 1.3; }

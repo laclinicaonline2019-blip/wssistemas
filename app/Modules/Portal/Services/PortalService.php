@@ -145,7 +145,7 @@ class PortalService
             throw new BusinessRuleViolation("Cancelamento pelo portal só até {$hours} horas antes. Fale com a clínica.", 'portal_cancel_too_late');
         }
 
-        return $this->appointments->cancel(null, $appointment, 'Cancelado pelo paciente no portal');
+        return $this->appointments->cancel(null, $appointment, 'Cancelado pelo paciente no portal', notify: false);
     }
 
     public function confirm(PatientAccount $a, Appointment $appointment): Appointment

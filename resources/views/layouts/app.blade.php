@@ -46,6 +46,7 @@
                 {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
                 {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $nav($can('convenio.faturar') ? 'guides.index' : ($can('convenio.autorizar') ? 'authorizations.index' : 'insurers.index'), ['insurers.*', 'procedures.*', 'authorizations.*', 'guides.*', 'batches.*'], 'shield', 'Convênios', $can('convenio.visualizar') || $can('convenio.gerenciar') || $can('convenio.autorizar') || $can('convenio.faturar')) !!}
+                {!! $nav('messaging.inbox', ['messaging.inbox', 'messaging.threads.*'], 'chat', 'Conversas WhatsApp', $can('ia.conversas')) !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
             </ul>
             @php
@@ -58,6 +59,7 @@
                     $nav('roles.index', 'roles.*', 'shield', 'Perfis de acesso', $can('perfil.visualizar')),
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
                     $nav('gateways.index', 'gateways.*', 'cash', 'Pagamentos online', $can('integracao.gerenciar')),
+                    $nav('messaging.settings', 'messaging.settings', 'chat', 'WhatsApp e mensagens', $can('integracao.gerenciar')),
                     $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar'))
                 ]);
             @endphp
@@ -68,7 +70,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.11.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.12.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>
@@ -105,6 +107,11 @@
             @endif
 
             <div class="topbar__spacer"></div>
+
+            @if (! $isPlatform && $ctx->hasCompany())
+                @php $unread = \App\Modules\Messaging\Models\StaffNotification::query()->visibleTo($user, $ctx->allowedBranchIds())->unreadBy($user)->where('created_at', '>=', now()->subDays(30))->count(); @endphp
+                <a class="btn btn-ghost btn-sm bell" href="{{ route('notifications.index') }}" aria-label="Notificações{{ $unread ? ': '.$unread.' novas' : '' }}"><svg><use href="#i-activity"/></svg>@if ($unread)<span class="count">{{ $unread > 99 ? '99+' : $unread }}</span>@endif</a>
+            @endif
 
             @if (config('aivexa.stage') !== 'production')
                 <span class="stage-ribbon hide-sm" title="Dados e integrações deste ambiente não são de produção">{{ config('aivexa.stage') }}</span>

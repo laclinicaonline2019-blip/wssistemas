@@ -217,6 +217,16 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
 3. Na ficha do paciente: *Portal do paciente → Gerar link de ativação*. Exames anexados só aparecem no portal
    depois de "Liberar no portal".
 
+## WhatsApp
+
+1. No Meta Business: app com o produto WhatsApp, número verificado, **token permanente de System User** e App
+   Secret. Cadastre os modelos sugeridos em *WhatsApp e mensagens* e aguarde a aprovação.
+2. Em *Administração → WhatsApp e mensagens*: informe Phone Number ID, token, App Secret e os nomes dos modelos.
+3. No app da Meta: URL de callback = URL do webhook mostrada na tela; token de verificação = o da tela; assine
+   **messages**. O site precisa estar em HTTPS.
+4. O cron (item 7) envia os lembretes e reenvia mensagens pendentes a cada 5 minutos.
+5. Registre o consentimento de WhatsApp na ficha do paciente (ou desmarque "exigir consentimento").
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).
