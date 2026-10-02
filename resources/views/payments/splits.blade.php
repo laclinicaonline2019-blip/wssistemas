@@ -75,23 +75,29 @@
                 <div class="field col-4"><label for="sr-t">Tipo</label>
                     <select id="sr-t" name="type" class="input"><option value="percent">Percentual (%)</option><option value="fixed">Valor fixo (R$)</option></select></div>
                 <x-field name="value" label="Valor" col="col-4" placeholder="60,00" required />
-                <p class="help col-12">A regra mais específica vale (tipo de atendimento + pagador &gt; tipo de atendimento &gt; pagador &gt; geral). Percentual sobre o valor recebido (no split nativo do ASAAS, sobre o valor líquido).</p>
+                <p class="help col-12">A regra mais específica vale (tipo de atendimento + pagador &gt; tipo de atendimento &gt; pagador &gt; geral). Percentual sobre o valor recebido (no split nativo do ASAAS, sobre o valor líquido). Na <strong>maquininha Cielo</strong>, a divisão é a configurada pela Cielo no terminal — mantenha a regra igual para os relatórios baterem.</p>
                 <div class="col-12 form-actions"><button class="btn btn-primary" type="submit">Adicionar regra</button></div>
             </form>
         </div>
     </section>
 
     <section class="card">
-        <div class="card__head"><h2>Carteiras ASAAS dos médicos (split nativo)</h2></div>
+        <div class="card__head"><h2>Split nativo: identificação dos médicos nos gateways</h2></div>
         <div class="card__body stack">
-            <p class="help">Com a carteira (walletId) cadastrada, cobranças pelo ASAAS já depositam a parte do médico na conta dele. O médico precisa ter conta no ASAAS (ou subconta da clínica).</p>
+            <p class="help"><strong>ASAAS</strong>: carteira (walletId) — cobranças pelo ASAAS já depositam a parte do médico na conta dele.
+                <strong>Cielo</strong>: ID de subordinado (SubordinateMerchantId) — usado nas vendas online pela API Cielo com split e para registrar vendas
+                na <strong>maquininha Cielo com split</strong>. Exige contrato de Split com a Cielo (clínica como marketplace, médicos como subordinados).</p>
             @foreach ($doctors as $d)
-                <form method="post" action="{{ route('splits.wallet', $d) }}" class="row">
+                <form method="post" action="{{ route('splits.wallet', $d) }}" class="stack">
                     @csrf @method('put')
-                    <span class="small grow">{{ $d->displayName() }}</span>
-                    <label class="sr-only" for="w-{{ $d->id }}">walletId</label>
-                    <input id="w-{{ $d->id }}" name="asaas_wallet_id" class="input input-sm w-auto mono" value="{{ $d->asaas_wallet_id }}" placeholder="walletId" maxlength="64">
-                    <button class="btn btn-sm" type="submit">Salvar</button>
+                    <strong class="small">{{ $d->displayName() }}</strong>
+                    <div class="row">
+                        <label class="sr-only" for="w-{{ $d->id }}">walletId ASAAS</label>
+                        <input id="w-{{ $d->id }}" name="asaas_wallet_id" class="input input-sm w-auto mono" value="{{ $d->asaas_wallet_id }}" placeholder="walletId ASAAS" maxlength="64">
+                        <label class="sr-only" for="c-{{ $d->id }}">Subordinado Cielo</label>
+                        <input id="c-{{ $d->id }}" name="cielo_subordinate_id" class="input input-sm w-auto mono" value="{{ $d->cielo_subordinate_id }}" placeholder="SubordinateMerchantId Cielo" maxlength="36">
+                        <button class="btn btn-sm" type="submit">Salvar</button>
+                    </div>
                 </form>
             @endforeach
         </div>
@@ -107,7 +113,7 @@
             <tr><td class="small nowrap">{{ $s->created_at->timezone($tz)->format('d/m/Y H:i') }}</td><td class="small">{{ $s->doctor->displayName() }}</td>
                 <td class="small">{{ $s->receivable?->description }}</td><td class="t-right small">{{ Format::money($s->base_cents) }}</td>
                 <td class="t-right {{ $s->amount_cents < 0 ? 'text-danger' : '' }}">{{ Format::money($s->amount_cents) }}</td>
-                <td class="small">{{ $s->mode === 'native' ? 'nativo (gateway)' : 'interno' }}</td>
+                <td class="small">{{ $s->mode === 'native' ? 'nativo — '.(\App\Modules\Payments\Models\PaymentSplit::SOURCES[$s->source] ?? 'gateway') : 'interno' }}</td>
                 <td><span class="badge {{ ['settled' => 'badge-success', 'pending' => 'badge-warning'][$s->status] ?? '' }}">{{ ['settled' => 'liquidado', 'pending' => 'a repassar', 'reversed' => 'estornado'][$s->status] }}</span></td></tr>
         @empty
             <tr><td colspan="7" class="empty">Nenhum lançamento.</td></tr>

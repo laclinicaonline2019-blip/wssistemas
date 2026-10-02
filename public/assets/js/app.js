@@ -421,10 +421,50 @@
       $('[name=card_installments]', rf).closest('.field').classList.toggle('hidden', m !== 'credit_card');
       $('[name=card_brand]', rf).closest('.field').classList.toggle('hidden', m === 'pix');
       $('[data-cash-fields]', rf).classList.toggle('hidden', m !== 'cash');
+      var ts = $('[data-terminal-split]', rf);
+      if (ts) { ts.classList.toggle('hidden', ['credit_card', 'debit_card'].indexOf(m) < 0); if (ts.classList.contains('hidden')) $('input', ts).checked = false; }
       var given = toCents($('[data-given]', rf).value), amount = toCents($('[name=amount]', rf).value);
       $('[data-change]', rf).textContent = given ? (given >= amount ? fmt(given - amount) : 'valor insuficiente') : '—';
     };
     rf.addEventListener('change', syncReceive); rf.addEventListener('input', syncReceive); syncReceive();
+  }
+
+  // Pagamento com cartão (Cielo Silent Order Post): os campos do cartão não têm "name" e nunca
+  // são enviados a este servidor — o script da Cielo os envia direto à Cielo e devolve o PaymentToken.
+  var sopForm = $('[data-sop-form]');
+  if (sopForm) {
+    var sopBusy = false;
+    var sopError = function (msg) { var e = $('[data-sop-error]', sopForm); e.textContent = msg; e.hidden = false; sopBusy = false; $$('button[type=submit]', sopForm).forEach(function (b) { b.disabled = false; }); };
+    var loadScript = function (src) {
+      return new Promise(function (resolve, reject) {
+        if (window.bpSop_silentOrderPost) return resolve();
+        var s = document.createElement('script'); s.src = src; s.onload = resolve; s.onerror = reject; document.head.appendChild(s);
+      });
+    };
+    sopForm.addEventListener('submit', function (ev) {
+      if ($('[data-sop-token]', sopForm).value) return; // token obtido: envia (só token, bandeira, parcelas e nome)
+      ev.preventDefault();
+      if (sopBusy) return;
+      sopBusy = true;
+      $('[data-sop-error]', sopForm).hidden = true;
+      fetch(sopForm.getAttribute('data-session-url'), { headers: { Accept: 'application/json' } })
+        .then(function (r) { if (!r.ok) throw new Error('session'); return r.json(); })
+        .then(function (cfg) {
+          return loadScript(cfg.script_url).then(function () {
+            window.bpSop_silentOrderPost({
+              accessToken: cfg.access_token, environment: cfg.environment, language: 'PT', enableTokenize: false, cvvrequired: true,
+              onSuccess: function (resp) {
+                if (!resp || !resp.PaymentToken) return sopError('Não foi possível validar o cartão. Tente novamente.');
+                $('[data-sop-token]', sopForm).value = resp.PaymentToken;
+                sopForm.submit();
+              },
+              onError: function () { sopError('Não foi possível validar o cartão. Confira os dados e tente novamente.'); },
+              onInvalid: function () { sopError('Dados do cartão inválidos. Confira número, validade e CVV.'); }
+            });
+          });
+        })
+        .catch(function () { sopError('Pagamento com cartão indisponível no momento. Tente novamente em instantes.'); });
+    });
   }
 
   // Página de teste de impressão abre o diálogo automaticamente

@@ -24,7 +24,7 @@
         </div>
         <div class="card__body stack">
             @if ($g->provider !== 'mock')
-                @php $url = $g->webhookUrl().($g->provider === 'cielo' ? '?token='.$g->webhook_token : ''); @endphp
+                @php $url = $g->webhookUrl().(in_array($g->provider, ['cielo', 'cielo_api'], true) ? '?token='.$g->webhook_token : ''); @endphp
                 <div>
                     <span class="label">URL de webhook / notificação (cadastre no painel do {{ $g->provider === 'asaas' ? 'ASAAS' : 'Cielo' }})</span>
                     <div class="row"><input class="input" readonly value="{{ $url }}" id="wh-{{ $g->id }}" aria-label="URL de webhook"><button type="button" class="btn btn-sm" data-copy="#wh-{{ $g->id }}">Copiar</button></div>
@@ -33,7 +33,7 @@
                             <input class="input input-sm w-auto mono" readonly value="{{ $g->webhook_token }}" id="tk-{{ $g->id }}" aria-label="Token do webhook"><button type="button" class="btn btn-sm" data-copy="#tk-{{ $g->id }}">Copiar</button></div>
                         <p class="help">No ASAAS: Integrações → Webhooks → eventos de <strong>Cobranças</strong> (PAYMENT_*), versão da API v3.</p>
                     @else
-                        <p class="help">Na Cielo (Link de Pagamento): Configurações → URL de Notificação (POST) e URL de Mudança de Status. O token vai na própria URL — trate-a como senha.</p>
+                        <p class="help">{{ $g->provider === 'cielo_api' ? 'Na Cielo (API E-commerce): cadastre esta URL como "URL de Notificação" junto ao suporte/painel Cielo. O split exige contrato de Split com a Cielo e cada médico cadastrado como subordinado (ID em Financeiro → Repasses).' : 'Na Cielo (Link de Pagamento): Configurações → URL de Notificação (POST) e URL de Mudança de Status.' }} O token vai na própria URL — trate-a como senha.</p>
                     @endif
                     <form method="post" action="{{ route('gateways.rotate', $g) }}" data-confirm="Gerar novo token? O atual deixa de funcionar e precisará ser atualizado no gateway." class="mt-1">@csrf<button class="btn btn-sm btn-ghost" type="submit">Gerar novo token</button></form>
                 </div>

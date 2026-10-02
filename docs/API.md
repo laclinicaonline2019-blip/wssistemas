@@ -105,7 +105,7 @@ Campos desconhecidos são descartados.
 | Método | Rota | Permissão / notas |
 |---|---|---|
 | GET/POST | `/receivables` | `financeiro.visualizar\|caixa.operar` / `financeiro.editar\|caixa.operar` — `{branch_id, category_id, patient_id?, description, amount_cents, due_date}` |
-| POST | `/receivables/{id}/receive` | `caixa.operar\|financeiro.editar` — `{method, amount_cents, discount_cents?, card_installments?, card_brand?, authorization_code?, paid_on?}`. Erros: `cash_session_required`, `amount_exceeds_balance`, `discount_forbidden` (403), `not_receivable` (409) |
+| POST | `/receivables/{id}/receive` | `caixa.operar\|financeiro.editar` — `{method, amount_cents, discount_cents?, card_installments?, card_brand?, authorization_code?, paid_on?, terminal_split?}` (`terminal_split`: venda na maquininha Cielo com split — `terminal_split_invalid`, `terminal_split_unavailable`). Erros: `cash_session_required`, `amount_exceeds_balance`, `discount_forbidden` (403), `not_receivable` (409) |
 | POST | `/receivables/{id}/cancel` | `financeiro.editar` — só sem recebimentos (`has_payments`) |
 | GET/POST | `/payables` | `financeiro.visualizar` / `financeiro.editar` — `installments` gera N parcelas mensais |
 | POST | `/payables/{id}/pay` · `/cancel` | `financeiro.editar` |
@@ -124,6 +124,10 @@ Campos desconhecidos são descartados.
 | POST | `/charges/{id}/sync` | consulta o gateway e aplica a situação |
 | POST | `/charges/{id}/cancel` · `/refund` | `pagamento.cobrar` · `pagamento.estornar` |
 | POST | `/webhooks/pagamentos/{gateway_id}` (fora de `/api`, público) | autenticado pelo token do gateway; `401` sem token; eventos repetidos → `200 "evento já recebido"` |
+
+Gateway `cielo_api` (split Cielo): só `billing_type: credit_card` (`invalid_billing_type`); o pagamento é
+feito pelo paciente na `public_url` (cartão tokenizado no navegador; rotas públicas `GET /pagar/{token}/cartao/sessao`
+e `POST /pagar/{token}/cartao` recebem apenas o `PaymentToken`).
 
 Situações: `pending`, `paid`, `overdue`, `cancelled`, `refunded`, `failed`, `review` (valor divergente,
 duplicidade, chargeback — exige conferência).

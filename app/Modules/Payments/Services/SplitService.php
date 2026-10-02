@@ -45,25 +45,39 @@ class SplitService
             ->first();
     }
 
-    /** Split nativo para enviar ao gateway (ASAAS): só com regra e carteira do médico. */
+    /**
+     * Split nativo para enviar ao gateway — só com regra e identificação do médico no gateway:
+     * ASAAS → carteira (walletId); Cielo API E-commerce → SubordinateMerchantId.
+     */
     public function nativePayload(Receivable $r, PaymentGateway $gateway, int $amount): ?array
     {
-        if ($gateway->provider !== 'asaas' || ! ($rule = $this->ruleFor($r))) {
+        if (! in_array($gateway->provider, ['asaas', 'cielo_api'], true) || ! ($rule = $this->ruleFor($r))) {
             return null;
         }
 
-        $wallet = DB::table('doctors')->where('id', $r->doctor_id)->value('asaas_wallet_id');
-        if (! $wallet) {
-            return null;
-        }
+        $doctor = DB::table('doctors')->where('id', $r->doctor_id)->first(['asaas_wallet_id', 'cielo_subordinate_id']);
+        $base = ['doctor_id' => $r->doctor_id, 'rule_id' => $rule->id, 'source' => $gateway->provider, 'expected_cents' => $rule->shareOf($amount)];
 
-        return [
-            'doctor_id' => $r->doctor_id, 'rule_id' => $rule->id, 'wallet_id' => $wallet,
-            'type' => $rule->type, 'value' => $rule->value, 'expected_cents' => $rule->shareOf($amount),
-        ];
+        return match (true) {
+            $gateway->provider === 'asaas' && (bool) $doctor?->asaas_wallet_id => $base + ['wallet_id' => $doctor->asaas_wallet_id, 'type' => $rule->type, 'value' => $rule->value],
+            // Cielo: valor em centavos da parte do médico (a clínica fica com o restante).
+            $gateway->provider === 'cielo_api' && (bool) $doctor?->cielo_subordinate_id => $base + ['subordinate_id' => $doctor->cielo_subordinate_id],
+            default => null,
+        };
     }
 
-    public function applyForReceipt(FinancialTransaction $txn, ?PaymentCharge $charge = null): ?PaymentSplit
+    /** O médico pode receber split na maquininha Cielo (subordinado cadastrado + regra)? */
+    public function terminalSplitAvailable(Receivable $r): bool
+    {
+        return $r->doctor_id && $this->ruleFor($r)
+            && (bool) DB::table('doctors')->where('id', $r->doctor_id)->value('cielo_subordinate_id');
+    }
+
+    /**
+     * @param  string|null  $terminalSource  "cielo_terminal" quando a venda foi feita na maquininha Cielo com split
+     *                                       (a Cielo já dividiu — não há repasse interno a pagar)
+     */
+    public function applyForReceipt(FinancialTransaction $txn, ?PaymentCharge $charge = null, ?string $terminalSource = null): ?PaymentSplit
     {
         if ($txn->kind !== 'receipt' || ! $txn->receivable_id) {
             return null;
@@ -74,9 +88,10 @@ class SplitService
             return null;
         }
 
-        $native = $charge?->split_snapshot && ($charge->split_snapshot['doctor_id'] ?? null) === $r->doctor_id;
-        // Split nativo do ASAAS incide sobre o valor líquido (após a tarifa do gateway).
-        $base = $native && $charge->net_cents ? $charge->net_cents : $txn->amount_cents;
+        $native = ($charge?->split_snapshot && ($charge->split_snapshot['doctor_id'] ?? null) === $r->doctor_id) || $terminalSource !== null;
+        $source = $terminalSource ?? ($native ? ($charge->split_snapshot['source'] ?? $charge->provider) : null);
+        // Split nativo do ASAAS incide sobre o valor líquido (após a tarifa); na Cielo, sobre o valor da venda.
+        $base = $native && $charge?->net_cents ? $charge->net_cents : $txn->amount_cents;
         $amount = $rule->shareOf($base);
 
         if ($amount <= 0) {
@@ -87,6 +102,7 @@ class SplitService
             'doctor_id' => $r->doctor_id, 'receivable_id' => $r->id, 'transaction_id' => $txn->id, 'charge_id' => $charge?->id,
             'split_rule_id' => $rule->id, 'base_cents' => $base, 'amount_cents' => $amount,
             'mode' => $native ? 'native' : 'internal', 'status' => $native ? 'settled' : 'pending', 'settled_at' => $native ? now() : null,
+            'source' => $source,
         ]);
     }
 

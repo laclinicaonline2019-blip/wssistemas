@@ -189,6 +189,10 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
 3. O site precisa estar em **HTTPS** com o `APP_URL` correto — os gateways só enviam avisos para HTTPS.
 4. O cron (item 7) também roda a sincronização de cobranças a cada 10 minutos.
 5. Faça um pagamento de teste e confira em *Últimos avisos recebidos* e na conta a receber.
+6. **Split Cielo online** (`Cielo — API E-commerce com split`): informe MerchantId/MerchantKey e
+   ClientId/ClientSecret, cadastre a URL de notificação mostrada na tela e, em *Repasses*, o **ID de
+   subordinado Cielo** de cada médico. Não precisa de nada instalado no servidor (o cartão é tokenizado
+   no navegador do paciente).
 
 ## Atualizações
 

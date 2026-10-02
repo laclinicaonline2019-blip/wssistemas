@@ -51,6 +51,7 @@ class FinanceController extends Controller
             'method' => ['required', Rule::in(array_keys(FinancialTransaction::METHODS))],
             'card_installments' => ['nullable', 'integer', 'between:1,24'], 'card_brand' => ['nullable', 'string', 'max:30'],
             'authorization_code' => ['nullable', 'string', 'max:60'], 'paid_on' => ['nullable', 'date'],
+            'terminal_split' => ['nullable', 'boolean'],
         ]);
         $data['discount_cents'] = $this->cents($request, 'discount_cents', false, 0) ?? 0;
         $data['amount_cents'] = $this->cents($request, 'amount_cents', $data['discount_cents'] === 0, 0) ?? 0;

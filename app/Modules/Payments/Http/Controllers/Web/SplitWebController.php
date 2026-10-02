@@ -78,10 +78,13 @@ class SplitWebController extends Controller
 
     public function wallet(Request $request, Doctor $doctor): RedirectResponse
     {
-        $wallet = $request->validate(['asaas_wallet_id' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9\-]+$/']])['asaas_wallet_id'] ?? null;
-        $doctor->forceFill(['asaas_wallet_id' => $wallet ?: null])->save();
+        $data = $request->validate([
+            'asaas_wallet_id' => ['nullable', 'string', 'max:64', 'regex:/^[A-Za-z0-9\-]+$/'],
+            'cielo_subordinate_id' => ['nullable', 'uuid'],
+        ], [], ['cielo_subordinate_id' => 'ID de subordinado Cielo']);
+        $doctor->forceFill(['asaas_wallet_id' => ($data['asaas_wallet_id'] ?? null) ?: null, 'cielo_subordinate_id' => ($data['cielo_subordinate_id'] ?? null) ?: null])->save();
 
-        return back()->with('success', 'Carteira ASAAS do médico atualizada.');
+        return back()->with('success', 'Dados de split do médico atualizados.');
     }
 
     public function settle(Request $request, Doctor $doctor): RedirectResponse

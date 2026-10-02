@@ -12,7 +12,7 @@ class PaymentGateway extends Model
 {
     use Auditable, BelongsToCompany, HasUlids;
 
-    public const PROVIDERS = ['asaas' => 'ASAAS', 'cielo' => 'Cielo (Link de Pagamento)', 'mock' => 'MOCK (simulação, sem dinheiro real)'];
+    public const PROVIDERS = ['asaas' => 'ASAAS', 'cielo' => 'Cielo (Link de Pagamento)', 'cielo_api' => 'Cielo — API E-commerce com split (cartão)', 'mock' => 'MOCK (simulação, sem dinheiro real)'];
 
     public const MODES = ['mock' => 'MOCK', 'sandbox' => 'SANDBOX (homologação)', 'production' => 'Produção'];
 

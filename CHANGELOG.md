@@ -2,6 +2,22 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.9.1] — 2026-10-02 — Fase 8.1: split da Cielo (online e maquininha)
+
+### Adicionado
+- **Cielo — API E-commerce com split** (`cielo_api`): venda `SplittedCreditCard` com `SplitPayments`
+  (`SubordinateMerchantId` do médico + valor da parte dele); a Cielo liquida cada parte na conta de cada um.
+  O cartão é digitado na página `/pagar/{token}`, mas os dados vão do navegador **direto para a Cielo**
+  (Silent Order Post): o servidor recebe só o `PaymentToken` temporário. Confirmação pela consulta
+  `GET /1/sales/{PaymentId}`; "Post de Notificação" autenticado por token na URL; estorno via `void`
+  (desfaz o split). Proteção contra clique duplo (lock por cobrança) e auditoria de aprovação/recusa.
+- **Maquininha Cielo com split** (Cielo Smart/Flash com split contratado): no recebimento por cartão,
+  a opção "Venda na maquininha Cielo com split" (exige NSU/autorização e médico com ID de subordinado)
+  registra a parte do médico como **já liquidada pela Cielo** — não entra no fechamento de repasse.
+- Cadastro do **ID de subordinado Cielo** do médico na tela de Repasses (ao lado da carteira ASAAS) e
+  origem de cada split (ASAAS, Cielo online, Maquininha Cielo).
+- API: `terminal_split` em `POST /receivables/{id}/receive`.
+
 ## [0.9.0] — 2026-10-02 — Fase 8: pagamentos online, webhooks e split
 
 ### Adicionado

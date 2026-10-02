@@ -141,7 +141,18 @@ class FinanceService
             throw new BusinessRuleViolation('Você não tem permissão para conceder desconto.', 'discount_forbidden', 403);
         }
 
-        return DB::transaction(function () use ($actor, $receivable, $data, $discount) {
+        // Maquininha Cielo com split: a própria Cielo já dividiu a venda — registra sem repasse interno.
+        $terminalSplit = filter_var($data['terminal_split'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($terminalSplit) {
+            if (! in_array($data['method'], ['credit_card', 'debit_card'], true) || empty($data['authorization_code'])) {
+                throw new BusinessRuleViolation('Split na maquininha Cielo: informe cartão de crédito/débito e o NSU/autorização do comprovante.', 'terminal_split_invalid');
+            }
+            if (! $this->splits->terminalSplitAvailable($receivable)) {
+                throw new BusinessRuleViolation('O médico desta conta não tem ID de subordinado Cielo ou regra de repasse cadastrados (Financeiro → Repasses).', 'terminal_split_unavailable');
+            }
+        }
+
+        return DB::transaction(function () use ($actor, $receivable, $data, $discount, $terminalSplit) {
             $r = Receivable::query()->whereKey($receivable->id)->lockForUpdate()->firstOrFail();
 
             if (! in_array($r->status, ['open', 'partial'], true)) {
@@ -180,7 +191,7 @@ class FinanceService
             Receivable::withoutAuditing(fn () => $r->save());
 
             if ($txn) {
-                $this->splits->applyForReceipt($txn);
+                $this->splits->applyForReceipt($txn, null, $terminalSplit ? 'cielo_terminal' : null);
             }
 
             $this->audit->record('finance.received', $r, metadata: [

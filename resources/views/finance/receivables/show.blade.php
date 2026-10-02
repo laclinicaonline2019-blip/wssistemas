@@ -47,6 +47,9 @@
                     <x-field name="card_installments" label="Parcelas" type="number" min="1" max="24" col="col-3" :value="old('card_installments', 1)" />
                     <x-field name="card_brand" label="Bandeira" col="col-4" maxlength="30" placeholder="Visa, Master…" />
                     <x-field name="authorization_code" label="NSU / autorização / ID PIX" col="col-5" maxlength="60" />
+                    @if ($terminalSplit)
+                        <label class="check col-12" data-terminal-split><input type="checkbox" name="terminal_split" value="1"><span><strong>Venda na maquininha Cielo com split</strong> — a Cielo já separou a parte do médico (não gera repasse interno). NSU obrigatório.</span></label>
+                    @endif
                 </div>
                 <div class="col-12 form-grid" data-cash-fields>
                     <div class="field col-6"><label for="rv-given">Valor entregue pelo paciente</label><input id="rv-given" class="input money-input" data-mask="money" inputmode="numeric" data-given></div>

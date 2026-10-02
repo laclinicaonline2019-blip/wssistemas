@@ -24,13 +24,18 @@ class SecurityHeaders
         $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $headers->set('Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()');
+        // Página pública de pagamento com cartão: o script de tokenização da Cielo (Silent Order Post)
+        // envia o cartão do navegador direto para a Cielo — liberado só nesta rota.
+        $sop = $request->routeIs('payments.public') ? ' https://transaction.pagador.com.br https://transactionsandbox.pagador.com.br' : '';
+
         $headers->set('Content-Security-Policy', implode('; ', [
             "default-src 'self'",
-            "script-src 'self'",
+            "script-src 'self'".$sop,
             "style-src 'self' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com",
             "img-src 'self' data: blob:",
-            "connect-src 'self'",
+            "connect-src 'self'".$sop,
+            "frame-src 'self'".$sop,
             $printable ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

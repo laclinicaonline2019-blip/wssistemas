@@ -16,7 +16,9 @@ use App\Modules\Payments\Models\PaymentCustomer;
 use App\Modules\Payments\Models\PaymentGateway;
 use App\Modules\Payments\Models\PaymentWebhookEvent;
 use App\Modules\Payments\Providers\AsaasProvider;
+use App\Modules\Payments\Providers\CardTokenProvider;
 use App\Modules\Payments\Providers\ChargeRequest;
+use App\Modules\Payments\Providers\CieloApiProvider;
 use App\Modules\Payments\Providers\CieloProvider;
 use App\Modules\Payments\Providers\MockProvider;
 use App\Modules\Payments\Providers\PaymentProvider;
@@ -24,6 +26,7 @@ use App\Modules\Payments\Providers\RemoteCharge;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -51,6 +54,7 @@ class PaymentService
         return app(match ($gateway->provider) {
             'asaas' => AsaasProvider::class,
             'cielo' => CieloProvider::class,
+            'cielo_api' => CieloApiProvider::class,
             default => MockProvider::class,
         });
     }
@@ -107,6 +111,9 @@ class PaymentService
         if (! $gateway->is_active) {
             throw new BusinessRuleViolation('Gateway inativo.', 'gateway_inactive');
         }
+        if ($gateway->provider === 'cielo_api' && $billingType !== 'credit_card') {
+            throw new BusinessRuleViolation('A Cielo com split (API E-commerce) aceita somente cartão de crédito. Para PIX/boleto use outro gateway.', 'invalid_billing_type');
+        }
         if (! array_key_exists($billingType, PaymentCharge::BILLING_TYPES)) {
             throw new BusinessRuleViolation('Forma de cobrança inválida.', 'invalid_billing_type');
         }
@@ -143,7 +150,7 @@ class PaymentService
             $result = $provider->createCharge($gateway, new ChargeRequest(
                 $charge->id, $amountCents, $billingType, $dueDate,
                 mb_substr($receivable->description, 0, 200), $customerId,
-                $split ? ['wallet_id' => $split['wallet_id'], 'type' => $split['type'], 'value' => $split['value']] : null,
+                isset($split['wallet_id']) ? ['wallet_id' => $split['wallet_id'], 'type' => $split['type'], 'value' => $split['value']] : null,
                 (int) $gateway->setting('max_installments', 1),
             ));
         } catch (Throwable $e) {
@@ -163,6 +170,64 @@ class PaymentService
         ]);
 
         return $charge;
+    }
+
+    /** Configuração da tokenização no navegador (página pública de pagamento com cartão). */
+    public function tokenizationConfig(PaymentCharge $charge): array
+    {
+        $gateway = $charge->gateway()->first();
+        $provider = $this->provider($gateway);
+
+        if (! $provider instanceof CardTokenProvider || ! $charge->isOpen()) {
+            throw new BusinessRuleViolation('Esta cobrança não aceita pagamento com cartão nesta página.', 'not_card_charge', 409);
+        }
+
+        return $provider->tokenizationConfig($gateway);
+    }
+
+    /**
+     * Pagamento com cartão tokenizado (o servidor recebe só o PaymentToken). A baixa segue a
+     * regra de sempre: só depois da consulta à API do gateway confirmar a venda.
+     */
+    public function payWithCard(PaymentCharge $charge, string $paymentToken, string $brand, int $installments, string $holderName): PaymentCharge
+    {
+        $gateway = $charge->gateway()->first();
+        $provider = $this->provider($gateway);
+
+        if (! $provider instanceof CardTokenProvider) {
+            throw new BusinessRuleViolation('Esta cobrança não aceita pagamento com cartão nesta página.', 'not_card_charge', 409);
+        }
+
+        $lock = Cache::lock("charge-pay:{$charge->id}", 60);
+        if (! $lock->get()) {
+            throw new BusinessRuleViolation('Pagamento em processamento. Aguarde alguns segundos.', 'payment_in_progress', 409);
+        }
+
+        try {
+            $charge->refresh();
+            if (! $charge->isOpen() || $charge->provider_charge_id) {
+                throw new BusinessRuleViolation('Esta cobrança já foi paga ou está em processamento.', 'already_processed', 409);
+            }
+
+            $max = max(1, (int) $gateway->setting('max_installments', 1));
+            $split = $charge->split_snapshot && isset($charge->split_snapshot['subordinate_id'])
+                ? ['subordinate_id' => $charge->split_snapshot['subordinate_id'], 'amount_cents' => (int) $charge->split_snapshot['expected_cents']] : null;
+
+            $result = $provider->authorizeCard($gateway, $charge, $paymentToken, $brand, min($max, max(1, $installments)), $holderName, $split);
+            $this->audit->record($result['approved'] ? 'payment.card_authorized' : 'payment.card_denied', $charge->receivable, metadata: [
+                'charge_id' => $charge->id, 'payment_id' => $result['payment_id'], 'brand' => $brand, 'installments' => $installments, 'split' => (bool) $split,
+            ]);
+
+            if (! $result['approved']) {
+                throw new BusinessRuleViolation($result['message'], 'card_denied');
+            }
+
+            $charge->forceFill(['provider_charge_id' => $result['payment_id']])->save();
+
+            return $this->sync($charge);
+        } finally {
+            $lock->release();
+        }
     }
 
     public function cancelCharge(User $actor, PaymentCharge $charge): PaymentCharge

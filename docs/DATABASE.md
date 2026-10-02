@@ -119,6 +119,9 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `split_rules` | Regra de repasse por médico (percentual em centésimos de % ou valor fixo), tipo de atendimento e pagador | CHECK percentual ≤ 100% |
 | `payment_splits` | Parte do médico por recebimento: nativo (já liquidado) ou interno (a repassar), conta a pagar do fechamento | `UNIQUE(transaction_id, doctor_id)` |
 | `doctors.asaas_wallet_id` | Carteira ASAAS do médico (split nativo) | |
+| `doctors.cielo_subordinate_id` | ID de subordinado (SubordinateMerchantId) do médico no split Cielo | 8.1 |
+| `payment_splits.source` | Origem do split nativo: `asaas`, `cielo_api`, `cielo_terminal` | 8.1 |
+| `payment_gateways.provider` | + `cielo_api` (API E-commerce com split) | 8.1 |
 | `financial_transactions.kind` | + `fee` (tarifa do gateway) | |
 
 ## Modelo alvo (fases seguintes)

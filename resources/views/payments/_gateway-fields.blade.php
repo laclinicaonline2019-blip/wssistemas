@@ -8,11 +8,16 @@
     <div class="field col-6"><label>ASAAS — chave de API (access_token)</label>
         <input name="credentials[api_key]" type="password" class="input" autocomplete="off" placeholder="{{ $g?->credential('api_key') ? '•••••••• configurada (deixe em branco para manter)' : '$aact_...' }}"></div>
 @endif
-@if ($p === null || $p === 'cielo')
+@if ($p === null || $p === 'cielo_api')
+    <div class="field col-3"><label>Cielo API — MerchantId</label><input name="credentials[merchant_id]" class="input" autocomplete="off" placeholder="{{ $g?->credential('merchant_id') ? 'configurado' : '' }}"></div>
+    <div class="field col-3"><label>Cielo API — MerchantKey</label><input name="credentials[merchant_key]" type="password" class="input" autocomplete="off" placeholder="{{ $g?->credential('merchant_key') ? '•••••••• configurada' : '' }}"></div>
+    <x-field name="settings[soft_descriptor]" label="Nome na fatura (até 13, sem espaços)" col="col-3" maxlength="13" :value="$g?->setting('soft_descriptor')" />
+@endif
+@if ($p === null || $p === 'cielo' || $p === 'cielo_api')
     <div class="field col-3"><label>Cielo — ClientId</label><input name="credentials[client_id]" class="input" autocomplete="off" placeholder="{{ $g?->credential('client_id') ? 'configurado' : '' }}"></div>
     <div class="field col-3"><label>Cielo — ClientSecret</label><input name="credentials[client_secret]" type="password" class="input" autocomplete="off" placeholder="{{ $g?->credential('client_secret') ? '•••••••• configurado' : '' }}"></div>
 @endif
 <x-field name="settings[max_installments]" label="Parcelas máx. no cartão" type="number" min="1" max="12" col="col-3" :value="$g?->setting('max_installments', 1) ?? 1" />
 <label class="check col-3"><input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" value="1" @checked($g?->is_active ?? true)><span>Ativo</span></label>
 <label class="check col-3"><input type="hidden" name="is_default" value="0"><input type="checkbox" name="is_default" value="1" @checked($g?->is_default ?? false)><span>Padrão</span></label>
-@if ($p === null)<p class="help col-12">Preencha apenas os campos do gateway escolhido. O gateway MOCK não usa credenciais (simulação).</p>@endif
+@if ($p === null)<p class="help col-12">Preencha apenas os campos do gateway escolhido. Cielo API com split usa MerchantId/MerchantKey (vendas) e ClientId/ClientSecret (tokenização do cartão). O gateway MOCK não usa credenciais (simulação).</p>@endif

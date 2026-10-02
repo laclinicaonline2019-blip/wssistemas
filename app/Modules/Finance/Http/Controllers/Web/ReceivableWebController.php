@@ -14,6 +14,7 @@ use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Payments\Models\PaymentCharge;
 use App\Modules\Payments\Models\PaymentGateway;
+use App\Modules\Payments\Services\SplitService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -93,6 +94,7 @@ class ReceivableWebController extends Controller
             'methods' => FinancialTransaction::METHODS,
             'charges' => PaymentCharge::query()->with('gateway:id,name,provider,mode')->where('receivable_id', $receivable->id)->latest()->get(),
             'gateways' => PaymentGateway::query()->where('is_active', true)->orderByDesc('is_default')->get(),
+            'terminalSplit' => app(SplitService::class)->terminalSplitAvailable($receivable),
         ]);
     }
 
@@ -105,6 +107,7 @@ class ReceivableWebController extends Controller
             'card_brand' => ['nullable', 'string', 'max:30'],
             'authorization_code' => ['nullable', 'string', 'max:60'],
             'paid_on' => ['nullable', 'date'],
+            'terminal_split' => ['nullable', 'boolean'],
         ], [], ['method' => 'forma de pagamento']);
         $data['discount_cents'] = $this->cents($request, 'discount', false, 0, 'desconto') ?? 0;
         $data['amount_cents'] = $this->cents($request, 'amount', $data['discount_cents'] === 0, 0) ?? 0;

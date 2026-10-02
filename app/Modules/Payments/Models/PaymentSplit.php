@@ -15,7 +15,9 @@ class PaymentSplit extends Model
 {
     use BelongsToCompany, HasUlids;
 
-    protected $fillable = ['doctor_id', 'receivable_id', 'transaction_id', 'charge_id', 'split_rule_id', 'base_cents', 'amount_cents', 'mode', 'status', 'payable_id', 'settled_at'];
+    protected $fillable = ['doctor_id', 'receivable_id', 'transaction_id', 'charge_id', 'split_rule_id', 'base_cents', 'amount_cents', 'mode', 'status', 'payable_id', 'settled_at', 'source'];
+
+    public const SOURCES = ['asaas' => 'ASAAS', 'cielo_api' => 'Cielo (online)', 'cielo_terminal' => 'Maquininha Cielo'];
 
     protected $attributes = ['status' => 'pending'];
 

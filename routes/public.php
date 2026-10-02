@@ -23,3 +23,6 @@ Route::middleware('throttle:30,1')->group(function () {
 // Fase 8 — webhooks dos gateways (autenticados por token) e página pública da cobrança.
 Route::post('webhooks/pagamentos/{gateway}', WebhookController::class)->middleware('throttle:240,1')->name('payments.webhook');
 Route::get('pagar/{token}', PublicPaymentController::class)->middleware('throttle:60,1')->name('payments.public');
+// Cartão tokenizado no navegador (Cielo Silent Order Post): o servidor recebe só o PaymentToken.
+Route::get('pagar/{token}/cartao/sessao', [PublicPaymentController::class, 'cardSession'])->middleware('throttle:20,1')->name('payments.card_session');
+Route::post('pagar/{token}/cartao', [PublicPaymentController::class, 'payCard'])->middleware('throttle:10,1')->name('payments.card_pay');

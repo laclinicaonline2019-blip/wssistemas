@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (162 testes; 1–3 ignorados conforme o banco)
+## Cobertura atual (167 testes; 1–3 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -38,6 +38,7 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Documents/DocumentWebTest` | emissão web dos 4 tipos (linhas em branco ignoradas, exames por linha), telas, cancelamento, menu por permissão, **anexos privados com tipo detectado pelo conteúdo**, download auditado, arquivar sem apagar, **limite de armazenamento do plano**, isolamento |
 | `Finance/FinanceTest` | cobrança gerada na chegada (uma vez) e cancelada com o agendamento, dinheiro exige caixa aberto, valor acima do saldo, **desconto só com permissão**, recebimento parcial e quitação, recibo por extenso, **fechamento cego com diferença e conferência por outra pessoa** (justificativa obrigatória, operador não confere o próprio caixa), sangria sem saldo, **estorno restaura saldo** (sem estorno duplo nem estorno de estorno), **livro imutável** (aplicação e banco), parcelamento com centavos, data retroativa limitada, fluxo por categoria, permissões por perfil, isolamento entre clínicas, telas, máscara de valor e CSV |
 | `Payments/PaymentTest` | cobrança MOCK **idempotente**, página pública com dados mínimos, baixa só pelo fluxo do webhook (com tarifa), recebimento online não estornável manualmente, **webhook sem token/token errado recusado**, **evento repetido não duplica**, evento de cobrança desconhecida ignorado, **ASAAS**: corpo da cobrança, split nativo com `walletId`, "webhook diz pago mas API diz pendente" não dá baixa, split sobre o líquido, credenciais criptografadas e fora da auditoria, CPF obrigatório; **valor divergente e pagamento em duplicidade vão para revisão**; estorno pelo gateway reverte livro e split; repasse interno, fechamento e devolução após estorno; **sincronização periódica** recupera webhook perdido; **Cielo**: link, notificação com token, negado não baixa, pago baixa; permissões e isolamento entre clínicas |
+| `Payments/CieloSplitTest` | **split Cielo online**: venda `SplittedCreditCard` com `SubordinateMerchantId` e valor do médico, só o PaymentToken chega ao servidor, baixa após consulta, split nativo (origem Cielo online); cartão negado não baixa e pode tentar de novo; formato inválido recusado; notificação com token + estorno (void) reverte livro e split; **maquininha com split** exige cartão + NSU + subordinado e não entra no repasse; telas de configuração |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
 
 ## Próximos testes obrigatórios (por fase)
