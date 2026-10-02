@@ -30,7 +30,7 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Pagamentos online** ASAAS e Cielo (SANDBOX/produção) + MOCK identificado: links com PIX/QR Code, webhooks autenticados e idempotentes com **confirmação por consulta à API**, sincronização periódica, tarifas, estornos e **split/repasse médico** (nativo ASAAS ou interno)
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 163 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 162 testes
 
 Próxima fase: **Fase 9** — convênios: operadoras, planos, tabelas de procedimentos, autorizações e faturamento (preparado para TISS).
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).

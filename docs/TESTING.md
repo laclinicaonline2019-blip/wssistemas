@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (163 testes; 1–3 ignorados conforme o banco)
+## Cobertura atual (162 testes; 1–3 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
