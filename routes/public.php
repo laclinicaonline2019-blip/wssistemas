@@ -17,3 +17,7 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::get('validar/consulta', [DocumentValidationController::class, 'lookup'])->name('documents.validate.lookup');
     Route::get('validar/{code}', [DocumentValidationController::class, 'show'])->name('documents.validate');
 });
+
+// Fase 8 — webhooks dos gateways (autenticados por token) e página pública da cobrança.
+Route::post('webhooks/pagamentos/{gateway}', \App\Modules\Payments\Http\Controllers\Web\WebhookController::class)->middleware('throttle:240,1')->name('payments.webhook');
+Route::get('pagar/{token}', \App\Modules\Payments\Http\Controllers\Web\PublicPaymentController::class)->middleware('throttle:60,1')->name('payments.public');

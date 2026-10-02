@@ -60,4 +60,12 @@ return [
     'signature' => [
         'driver' => env('SIGNATURE_DRIVER', 'none'),
     ],
+
+    /*
+    | Pagamentos online. O gateway MOCK (simulação) fica bloqueado em produção,
+    | salvo liberação explícita para demonstração.
+    */
+    'payments' => [
+        'allow_mock_in_production' => (bool) env('PAYMENTS_ALLOW_MOCK_IN_PRODUCTION', false),
+    ],
 ];

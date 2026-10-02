@@ -13,6 +13,8 @@ use App\Modules\Finance\Models\Payable;
 use App\Modules\Finance\Models\Receivable;
 use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
+use App\Modules\Payments\Models\PaymentCharge;
+use App\Modules\Payments\Services\SplitService;
 use App\Modules\Scheduling\Models\Appointment;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
@@ -36,6 +38,7 @@ class FinanceService
     public function __construct(
         private readonly TenantContext $context,
         private readonly AuditLogger $audit,
+        private readonly SplitService $splits,
     ) {}
 
     // ------------------------------------------------------------------ categorias
@@ -176,12 +179,52 @@ class FinanceService
             $this->refreshStatus($r);
             Receivable::withoutAuditing(fn () => $r->save());
 
+            if ($txn) {
+                $this->splits->applyForReceipt($txn);
+            }
+
             $this->audit->record('finance.received', $r, metadata: [
                 'amount_cents' => $amount, 'discount_cents' => $discount, 'method' => $data['method'], 'transaction_id' => $txn?->id, 'cash_session_id' => $session?->id,
             ]);
 
             return $txn; // null = apenas desconto aplicado
         });
+    }
+
+    /**
+     * Baixa de cobrança online CONFIRMADA pelo gateway (chamado só pelo PaymentService, após
+     * webhook autenticado + consulta à API). Registra a tarifa do gateway como saída.
+     */
+    public function receiveOnline(PaymentCharge $charge, int $paidCents, ?int $netCents, string $method, CarbonImmutable $paidAt): FinancialTransaction
+    {
+        $r = Receivable::query()->whereKey($charge->receivable_id)->lockForUpdate()->firstOrFail();
+
+        if (! in_array($r->status, ['open', 'partial'], true) || $paidCents > $r->amount_cents - $r->discount_cents - $r->paid_cents) {
+            throw new BusinessRuleViolation('Conta já quitada ou saldo menor que o valor pago online — revisar (possível pagamento em duplicidade).', 'duplicate_payment', 409);
+        }
+
+        $txn = $this->record(null, [
+            'branch_id' => $r->branch_id, 'direction' => 'in', 'kind' => 'receipt', 'method' => $method, 'amount_cents' => $paidCents,
+            'receivable_id' => $r->id, 'gateway' => $charge->provider, 'gateway_reference' => $charge->provider_charge_id,
+            'description' => $r->description, 'occurred_at' => $paidAt->min(CarbonImmutable::now()),
+        ]);
+
+        if ($netCents !== null && $netCents < $paidCents) {
+            $this->record(null, [
+                'branch_id' => $r->branch_id, 'direction' => 'out', 'kind' => 'fee', 'method' => $method, 'amount_cents' => $paidCents - $netCents,
+                'receivable_id' => $r->id, 'gateway' => $charge->provider, 'gateway_reference' => $charge->provider_charge_id,
+                'description' => 'Tarifa do gateway '.strtoupper($charge->provider), 'occurred_at' => $paidAt->min(CarbonImmutable::now()),
+            ]);
+        }
+
+        $r->paid_cents += $paidCents;
+        $this->refreshStatus($r);
+        Receivable::withoutAuditing(fn () => $r->save());
+
+        $this->splits->applyForReceipt($txn, $charge);
+        $this->audit->record('finance.received', $r, metadata: ['amount_cents' => $paidCents, 'method' => $method, 'transaction_id' => $txn->id, 'gateway' => $charge->provider, 'charge_id' => $charge->id]);
+
+        return $txn;
     }
 
     public function cancelReceivable(User $actor, Receivable $receivable, string $reason): Receivable
@@ -288,7 +331,7 @@ class FinanceService
 
     // ------------------------------------------------------------------ estorno
 
-    public function reverse(User $actor, FinancialTransaction $original, string $reason): FinancialTransaction
+    public function reverse(?User $actor, FinancialTransaction $original, string $reason): FinancialTransaction
     {
         if (mb_strlen(trim($reason)) < 10) {
             throw new BusinessRuleViolation('Informe o motivo do estorno (mínimo 10 caracteres).', 'reason_required');
@@ -331,6 +374,7 @@ class FinanceService
                 Payable::withoutAuditing(fn () => $p->save());
             }
 
+            $this->splits->reverseFor($reversal);
             $this->audit->record('finance.reversed', $o, metadata: ['reversal_id' => $reversal->id, 'amount_cents' => $o->amount_cents, 'method' => $o->method, 'reason' => trim($reason)]);
 
             return $reversal;
@@ -494,14 +538,14 @@ class FinanceService
         $txns = FinancialTransaction::query()->with(['receivable:id,category_id', 'payable:id,category_id'])
             ->accessibleBranches($this->context->allowedBranchIds())
             ->whereBetween('occurred_at', [$start, $end])->when($branchId, fn ($q, $b) => $q->where('branch_id', $b))
-            ->whereIn('kind', ['receipt', 'payment', 'reversal'])->get();
+            ->whereIn('kind', ['receipt', 'payment', 'reversal', 'fee'])->get();
         $categories = FinancialCategory::query()->pluck('name', 'id');
 
         $byMethod = $byCategory = $byDay = [];
         foreach ($txns as $t) {
             $signed = $t->signedCents();
             $byMethod[$t->method] = ($byMethod[$t->method] ?? 0) + $signed;
-            $cat = $categories[$t->receivable?->category_id ?? $t->payable?->category_id] ?? 'Sem categoria';
+            $cat = $t->kind === 'fee' ? 'Tarifas bancárias e de cartão' : ($categories[$t->receivable?->category_id ?? $t->payable?->category_id] ?? 'Sem categoria');
             $byCategory[$cat] = ($byCategory[$cat] ?? 0) + $signed;
             $day = $t->occurred_at->timezone($tz)->toDateString();
             $byDay[$day] = ($byDay[$day] ?? 0) + $signed;
@@ -517,9 +561,9 @@ class FinanceService
 
     // ------------------------------------------------------------------ internos
 
-    private function record(User $actor, array $data): FinancialTransaction
+    private function record(?User $actor, array $data): FinancialTransaction
     {
-        return FinancialTransaction::create($data + ['created_by' => $actor->id]);
+        return FinancialTransaction::create($data + ['created_by' => $actor?->id]);
     }
 
     private function refreshStatus(Receivable $r): void
@@ -529,8 +573,12 @@ class FinanceService
     }
 
     /** Caixa aberto do operador: obrigatório para dinheiro; usado nas demais formas quando existir. */
-    private function sessionFor(User $actor, string $method): ?CashSession
+    private function sessionFor(?User $actor, string $method): ?CashSession
     {
+        if (! $actor) {
+            return null; // lançamento automático (gateway): nunca passa por caixa
+        }
+
         $session = CashSession::query()->where('user_id', $actor->id)->where('status', 'open')->lockForUpdate()->first();
 
         if (! $session && $method === 'cash') {

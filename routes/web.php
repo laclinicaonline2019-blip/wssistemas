@@ -20,6 +20,9 @@ use App\Modules\Identity\Http\Controllers\Web\AccountController;
 use App\Modules\Identity\Http\Controllers\Web\LoginController;
 use App\Modules\Identity\Http\Controllers\Web\RoleWebController;
 use App\Modules\Identity\Http\Controllers\Web\UserWebController;
+use App\Modules\Payments\Http\Controllers\Web\ChargeWebController;
+use App\Modules\Payments\Http\Controllers\Web\GatewayWebController;
+use App\Modules\Payments\Http\Controllers\Web\SplitWebController;
 use App\Modules\Organization\Http\Controllers\Web\BranchWebController;
 use App\Modules\Patients\Http\Controllers\Web\PatientWebController;
 use App\Modules\Platform\Http\Controllers\Web\CompanySettingsWebController;
@@ -221,6 +224,24 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::post('caixa/{session}/conferir', [CashWebController::class, 'review'])->middleware('permission:caixa.conferir')->name('cash.review');
     Route::post('movimentacoes/{transaction}/estornar', [TransactionWebController::class, 'reverse'])->middleware('permission:pagamento.estornar')->name('transactions.reverse');
     Route::get('movimentacoes/{transaction}/recibo', [TransactionWebController::class, 'receipt'])->middleware('permission:caixa.operar|financeiro.visualizar')->name('transactions.receipt');
+
+    // Fase 8 — pagamentos online, gateways e repasses
+    Route::get('configuracoes/pagamentos', [GatewayWebController::class, 'index'])->middleware('permission:integracao.gerenciar')->name('gateways.index');
+    Route::post('configuracoes/pagamentos', [GatewayWebController::class, 'store'])->middleware('permission:integracao.gerenciar')->name('gateways.store');
+    Route::put('configuracoes/pagamentos/{gateway}', [GatewayWebController::class, 'update'])->middleware('permission:integracao.gerenciar')->name('gateways.update');
+    Route::post('configuracoes/pagamentos/{gateway}/testar', [GatewayWebController::class, 'test'])->middleware(['permission:integracao.gerenciar', 'throttle:10,1'])->name('gateways.test');
+    Route::post('configuracoes/pagamentos/{gateway}/novo-token', [GatewayWebController::class, 'rotate'])->middleware('permission:integracao.gerenciar')->name('gateways.rotate');
+    Route::get('cobrancas', [ChargeWebController::class, 'index'])->middleware('permission:pagamento.visualizar')->name('charges.index');
+    Route::post('contas-a-receber/{receivable}/cobrancas', [ChargeWebController::class, 'store'])->middleware(['permission:pagamento.cobrar', 'throttle:30,1'])->name('charges.store');
+    Route::post('cobrancas/{charge}/consultar', [ChargeWebController::class, 'sync'])->middleware(['permission:pagamento.visualizar|pagamento.cobrar', 'throttle:30,1'])->name('charges.sync');
+    Route::post('cobrancas/{charge}/cancelar', [ChargeWebController::class, 'cancel'])->middleware('permission:pagamento.cobrar')->name('charges.cancel');
+    Route::post('cobrancas/{charge}/estornar', [ChargeWebController::class, 'refund'])->middleware('permission:pagamento.estornar')->name('charges.refund');
+    Route::post('cobrancas/{charge}/simular', [ChargeWebController::class, 'simulate'])->middleware('permission:pagamento.cobrar')->name('charges.simulate');
+    Route::get('financeiro/repasses', [SplitWebController::class, 'index'])->middleware('permission:financeiro.repasse')->name('splits.index');
+    Route::post('financeiro/repasses/regras', [SplitWebController::class, 'storeRule'])->middleware('permission:financeiro.repasse')->name('splits.rules.store');
+    Route::patch('financeiro/repasses/regras/{rule}', [SplitWebController::class, 'toggleRule'])->middleware('permission:financeiro.repasse')->name('splits.rules.toggle');
+    Route::put('financeiro/repasses/medicos/{doctor}/carteira', [SplitWebController::class, 'wallet'])->middleware('permission:financeiro.repasse')->name('splits.wallet');
+    Route::post('financeiro/repasses/medicos/{doctor}/fechar', [SplitWebController::class, 'settle'])->middleware('permission:financeiro.repasse')->name('splits.settle');
 
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');

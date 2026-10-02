@@ -23,7 +23,7 @@ class FinancialTransaction extends Model
         'bank_transfer' => 'Transferência / TED', 'boleto' => 'Boleto', 'check' => 'Cheque', 'other' => 'Outro',
     ];
 
-    public const KINDS = ['receipt' => 'Recebimento', 'payment' => 'Pagamento', 'withdrawal' => 'Sangria', 'deposit' => 'Suprimento', 'reversal' => 'Estorno'];
+    public const KINDS = ['receipt' => 'Recebimento', 'payment' => 'Pagamento', 'withdrawal' => 'Sangria', 'deposit' => 'Suprimento', 'reversal' => 'Estorno', 'fee' => 'Tarifa do gateway'];
 
     protected $fillable = [
         'branch_id', 'direction', 'kind', 'method', 'amount_cents', 'receivable_id', 'payable_id', 'cash_session_id', 'reversal_of',
