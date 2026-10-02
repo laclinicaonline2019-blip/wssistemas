@@ -85,6 +85,10 @@
     </section>
 </div>
 
+@if (auth()->user()->hasPermission('pagamento.visualizar') || auth()->user()->hasPermission('pagamento.cobrar'))
+    @include('payments._charges')
+@endif
+
 <section class="card mt-2">
     <div class="card__head"><h2>Movimentações</h2></div>
     @include('finance._transactions', ['transactions' => $r->transactions])

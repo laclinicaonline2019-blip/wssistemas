@@ -6,6 +6,8 @@ use App\Core\Support\Format;
 use App\Core\Tenancy\TenantContext;
 use App\Http\Controllers\Controller;
 use App\Modules\Documents\Services\DocumentService;
+use App\Modules\Finance\Models\Receivable;
+use App\Modules\Patients\Models\Patient;
 use App\Modules\Payments\Models\PaymentCharge;
 use App\Modules\Platform\Models\Company;
 use Illuminate\View\View;
@@ -20,8 +22,8 @@ class PublicPaymentController extends Controller
         $data = $context->runAsSystem(function () use ($token) {
             $charge = PaymentCharge::query()->withoutGlobalScopes()->where('public_token', $token)->first();
             abort_unless($charge, 404);
-            $receivable = \App\Modules\Finance\Models\Receivable::query()->withoutGlobalScopes()->find($charge->receivable_id);
-            $patient = $charge->patient_id ? \App\Modules\Patients\Models\Patient::query()->withoutGlobalScopes()->find($charge->patient_id) : null;
+            $receivable = Receivable::query()->withoutGlobalScopes()->find($charge->receivable_id);
+            $patient = $charge->patient_id ? Patient::query()->withoutGlobalScopes()->find($charge->patient_id) : null;
 
             return ['charge' => $charge, 'description' => $receivable?->description, 'company' => Company::query()->find($charge->company_id),
                 'patient' => $patient ? Format::initials($patient->displayName()) : null];

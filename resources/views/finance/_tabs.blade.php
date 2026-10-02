@@ -4,5 +4,7 @@
     @if ($me->hasPermission('financeiro.visualizar') || $me->hasPermission('caixa.operar'))<a class="btn btn-sm {{ request()->routeIs('receivables.*') ? 'btn-primary' : '' }}" href="{{ route('receivables.index') }}">Contas a receber</a>@endif
     @if ($me->hasPermission('financeiro.visualizar'))<a class="btn btn-sm {{ request()->routeIs('payables.*') ? 'btn-primary' : '' }}" href="{{ route('payables.index') }}">Contas a pagar</a>@endif
     @if ($me->hasPermission('caixa.operar'))<a class="btn btn-sm {{ request()->routeIs('cash.index') ? 'btn-primary' : '' }}" href="{{ route('cash.index') }}">Meu caixa</a>@endif
+    @if ($me->hasPermission('pagamento.visualizar'))<a class="btn btn-sm {{ request()->routeIs('charges.*') ? 'btn-primary' : '' }}" href="{{ route('charges.index') }}">Cobranças online</a>@endif
+    @if ($me->hasPermission('financeiro.repasse'))<a class="btn btn-sm {{ request()->routeIs('splits.*') ? 'btn-primary' : '' }}" href="{{ route('splits.index') }}">Repasses</a>@endif
     @if ($me->hasPermission('caixa.conferir') || $me->hasPermission('financeiro.visualizar'))<a class="btn btn-sm {{ request()->routeIs('cash.sessions', 'cash.show') ? 'btn-primary' : '' }}" href="{{ route('cash.sessions') }}">Conferência de caixa</a>@endif
 </nav>

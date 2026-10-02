@@ -16,12 +16,12 @@
                 @if ($reversed)<span class="badge badge-danger">estornado</span>@endif</td>
             <td class="small">{{ $t->methodLabel() }}{{ $t->card_installments > 1 ? ' '.$t->card_installments.'x' : '' }}{{ $t->authorization_code ? ' · '.$t->authorization_code : '' }}</td>
             <td class="t-right nowrap {{ $t->direction === 'in' ? 'text-success' : 'text-danger' }}">{{ Format::money($t->signedCents()) }}</td>
-            <td class="hide-sm small">{{ $t->creator?->name }}</td>
+            <td class="hide-sm small">{{ $t->creator?->name ?? ($t->gateway ? 'Gateway '.strtoupper($t->gateway) : '') }}</td>
             <td class="actions"><div class="row">
                 @if ($t->kind === 'receipt')
                     <a class="btn btn-sm btn-ghost" href="{{ route('transactions.receipt', $t) }}" target="_blank" rel="noopener" aria-label="Imprimir recibo"><svg><use href="#i-printer"/></svg></a>
                 @endif
-                @if (! $reversed && $t->kind !== 'reversal' && $me->hasPermission('pagamento.estornar'))
+                @if (! $reversed && ! in_array($t->kind, ['reversal', 'fee'], true) && ! $t->gateway && $me->hasPermission('pagamento.estornar'))
                     <details class="inline-details"><summary class="btn btn-sm btn-ghost">Estornar</summary>
                         <form method="post" action="{{ route('transactions.reverse', $t) }}" class="stack mt-1" data-confirm="Confirmar o estorno de {{ Format::money($t->amount_cents) }}?">
                             @csrf

@@ -101,7 +101,7 @@ class FinanceService
         $tz = $appointment->branch->timezone ?: 'America/Sao_Paulo';
 
         try {
-            return Receivable::create([
+            return DB::transaction(fn () => Receivable::create([
                 'branch_id' => $appointment->branch_id,
                 'category_id' => $this->defaultCategory('income', 'Consultas'),
                 'patient_id' => $appointment->patient_id, 'appointment_id' => $appointment->id, 'doctor_id' => $appointment->doctor_id,
@@ -110,7 +110,7 @@ class FinanceService
                 'amount_cents' => $appointment->price_cents,
                 'due_date' => $appointment->starts_at->timezone($tz)->toDateString(),
                 'origin' => 'appointment', 'payer_type' => 'private', 'created_by' => $actor?->id,
-            ]);
+            ]));
         } catch (QueryException $e) {
             // Corrida entre duas chegadas simultâneas: o índice único (empresa, agendamento) garante um só.
             return Receivable::query()->where('appointment_id', $appointment->id)->first() ?? throw $e;
@@ -340,6 +340,12 @@ class FinanceService
         return DB::transaction(function () use ($actor, $original, $reason) {
             $o = FinancialTransaction::query()->whereKey($original->id)->lockForUpdate()->firstOrFail();
 
+            if ($o->gateway && $actor !== null) {
+                throw new BusinessRuleViolation('Recebimento online: use "Estornar no gateway" na cobrança (o dinheiro precisa voltar pelo gateway).', 'use_gateway_refund');
+            }
+            if ($o->kind === 'fee') {
+                throw new BusinessRuleViolation('Tarifa do gateway é lançada automaticamente e não pode ser estornada.', 'fee_not_reversible');
+            }
             if ($o->kind === 'reversal') {
                 throw new BusinessRuleViolation('Um estorno não pode ser estornado — lance a operação novamente.', 'reversal_of_reversal');
             }
@@ -395,7 +401,7 @@ class FinanceService
         }
 
         try {
-            $session = CashSession::create(['branch_id' => $branchId, 'user_id' => $actor->id, 'opened_at' => now(), 'opening_cents' => $openingCents]);
+            $session = DB::transaction(fn () => CashSession::create(['branch_id' => $branchId, 'user_id' => $actor->id, 'opened_at' => now(), 'opening_cents' => $openingCents]));
         } catch (QueryException) {
             throw new BusinessRuleViolation('Você já tem um caixa aberto.', 'session_already_open', 409);
         }

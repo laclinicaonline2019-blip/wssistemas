@@ -4,7 +4,6 @@ namespace App\Modules\Payments\Services;
 
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRuleViolation;
-use App\Core\Support\Format;
 use App\Modules\Finance\Models\FinancialCategory;
 use App\Modules\Finance\Models\FinancialTransaction;
 use App\Modules\Finance\Models\Payable;
@@ -148,10 +147,5 @@ class SplitService
 
             return $payable;
         });
-    }
-
-    public function describe(int $cents): string
-    {
-        return Format::money($cents);
     }
 }

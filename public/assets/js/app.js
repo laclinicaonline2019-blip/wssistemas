@@ -60,8 +60,11 @@
 
     // Copiar texto
     var copy = t.closest('[data-copy]');
-    if (copy && navigator.clipboard) {
-      navigator.clipboard.writeText($(copy.getAttribute('data-copy')).innerText.trim());
+    if (copy) {
+      var src = $(copy.getAttribute('data-copy'));
+      var text = ('value' in src && src.value ? src.value : src.innerText).trim();
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text);
+      else if (src.select) { src.select(); try { document.execCommand('copy'); } catch (e) { /* seleção manual */ } }
       copy.textContent = 'Copiado!';
     }
 

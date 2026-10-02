@@ -115,6 +115,19 @@ Campos desconhecidos são descartados.
 | POST | `/cash-sessions/{id}/review` | `caixa.conferir` — outra pessoa; `notes` obrigatório se houver diferença |
 | GET | `/finance/summary?from=&to=&branch_id=` | fluxo de caixa: entradas, saídas, por forma, categoria e dia |
 
+### Cobranças online (Fase 8)
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| POST | `/receivables/{id}/charges` | `pagamento.cobrar` — header **`Idempotency-Key`** (16–64); `{billing_type: pix\|boleto\|credit_card\|undefined, amount_cents, due_date, gateway_id?}`. Mesma chave → `200` com a mesma cobrança. Resposta inclui `public_url`, `payment_url`, `pix_payload`, `test_mode` (`MOCK`/`SANDBOX`/`null`) |
+| GET | `/charges/{id}` | `pagamento.visualizar\|pagamento.cobrar` |
+| POST | `/charges/{id}/sync` | consulta o gateway e aplica a situação |
+| POST | `/charges/{id}/cancel` · `/refund` | `pagamento.cobrar` · `pagamento.estornar` |
+| POST | `/webhooks/pagamentos/{gateway_id}` (fora de `/api`, público) | autenticado pelo token do gateway; `401` sem token; eventos repetidos → `200 "evento já recebido"` |
+
+Situações: `pending`, `paid`, `overdue`, `cancelled`, `refunded`, `failed`, `review` (valor divergente,
+duplicidade, chargeback — exige conferência).
+
 ## Plataforma (Super Admin)
 
 | Método | Rota | Descrição |

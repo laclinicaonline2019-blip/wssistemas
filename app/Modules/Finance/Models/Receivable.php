@@ -81,7 +81,7 @@ class Receivable extends Model
 
     public function isOverdue(): bool
     {
-        return in_array($this->status, ['open', 'partial'], true) && $this->due_date->lt(now('America/Sao_Paulo')->startOfDay());
+        return in_array($this->status, ['open', 'partial'], true) && $this->due_date->toDateString() < now('America/Sao_Paulo')->toDateString();
     }
 
     public function statusLabel(): string

@@ -75,7 +75,7 @@ class PaymentService
         $credentials = array_filter($data['credentials'] ?? [], fn ($v) => is_string($v) && trim($v) !== '');
         $credentials = array_map('trim', $credentials) + ($gateway?->credentials ?? []);
 
-        return DB::transaction(function () use ($actor, $data, $gateway, $provider, $mode, $credentials) {
+        return DB::transaction(function () use ($data, $gateway, $provider, $mode, $credentials) {
             $gateway ??= new PaymentGateway(['provider' => $provider, 'webhook_token' => Str::random(40)]);
             $gateway->fill([
                 'mode' => $mode, 'name' => $data['name'] ?? PaymentGateway::PROVIDERS[$provider],
@@ -123,12 +123,12 @@ class PaymentService
 
         // 1) registra localmente ANTES de chamar o gateway (nunca fica cobrança remota "órfã" sem rastro)
         try {
-            $charge = PaymentCharge::create([
+            $charge = DB::transaction(fn () => PaymentCharge::create([
                 'branch_id' => $receivable->branch_id, 'receivable_id' => $receivable->id, 'gateway_id' => $gateway->id,
                 'provider' => $gateway->provider, 'mode' => $gateway->mode, 'patient_id' => $patient?->id, 'amount_cents' => $amountCents,
                 'billing_type' => $billingType, 'due_date' => $dueDate, 'idempotency_key' => $idempotencyKey,
                 'public_token' => Str::random(40), 'split_snapshot' => $split, 'created_by' => $actor->id,
-            ]);
+            ]));
         } catch (QueryException $e) {
             return PaymentCharge::query()->where('idempotency_key', $idempotencyKey)->first() ?? throw $e;
         }
@@ -225,11 +225,12 @@ class PaymentService
     private function ingest(PaymentGateway $gateway, string $provider, string $eventId, ?string $type, ?string $chargeId, array $payload): array
     {
         try {
-            $event = PaymentWebhookEvent::create([
+            // Savepoint: no PostgreSQL uma violação de unicidade invalida a transação inteira.
+            $event = DB::transaction(fn () => PaymentWebhookEvent::create([
                 'company_id' => $gateway->company_id, 'gateway_id' => $gateway->id, 'provider' => $provider,
                 'provider_event_id' => mb_substr($eventId, 0, 150), 'event_type' => $type ? mb_substr($type, 0, 80) : null,
                 'provider_charge_id' => $chargeId, 'payload' => $payload, 'received_at' => now(),
-            ]);
+            ]));
         } catch (QueryException) {
             return [200, 'evento já recebido']; // idempotência: reenvio do gateway
         }
@@ -287,6 +288,10 @@ class PaymentService
 
                     return;
                 }
+
+                // Valores do gateway antes da baixa: o split nativo incide sobre o líquido.
+                $c->paid_cents = $remote->paidCents;
+                $c->net_cents = $remote->netCents;
 
                 try {
                     $txn = $this->finance->receiveOnline($c, $remote->paidCents, $remote->netCents, $remote->method ?? $this->methodFor($c), $remote->paidAt ?? CarbonImmutable::now());

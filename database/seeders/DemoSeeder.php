@@ -12,6 +12,8 @@ use App\Modules\Identity\Models\User;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Services\PatientService;
+use App\Modules\Payments\Models\PaymentGateway;
+use App\Modules\Payments\Models\SplitRule;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\SaasPlan;
 use App\Modules\Platform\Services\CompanyProvisioningService;
@@ -166,6 +168,12 @@ class DemoSeeder extends Seeder
 
         foreach ([$matriz, $filial] as $branch) {
             $branch->update(['settings' => array_merge($branch->settings ?? [], ['panel' => ['token' => Str::random(40), 'show_name' => 'short', 'sound' => true, 'voice' => true, 'repeat' => 2, 'volume' => 1]])]);
+        }
+        // Pagamentos (Fase 8): gateway MOCK — identificado como simulação em todas as telas — e regra de repasse.
+        PaymentGateway::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'MOCK (demonstração)',
+            'webhook_token' => Str::random(40), 'credentials' => [], 'is_default' => true]);
+        foreach ([$carla, $rafael, $beatriz] as $doctor) {
+            SplitRule::create(['doctor_id' => $doctor->id, 'type' => 'percent', 'value' => 6000]);
         }
     }
 

@@ -13,6 +13,7 @@ use App\Modules\Identity\Http\Controllers\Api\TwoFactorController;
 use App\Modules\Identity\Http\Controllers\Api\UserController;
 use App\Modules\Organization\Http\Controllers\Api\BranchController;
 use App\Modules\Patients\Http\Controllers\Api\PatientController;
+use App\Modules\Payments\Http\Controllers\Api\ChargeController;
 use App\Modules\Platform\Http\Controllers\Api\CompanySettingsController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformCompanyController;
 use App\Modules\Platform\Http\Controllers\Api\PlatformHealthController;
@@ -158,6 +159,13 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::post('cash-sessions/{session}/close', [FinanceController::class, 'closeSession'])->middleware('permission:caixa.operar')->name('cash.close');
             Route::post('cash-sessions/{session}/review', [FinanceController::class, 'reviewSession'])->middleware('permission:caixa.conferir')->name('cash.review');
             Route::get('finance/summary', [FinanceController::class, 'summary'])->middleware('permission:financeiro.visualizar|relatorio.financeiro')->name('finance.summary');
+
+            // Fase 8 — cobranças online
+            Route::post('receivables/{receivable}/charges', [ChargeController::class, 'store'])->middleware(['permission:pagamento.cobrar', 'throttle:30,1'])->name('charges.store');
+            Route::get('charges/{charge}', [ChargeController::class, 'show'])->middleware('permission:pagamento.visualizar|pagamento.cobrar')->name('charges.show');
+            Route::post('charges/{charge}/sync', [ChargeController::class, 'sync'])->middleware(['permission:pagamento.visualizar|pagamento.cobrar', 'throttle:30,1'])->name('charges.sync');
+            Route::post('charges/{charge}/cancel', [ChargeController::class, 'cancel'])->middleware('permission:pagamento.cobrar')->name('charges.cancel');
+            Route::post('charges/{charge}/refund', [ChargeController::class, 'refund'])->middleware('permission:pagamento.estornar')->name('charges.refund');
 
             Route::get('queue', [QueueController::class, 'index'])->middleware('permission:fila.visualizar')->name('queue.index');
             Route::middleware('permission:fila.gerenciar')->group(function () {

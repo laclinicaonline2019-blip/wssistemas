@@ -181,6 +181,15 @@ Limite padrão de 10 MB por arquivo (`UPLOAD_MAX_KB`). No cPanel → *Select PHP
 ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os arquivos ficam em
 `storage/app/private` (fora do `public_html`) — inclua essa pasta no backup.
 
+## Pagamentos online (ASAAS / Cielo)
+
+1. *Administração → Pagamentos online → Adicionar gateway*. Comece em **SANDBOX** (ASAAS).
+2. Copie a **URL de webhook** (e, no ASAAS, o **token**) e cadastre no painel do gateway.
+   ASAAS: *Integrações → Webhooks* (eventos de cobrança). Cielo: *URL de Notificação* e *URL de Mudança de Status*.
+3. O site precisa estar em **HTTPS** com o `APP_URL` correto — os gateways só enviam avisos para HTTPS.
+4. O cron (item 7) também roda a sincronização de cobranças a cada 10 minutos.
+5. Faça um pagamento de teste e confira em *Últimos avisos recebidos* e na conta a receber.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

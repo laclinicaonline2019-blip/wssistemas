@@ -10,7 +10,21 @@ adapter **MOCK** explicitamente identificado. Credenciais por clínica ficam cri
 | `sandbox` | homologação com ambiente de testes do provedor | selo "SANDBOX" |
 | `production` | produção | — |
 
-## Pagamentos (Fase 8)
+## Pagamentos (Fase 8) — implementado
+
+Configuração: *Administração → Pagamentos online* (permissão `integracao.gerenciar`).
+
+| Gateway | O que está implementado | Webhook | Observações |
+|---|---|---|---|
+| **ASAAS** | clientes, cobranças PIX/boleto/cartão/"paciente escolhe" (`/payments`), QR Code PIX (`/payments/{id}/pixQrCode`), consulta, cancelamento, estorno, **split nativo** (`walletId` + `percentualValue`/`fixedValue`) | `POST /webhooks/pagamentos/{id}` com header `asaas-access-token` | Sandbox `https://api-sandbox.asaas.com/v3`; produção `https://api.asaas.com/v3`. CPF do paciente obrigatório |
+| **Cielo** | Link de Pagamento (OAuth2 `/v2/token`, `/v1/products`), consulta `/v1/products/{id}/payments`, estorno `/v2/orders/{n}/void` | URL de notificação com `?token=` (a Cielo não assina) | Sem sandbox no Link de Pagamento: homologar com valor baixo. Sem split nativo (repasse interno) |
+| **MOCK** | simulação completa (pago, valor divergente, vencido, estorno) pelo **mesmo fluxo** do webhook | header `X-Mock-Token` | bloqueado em produção (`PAYMENTS_ALLOW_MOCK_IN_PRODUCTION`) |
+
+**Homologação:** os adaptadores seguem a documentação oficial e têm testes automatizados com respostas
+simuladas dos gateways. Antes de usar em produção, faça em SANDBOX (ASAAS) ou com valor baixo (Cielo): gerar
+cobrança, pagar, conferir o aviso em *Últimos avisos recebidos*, conferir a baixa e um estorno.
+
+### Desenho (referência)
 
 ```php
 interface PaymentProviderInterface {

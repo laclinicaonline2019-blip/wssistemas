@@ -33,7 +33,7 @@ class SplitWebController extends Controller
         $end = CarbonImmutable::parse($to, $tz)->endOfDay()->utc();
 
         $summary = PaymentSplit::query()->whereBetween('created_at', [$start, $end])
-            ->selectRaw("doctor_id, mode, status, SUM(amount_cents) AS total, COUNT(*) AS qty")->groupBy('doctor_id', 'mode', 'status')->get()
+            ->selectRaw('doctor_id, mode, status, SUM(amount_cents) AS total, COUNT(*) AS qty')->groupBy('doctor_id', 'mode', 'status')->get()
             ->groupBy('doctor_id');
 
         return view('payments.splits', [

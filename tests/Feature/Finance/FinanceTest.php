@@ -53,6 +53,9 @@ class FinanceTest extends TestCase
         $this->assertSame('appointment', $r->origin);
         $this->assertSame($this->doctor->id, $r->doctor_id);
         $this->assertSame(1, DB::table('receivables')->count());
+        // Vence hoje (São Paulo) não é "vencido" — regressão: comparação de datas em fusos diferentes.
+        $this->assertFalse($r->isOverdue());
+        $this->assertSame('Em aberto', $r->statusLabel());
 
         // Convênio não gera cobrança do paciente.
         $insured = $this->as($this->clinic['admin'])->postJson('/api/v1/appointments', $this->bookPayload($this->patient(), '08:30', ['payer_type' => 'private', 'service_id' => null]))->json('data.id');

@@ -44,7 +44,7 @@
                 {!! $nav('triage.index', 'triage.*', 'activity', 'Triagem', $can('triagem.registrar')) !!}
                 {!! $nav('documents.index', ['documents.*'], 'file', 'Documentos', $can('receita.imprimir') || $can('atestado.imprimir') || $can('documento.visualizar') || $can('exame.solicitar') || $can('prontuario.visualizar')) !!}
                 {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
-                {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
+                {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $soon('chat', 'Atendimento IA', 'Fase 12') !!}
             </ul>
             @php
@@ -56,6 +56,7 @@
                     $nav('users.index', 'users.*', 'users', 'Usuários', $can('usuario.visualizar')),
                     $nav('roles.index', 'roles.*', 'shield', 'Perfis de acesso', $can('perfil.visualizar')),
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
+                    $nav('gateways.index', 'gateways.*', 'cash', 'Pagamentos online', $can('integracao.gerenciar')),
                     $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar'))
                 ]);
             @endphp
@@ -66,7 +67,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.8.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.9.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

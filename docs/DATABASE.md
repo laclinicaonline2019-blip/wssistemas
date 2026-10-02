@@ -108,6 +108,19 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `cash_sessions` | Caixa do operador: abertura, fundo de troco, esperado × declarado por forma, diferença, conferência | **um caixa aberto por operador** (coluna gerada `open_user` + índice único) |
 | `financial_transactions` | **Livro imutável**: direção, tipo (recebimento, pagamento, sangria, suprimento, estorno), forma, valor, vínculos, NSU, campos do gateway (Fase 8) | `UNIQUE(reversal_of)` (um estorno por lançamento); trigger bloqueia UPDATE/DELETE quando o banco permite |
 
+### Fase 8 — pagamentos online e split
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `payment_gateways` | Gateway da clínica: provedor, modo (mock/sandbox/produção), credenciais e token de webhook **criptografados** | `UNIQUE(company_id, provider, mode)`; CHECK de provedor/modo |
+| `payment_customers` | Cliente do paciente no gateway (ex.: `cus_…` do ASAAS) | `UNIQUE(gateway_id, patient_id)` |
+| `payment_charges` | Cobrança: valor, forma, situação, ID no gateway, link, PIX, token público, pago/líquido, recebimento lançado, snapshot do split, motivo de revisão | `UNIQUE(company_id, idempotency_key)`, `UNIQUE(gateway_id, provider_charge_id)`, `UNIQUE(public_token)` |
+| `payment_webhook_events` | Avisos recebidos (sem dados do pagador) | **`UNIQUE(provider, provider_event_id)`** — webhook idempotente |
+| `split_rules` | Regra de repasse por médico (percentual em centésimos de % ou valor fixo), tipo de atendimento e pagador | CHECK percentual ≤ 100% |
+| `payment_splits` | Parte do médico por recebimento: nativo (já liquidado) ou interno (a repassar), conta a pagar do fechamento | `UNIQUE(transaction_id, doctor_id)` |
+| `doctors.asaas_wallet_id` | Carteira ASAAS do médico (split nativo) | |
+| `financial_transactions.kind` | + `fee` (tarifa do gateway) | |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

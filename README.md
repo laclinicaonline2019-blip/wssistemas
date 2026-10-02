@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.8.0 (Fases 1 a 7 concluídas, pronto para HostGator)
+## Estado atual — v0.9.0 (Fases 1 a 8 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -27,11 +27,12 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Prontuário eletrônico** com salvamento automático, **versões imutáveis com hash encadeado**, adendos justificados, CID-10 (importação DATASUS), triagem com classificação de risco, alergias e base de medicamentos com controle (Portaria 344/98)
 - ✅ **Receitas** (simples e controle especial em 2 vias, separadas pela Portaria 344/98), **atestados**, **solicitações de exames** e relatórios, com **impressão A4/A5/térmica e PDF**, código de verificação e **QR Code de validação pública**; anexos do paciente em área privada
 - ✅ **Financeiro**: contas a receber (geradas na chegada do paciente) e a pagar (parcelas), **caixa por operador com fechamento cego e conferência**, livro imutável com estornos, recibo com valor por extenso, fluxo de caixa e exportação CSV
+- ✅ **Pagamentos online** ASAAS e Cielo (SANDBOX/produção) + MOCK identificado: links com PIX/QR Code, webhooks autenticados e idempotentes com **confirmação por consulta à API**, sincronização periódica, tarifas, estornos e **split/repasse médico** (nativo ASAAS ou interno)
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 152 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 163 testes
 
-Próxima fase: **Fase 8** — pagamentos online: ASAAS e Cielo (modo SANDBOX/MOCK), PIX, cartão, boleto, links de pagamento, webhooks e **split/repasse**.
+Próxima fase: **Fase 9** — convênios: operadoras, planos, tabelas de procedimentos, autorizações e faturamento (preparado para TISS).
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

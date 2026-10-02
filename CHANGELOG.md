@@ -2,6 +2,35 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.9.0] — 2026-10-02 — Fase 8: pagamentos online, webhooks e split
+
+### Adicionado
+- **Gateways por clínica**: ASAAS (PIX, boleto, cartão na fatura do ASAAS), Cielo (Link de Pagamento) e
+  **MOCK** (simulação). Modo **SANDBOX/Produção** sempre visível (selos MOCK/SANDBOX em telas, links e API);
+  credenciais **criptografadas** e nunca exibidas de volta; teste de conexão; token de webhook rotacionável.
+- **Cobrança online** a partir da conta a receber: link público `/pagar/{token}` com PIX copia-e-cola/QR Code
+  e botão para a página segura do gateway (nenhum dado de cartão passa pelo sistema), envio por WhatsApp,
+  **chave de idempotência** (clique duplo/reenvio não duplica a cobrança).
+- **Confirmação segura**: webhook autenticado (ASAAS: header `asaas-access-token`; Cielo: token na URL;
+  comparação em tempo constante) → evento gravado com **ID único** (reenvio não duplica) → **consulta à API do
+  gateway** confirma status e valor → baixa no financeiro. "Webhook diz pago, API diz pendente" não dá baixa.
+  Valor divergente, pagamento em duplicidade (já pago no balcão) e chargeback vão para **revisão humana**.
+- **Sincronização a cada 10 minutos** (cron) cobre webhooks perdidos.
+- **Tarifa do gateway** lançada automaticamente como saída (valor bruto − líquido).
+- **Estorno pelo gateway**: a baixa reversa só é feita quando o gateway confirma; recebimento online não
+  pode ser estornado manualmente (o dinheiro precisa voltar pelo gateway).
+- **Split / repasse médico**: regras por médico (percentual ou valor fixo; por tipo de atendimento e
+  pagador; vale a mais específica). Cobranças ASAAS com a carteira do médico usam o **split nativo** (o
+  dinheiro já cai separado, sobre o valor líquido); dinheiro, maquininha e Cielo geram **repasse interno**.
+  **Fechamento do repasse** gera a conta a pagar "Repasse médico"; estorno depois do repasse vira
+  devolução descontada no próximo fechamento.
+- Telas: Pagamentos online (configuração + últimos avisos dos gateways), Cobranças online, Repasses.
+- API: `POST /receivables/{id}/charges` (header `Idempotency-Key`), `/charges/{id}` (consulta, sync,
+  cancel, refund); webhook `POST /webhooks/pagamentos/{gateway}`. Demo com gateway MOCK e regras de 60%.
+
+### Corrigido
+- Conta com vencimento **hoje** aparecia como "Vencido" (comparação de data em fusos diferentes).
+
 ## [0.8.0] — 2026-10-01 — Fase 7: financeiro, caixa e conferência
 
 ### Adicionado

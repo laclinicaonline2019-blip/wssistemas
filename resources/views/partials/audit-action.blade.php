@@ -26,6 +26,12 @@
         'triage.recorded' => 'Triagem registrada', 'patient_allergy.created' => 'Alergia registrada', 'patient_allergy.updated' => 'Alergia alterada',
         'medication.created' => 'Medicamento cadastrado', 'medication.updated' => 'Medicamento alterado',
         'catalog.cid_imported' => 'Base CID importada',
+        'finance.received' => 'Recebimento registrado', 'finance.paid' => 'Pagamento registrado', 'finance.reversed' => 'Estorno financeiro',
+        'cash.opened' => 'Caixa aberto', 'cash.closed' => 'Caixa fechado', 'cash.reviewed' => 'Caixa conferido', 'cash.withdrawal' => 'Sangria', 'cash.deposit' => 'Suprimento',
+        'payment.charge_created' => 'Cobrança online gerada', 'payment.charge_cancelled' => 'Cobrança online cancelada', 'payment.confirmed' => 'Pagamento online confirmado',
+        'payment.refund_requested' => 'Estorno solicitado ao gateway', 'payment.amount_mismatch' => 'Pagamento online com valor divergente',
+        'payment_gateway.created' => 'Gateway de pagamento configurado', 'payment_gateway.updated' => 'Gateway de pagamento alterado',
+        'split_rule.created' => 'Regra de repasse criada', 'split_rule.updated' => 'Regra de repasse alterada', 'split.settled' => 'Repasse médico fechado',
         'document.issued' => 'Documento médico emitido', 'document.printed' => 'Documento impresso', 'document.cancelled' => 'Documento cancelado',
         'patient_file.created' => 'Arquivo anexado ao paciente', 'patient_file.updated' => 'Arquivo do paciente arquivado/restaurado', 'patient_file.downloaded' => 'Arquivo do paciente acessado', 'catalog.medications_imported' => 'Base de medicamentos importada',
     ];
