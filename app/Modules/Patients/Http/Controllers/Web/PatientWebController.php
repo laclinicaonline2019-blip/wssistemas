@@ -15,6 +15,7 @@ use App\Modules\Patients\Http\Controllers\Api\PatientController;
 use App\Modules\Patients\Http\Requests\PatientRequest;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Services\PatientService;
+use App\Modules\Portal\Models\PatientAccount;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -60,6 +61,7 @@ class PatientWebController extends Controller
         return view('patients.show', [
             'patient' => $patient->load(['contacts', 'insurances', 'consents.recorder:id,name', 'homeBranch']),
             'history' => $this->service->history($patient, 30),
+            'portalAccount' => PatientAccount::query()->where('patient_id', $patient->id)->first(),
             // Dados clínicos só para quem tem acesso ao prontuário (sigilo médico).
             'encounters' => $clinical ? Encounter::query()->with(['doctor:id,name,social_name', 'diagnoses', 'branch:id,name'])
                 ->where('patient_id', $patient->id)->orderByDesc('started_at')->limit(30)->get() : null,

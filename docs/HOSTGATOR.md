@@ -208,6 +208,15 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
 6. Nada disso precisa de recurso extra no servidor: a validação usa a extensão `libxml`/`dom` do PHP,
    presente na HostGator.
 
+## Portal do paciente
+
+1. Endereço para os pacientes: `https://SEU_DOMINIO/portal/<identificador-da-clinica>` (aparece em
+   *Configurações → Portal do paciente*, com as regras de agendamento/cancelamento online).
+2. Configure o **SMTP** no `.env` (seção de e-mail acima, conta de e-mail do cPanel) para enviar os links de
+   ativação e "esqueci a senha". Sem SMTP, a recepção copia o link ou envia pelo WhatsApp na ficha do paciente.
+3. Na ficha do paciente: *Portal do paciente → Gerar link de ativação*. Exames anexados só aparecem no portal
+   depois de "Liberar no portal".
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

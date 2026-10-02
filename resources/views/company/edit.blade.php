@@ -54,6 +54,21 @@
         </section>
 
         <section class="card">
+            <div class="card__head"><h2>Portal do paciente</h2>
+                @if ($company->setting('portal.enabled', true))<a class="btn btn-sm" href="{{ route('portal.login', ['clinic' => $company->slug]) }}" target="_blank" rel="noopener">Abrir portal</a>@endif</div>
+            <div class="card__body form-grid">
+                <p class="help col-12">Endereço para divulgar aos pacientes: <span class="mono">{{ route('portal.login', ['clinic' => $company->slug]) }}</span></p>
+                <input type="hidden" name="settings[portal][enabled]" value="0">
+                <label class="check col-12"><input type="checkbox" name="settings[portal][enabled]" value="1" @checked($company->setting('portal.enabled', true)) @disabled(! $editable)><span>Portal do paciente ativo</span></label>
+                <input type="hidden" name="settings[portal][booking_enabled]" value="0">
+                <label class="check col-12"><input type="checkbox" name="settings[portal][booking_enabled]" value="1" @checked($company->setting('portal.booking_enabled', true)) @disabled(! $editable)><span>Permitir que o paciente agende pelo portal</span></label>
+                <x-field name="settings[portal][booking_min_notice_hours]" label="Antecedência mínima para agendar (horas)" type="number" min="0" max="168" col="col-4" :value="$company->setting('portal.booking_min_notice_hours', 2)" :disabled="! $editable" />
+                <x-field name="settings[portal][booking_max_days]" label="Agendar até quantos dias à frente" type="number" min="1" max="365" col="col-4" :value="$company->setting('portal.booking_max_days', 60)" :disabled="! $editable" />
+                <x-field name="settings[portal][cancel_min_hours]" label="Cancelar até quantas horas antes" type="number" min="0" max="168" col="col-4" :value="$company->setting('portal.cancel_min_hours', 24)" :disabled="! $editable" />
+            </div>
+        </section>
+
+        <section class="card">
             <div class="card__head"><h2>Plano</h2><span class="badge badge-primary">{{ $company->plan?->name ?? 'Sem plano' }}</span></div>
             <div class="card__body stack">
                 @foreach (['max_users' => 'Usuários', 'max_branches' => 'Filiais'] as $k => $label)

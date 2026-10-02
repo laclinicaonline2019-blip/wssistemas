@@ -23,6 +23,11 @@ class CompanySettingsRequest extends FormRequest
             'settings.print.header_text' => ['nullable', 'string', 'max:300'],
             'settings.print.footer_text' => ['nullable', 'string', 'max:300'],
             'settings.print.thermal_width_mm' => ['sometimes', 'integer', 'in:58,80'],
+            'settings.portal.enabled' => ['sometimes', 'boolean'],
+            'settings.portal.booking_enabled' => ['sometimes', 'boolean'],
+            'settings.portal.booking_min_notice_hours' => ['sometimes', 'integer', 'between:0,168'],
+            'settings.portal.booking_max_days' => ['sometimes', 'integer', 'between:1,365'],
+            'settings.portal.cancel_min_hours' => ['sometimes', 'integer', 'between:0,168'],
         ];
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Identity\Models\User;
+use App\Modules\Portal\Models\PatientAccount;
 
 return [
 
@@ -42,6 +43,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Portal do paciente: sessão separada da equipe da clínica (Fase 10).
+        'patient' => [
+            'driver' => 'session',
+            'provider' => 'patient_accounts',
+        ],
     ],
 
     /*
@@ -65,6 +72,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'patient_accounts' => [
+            'driver' => 'eloquent',
+            'model' => PatientAccount::class,
         ],
 
         // 'users' => [

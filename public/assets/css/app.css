@@ -357,3 +357,19 @@ details > summary { cursor: pointer; list-style: none; } details > summary::-web
 .inline { display: inline; }
 fieldset.form-grid { border: 0; padding: 0; margin: 0; min-width: 0; }
 .t-right { white-space: nowrap; }
+
+/* Portal do paciente (Fase 10) — mobile-first */
+body.portal { background: var(--bg); }
+.portal-top { background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20; }
+.portal-top__inner { max-width: 1040px; margin: 0 auto; padding: .7rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.portal-brand { display: flex; align-items: center; gap: .6rem; }
+.portal-brand span { display: flex; flex-direction: column; line-height: 1.2; }
+.portal-nav { max-width: 1040px; margin: 0 auto; padding: 0 .6rem; display: flex; gap: .25rem; overflow-x: auto; }
+.portal-nav a { padding: .55rem .75rem; border-bottom: 2px solid transparent; color: var(--text-2); white-space: nowrap; text-decoration: none; font-weight: 500; }
+.portal-nav a.is-active { color: var(--primary); border-bottom-color: var(--primary); }
+.portal-main { max-width: 1040px; margin: 0 auto; padding: 1rem; }
+.portal-list { list-style: none; margin: 0; padding: 0; }
+.portal-list > li { padding: .8rem 1rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.portal-list > li:last-child { border-bottom: 0; }
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .5rem; }
+.slot-grid .btn { justify-content: center; }

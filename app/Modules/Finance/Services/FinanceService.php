@@ -118,7 +118,7 @@ class FinanceService
     }
 
     /** Agendamento cancelado/falta: cancela a cobrança ainda não paga. */
-    public function cancelAppointmentReceivable(Appointment $appointment, User $actor, string $reason): void
+    public function cancelAppointmentReceivable(Appointment $appointment, ?User $actor, string $reason): void
     {
         $r = Receivable::query()->where('appointment_id', $appointment->id)->where('status', 'open')->where('paid_cents', 0)->first();
 
@@ -239,7 +239,7 @@ class FinanceService
         return $txn;
     }
 
-    public function cancelReceivable(User $actor, Receivable $receivable, string $reason): Receivable
+    public function cancelReceivable(?User $actor, Receivable $receivable, string $reason): Receivable
     {
         return DB::transaction(function () use ($actor, $receivable, $reason) {
             $r = Receivable::query()->whereKey($receivable->id)->lockForUpdate()->firstOrFail();
@@ -251,7 +251,7 @@ class FinanceService
                 throw new BusinessRuleViolation('Conta com recebimentos: estorne os recebimentos antes de cancelar.', 'has_payments', 409);
             }
 
-            $r->forceFill(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancel_reason' => mb_substr($reason, 0, 255)]);
+            $r->forceFill(['status' => 'cancelled', 'cancelled_at' => now(), 'cancelled_by' => $actor?->id, 'cancel_reason' => mb_substr($reason, 0, 255)]);
             $r->save();
 
             return $r;

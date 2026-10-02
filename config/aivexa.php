@@ -16,6 +16,12 @@ return [
     // Token do instalador web (/instalar). Mínimo 16 caracteres; vazio = instalador desativado.
     'install_token' => env('INSTALL_TOKEN'),
 
+    // Portal do paciente (Fase 10).
+    'portal' => [
+        'activation_ttl_hours' => (int) env('PORTAL_ACTIVATION_TTL_HOURS', 72),
+        'reset_ttl_minutes' => (int) env('PORTAL_RESET_TTL_MINUTES', 60),
+    ],
+
     'security' => [
         // Tentativas de login por e-mail+IP por minuto (rate limit).
         'login_rate_per_minute' => (int) env('LOGIN_RATE_PER_MINUTE', 5),

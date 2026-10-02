@@ -2,6 +2,27 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.11.0] — 2026-10-02 — Fase 10: portal do paciente
+
+### Adicionado
+- **Portal do paciente** em `/portal/{clínica}` (pensado para celular), com **login próprio** (guard `patient`,
+  separado da equipe): CPF ou e-mail + senha forte, rate limit, bloqueio temporário por tentativas, mensagens
+  neutras, sessão revalidada a cada acesso (bloqueio pela clínica derruba a sessão na hora), sem "lembrar-me".
+- **Liberação pela clínica** (permissão `paciente.portal`): link de ativação de uso único (72 h) — enviado por
+  e-mail, WhatsApp ou copiado; o token só existe no link (no banco, SHA-256). Link de nova senha para conta ativa;
+  bloquear/desbloquear acesso. "Esqueci a senha" pelo próprio paciente: CPF + data de nascimento → link de 60 min
+  para o e-mail cadastrado (resposta sempre neutra). Aceite dos termos na ativação.
+- O paciente vê: **próximas consultas** (confirmar presença; cancelar até N horas antes), **histórico de
+  atendimentos** (data, médico, unidade — o conteúdo do prontuário não é exibido), **agendamento online** com os
+  horários realmente livres (antecedência mínima e janela máxima configuráveis; nunca encaixe; proteção contra
+  clique duplo), **documentos** emitidos (receitas, atestados, pedidos de exames, relatórios — PDF), **exames e
+  arquivos** liberados um a um pela clínica, **pagamentos** (contas, recibos, link de pagamento online pendente),
+  **médicos** e **meus dados** (com troca de senha).
+- Toda ação do portal é auditada com ator **paciente** (nunca atribuída a um usuário da clínica logado no mesmo
+  navegador). Anonimização LGPD bloqueia o acesso.
+- Configurações da clínica: portal ativo, agendamento online, antecedência, janela e prazo de cancelamento.
+- E-mail transacional (SMTP) para ativação/redefinição — sem dados de saúde no corpo.
+
 ## [0.10.0] — 2026-10-02 — Fase 9: convênios e faturamento TISS
 
 ### Adicionado

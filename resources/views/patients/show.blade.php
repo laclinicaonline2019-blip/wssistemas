@@ -86,6 +86,45 @@
         </div>
     </section>
 
+
+    @if ($me->hasPermission('paciente.portal') && ! $patient->isAnonymized())
+    <section class="card">
+        <div class="card__head"><h2>Portal do paciente</h2>
+            @if ($portalAccount)<span class="badge {{ ['active' => 'badge-success', 'blocked' => 'badge-danger'][$portalAccount->status] ?? 'badge-warning' }}">{{ $portalAccount->statusLabel() }}</span>@endif</div>
+        <div class="card__body stack">
+            @if ($link = session('portal_link'))
+                <div class="alert alert-info stack">
+                    <strong>{{ $link['purpose'] === 'activation' ? 'Link de ativação' : 'Link para nova senha' }}</strong> — válido até {{ \Carbon\Carbon::parse($link['expires_at'])->timezone('America/Sao_Paulo')->format('d/m/Y H:i') }}, uso único. Ele não fica salvo: copie ou envie agora.
+                    <input id="portal-link" class="input mono" value="{{ $link['url'] }}" readonly aria-label="Link do portal">
+                    <span class="row">
+                        <button class="btn btn-sm" type="button" data-copy="#portal-link">Copiar link</button>
+                        @if ($patient->whatsapp)<a class="btn btn-sm" target="_blank" rel="noopener noreferrer" href="https://wa.me/55{{ $patient->whatsapp }}?text={{ rawurlencode('Olá! Este é o seu link de acesso ao portal do paciente: '.$link['url']) }}">Enviar pelo WhatsApp</a>@endif
+                        @if ($link['emailed'])<span class="small">E-mail enviado para {{ $portalAccount?->email }}.</span>@endif
+                    </span>
+                </div>
+            @endif
+            @if ($portalAccount)
+                <p class="small">Login: CPF{{ $portalAccount->email ? ' ou '.$portalAccount->email : '' }}{{ $portalAccount->last_login_at ? ' · último acesso '.$portalAccount->last_login_at->timezone('America/Sao_Paulo')->format('d/m/Y H:i') : '' }}</p>
+            @else
+                <p class="small muted">Sem acesso ao portal. Gere o link de ativação para o paciente criar a senha.</p>
+            @endif
+            @if (! $patient->cpf)<p class="small text-danger">Sem CPF cadastrado: o paciente só conseguirá entrar com o e-mail.</p>@endif
+            @if ($portalAccount?->status !== 'blocked')
+                <form method="post" action="{{ route('patients.portal.link', $patient) }}" class="form-grid">
+                    @csrf
+                    <x-field name="email" label="E-mail do paciente (login e envio do link)" type="email" col="col-12" :value="$portalAccount?->email ?? $patient->email" />
+                    <label class="check col-12 small"><input type="checkbox" name="send_email" value="1"><span>Enviar o link por e-mail</span></label>
+                    <div class="col-12"><button class="btn btn-sm btn-primary" type="submit">{{ $portalAccount?->isActive() ? 'Gerar link de nova senha' : 'Gerar link de ativação' }}</button></div>
+                </form>
+            @endif
+            @if ($portalAccount)
+                <form method="post" action="{{ route('patients.portal.block', $patient) }}" data-confirm="{{ $portalAccount->status === 'blocked' ? 'Desbloquear' : 'Bloquear' }} o acesso ao portal?">@csrf
+                    <button class="btn btn-sm btn-ghost" type="submit">{{ $portalAccount->status === 'blocked' ? 'Desbloquear acesso' : 'Bloquear acesso' }}</button></form>
+            @endif
+        </div>
+    </section>
+    @endif
+
     <section class="card">
         <div class="card__head"><h2>Consentimentos (LGPD)</h2></div>
         <div class="card__body">
@@ -202,9 +241,13 @@
                     <div class="spread small {{ $f->status === 'archived' ? 'muted' : '' }}">
                         <span>@if ($canView)<a href="{{ route('patient_files.download', [$f, 'inline' => 1]) }}" target="_blank" rel="noopener">{{ $f->title }}</a>@else{{ $f->title }}@endif
                             <span class="muted">· {{ \App\Modules\Documents\Models\PatientFile::CATEGORIES[$f->category] }} · {{ $f->sizeLabel() }} · {{ $f->created_at->timezone('America/Sao_Paulo')->format('d/m/Y') }} · {{ $f->uploader?->name }}</span>
-                            @if ($f->status === 'archived')<span class="badge">arquivado</span>@endif</span>
+                            @if ($f->status === 'archived')<span class="badge">arquivado</span>@endif
+                            @if ($f->visible_to_patient)<span class="badge badge-info">no portal</span>@endif</span>
                         @if ($me->hasPermission('documento.anexar'))
+                            <span class="row">
+                            <form method="post" action="{{ route('patient_files.share', $f) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $f->visible_to_patient ? 'Tirar do portal' : 'Liberar no portal' }}</button></form>
                             <form method="post" action="{{ route('patient_files.archive', $f) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $f->status === 'active' ? 'Arquivar' : 'Restaurar' }}</button></form>
+                            </span>
                         @endif
                     </div>
                 @empty

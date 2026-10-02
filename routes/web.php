@@ -30,11 +30,44 @@ use App\Modules\Payments\Http\Controllers\Web\GatewayWebController;
 use App\Modules\Payments\Http\Controllers\Web\SplitWebController;
 use App\Modules\Platform\Http\Controllers\Web\CompanySettingsWebController;
 use App\Modules\Platform\Http\Controllers\Web\PlatformWebController;
+use App\Modules\Portal\Http\Controllers\PortalAccessWebController;
+use App\Modules\Portal\Http\Controllers\PortalAuthController;
+use App\Modules\Portal\Http\Controllers\PortalController;
+use App\Modules\Portal\Http\Middleware\PortalAuthenticate;
+use App\Modules\Portal\Http\Middleware\ResolvePortalTenant;
 use App\Modules\Printing\Http\Controllers\PrintTestController;
 use App\Modules\Queue\Http\Controllers\Web\QueueWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\AgendaWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\ScheduleConfigWebController;
 use Illuminate\Support\Facades\Route;
+
+// ---------------------------------------------------------------- Portal do paciente (Fase 10)
+Route::prefix('portal/{clinic}')->middleware(ResolvePortalTenant::class)->name('portal.')->where(['clinic' => '[a-z0-9\-]+'])->group(function () {
+    Route::get('entrar', [PortalAuthController::class, 'show'])->name('login');
+    Route::post('entrar', [PortalAuthController::class, 'login'])->middleware('throttle:auth')->name('login.attempt');
+    Route::get('acesso/{token}', [PortalAuthController::class, 'showActivate'])->middleware('throttle:30,1')->name('activate');
+    Route::post('acesso/{token}', [PortalAuthController::class, 'activate'])->middleware('throttle:10,1')->name('activate.store');
+    Route::get('esqueci-a-senha', [PortalAuthController::class, 'showForgot'])->name('forgot');
+    Route::post('esqueci-a-senha', [PortalAuthController::class, 'forgot'])->middleware('throttle:5,1')->name('forgot.store');
+
+    Route::middleware(PortalAuthenticate::class)->group(function () {
+        Route::post('sair', [PortalAuthController::class, 'logout'])->name('logout');
+        Route::get('/', [PortalController::class, 'home'])->name('home');
+        Route::get('consultas', [PortalController::class, 'appointments'])->name('appointments');
+        Route::post('consultas/{appointment}/cancelar', [PortalController::class, 'cancel'])->middleware('throttle:10,1')->name('appointments.cancel');
+        Route::post('consultas/{appointment}/confirmar', [PortalController::class, 'confirm'])->name('appointments.confirm');
+        Route::get('agendar', [PortalController::class, 'book'])->name('book');
+        Route::post('agendar', [PortalController::class, 'storeBooking'])->middleware('throttle:10,1')->name('book.store');
+        Route::get('documentos', [PortalController::class, 'documents'])->name('documents');
+        Route::get('documentos/{document}/pdf', [PortalController::class, 'documentPdf'])->middleware('throttle:30,1')->name('documents.pdf');
+        Route::get('arquivos/{file}', [PortalController::class, 'file'])->middleware('throttle:30,1')->name('files.download');
+        Route::get('pagamentos', [PortalController::class, 'payments'])->name('payments');
+        Route::get('pagamentos/recibo/{transaction}', [PortalController::class, 'receipt'])->name('receipt');
+        Route::get('medicos', [PortalController::class, 'doctors'])->name('doctors');
+        Route::get('meus-dados', [PortalController::class, 'profile'])->name('profile');
+        Route::put('meus-dados/senha', [PortalController::class, 'password'])->middleware('throttle:10,1')->name('password');
+    });
+});
 
 // ---------------------------------------------------------------- Autenticação
 Route::middleware('guest')->group(function () {
@@ -200,6 +233,9 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::post('pacientes/{patient}/arquivos', [PatientFileController::class, 'store'])->middleware(['permission:documento.anexar', 'throttle:30,1'])->name('patient_files.store');
     Route::get('arquivos/{file}', [PatientFileController::class, 'download'])->middleware('permission:documento.visualizar|prontuario.visualizar')->name('patient_files.download');
     Route::patch('arquivos/{file}/arquivar', [PatientFileController::class, 'archive'])->middleware('permission:documento.anexar')->name('patient_files.archive');
+    Route::patch('arquivos/{file}/portal', [PortalAccessWebController::class, 'shareFile'])->middleware('permission:documento.anexar')->name('patient_files.share');
+    Route::post('pacientes/{patient}/portal/link', [PortalAccessWebController::class, 'link'])->middleware(['permission:paciente.portal', 'throttle:20,1'])->name('patients.portal.link');
+    Route::post('pacientes/{patient}/portal/bloqueio', [PortalAccessWebController::class, 'block'])->middleware('permission:paciente.portal')->name('patients.portal.block');
 
     // Fase 7 — financeiro e caixa
     Route::get('financeiro', [FinanceWebController::class, 'overview'])->middleware('permission:financeiro.visualizar|relatorio.financeiro')->name('finance.overview');

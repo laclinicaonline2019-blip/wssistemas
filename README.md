@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.10.0 (Fases 1 a 9 concluídas, pronto para HostGator)
+## Estado atual — v0.11.0 (Fases 1 a 10 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -29,11 +29,12 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Financeiro**: contas a receber (geradas na chegada do paciente) e a pagar (parcelas), **caixa por operador com fechamento cego e conferência**, livro imutável com estornos, recibo com valor por extenso, fluxo de caixa e exportação CSV
 - ✅ **Pagamentos online** ASAAS e Cielo (SANDBOX/produção) + MOCK identificado: links com PIX/QR Code, webhooks autenticados e idempotentes com **confirmação por consulta à API**, sincronização periódica, tarifas, estornos e **split/repasse médico** (nativo ASAAS, **split Cielo online e na maquininha**, ou interno)
 - ✅ **Convênios**: operadoras, planos, credenciamento, procedimentos TUSS, tabelas de valores com vigência, autorizações prévias, guias de consulta e SP/SADT geradas na chegada, atendimento misto (coparticipação), **lotes XML TISS 4.01.00 validados no schema oficial da ANS**, retorno com glosas, recurso e repasse por convênio
+- ✅ **Portal do paciente** (celular): login próprio e seguro, consultas, agendamento e cancelamento online, histórico, documentos em PDF, exames liberados pela clínica, pagamentos e recibos
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 175 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 180 testes
 
-Próxima fase: **Fase 10** — portal do paciente.
+Próxima fase: **Fase 11** — WhatsApp (confirmações, lembretes e atendimento).
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

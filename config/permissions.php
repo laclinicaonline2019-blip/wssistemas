@@ -83,6 +83,7 @@ return [
                 'paciente.editar' => 'Editar pacientes',
                 'paciente.exportar' => 'Exportar dados de pacientes (LGPD)',
                 'paciente.anonimizar' => 'Anonimizar pacientes (LGPD)',
+                'paciente.portal' => 'Liberar/bloquear o acesso do paciente ao portal',
             ],
         ],
 
@@ -277,7 +278,7 @@ return [
                 'filial.visualizar', 'filial.editar',
                 'usuario.visualizar', 'usuario.criar', 'usuario.editar', 'usuario.bloquear', 'usuario.perfis',
                 'perfil.visualizar', 'auditoria.visualizar',
-                'paciente.visualizar', 'paciente.criar', 'paciente.editar',
+                'paciente.visualizar', 'paciente.criar', 'paciente.editar', 'paciente.portal',
                 'medico.visualizar', 'agenda.visualizar', 'agenda.criar', 'agenda.editar', 'agenda.cancelar',
                 'agenda.encaixe', 'agenda.configurar', 'fila.visualizar', 'fila.gerenciar', 'fila.painel',
                 'convenio.visualizar', 'convenio.faturar', 'financeiro.visualizar', 'caixa.operar', 'caixa.conferir',
@@ -304,7 +305,7 @@ return [
             'description' => 'Cadastro, agendamento, chegada, senhas e caixa.',
             'locked' => false,
             'permissions' => [
-                'dashboard.visualizar', 'paciente.visualizar', 'paciente.criar', 'paciente.editar',
+                'dashboard.visualizar', 'paciente.visualizar', 'paciente.criar', 'paciente.editar', 'paciente.portal',
                 'medico.visualizar', 'agenda.visualizar', 'agenda.criar', 'agenda.editar', 'agenda.cancelar',
                 'agenda.encaixe', 'fila.visualizar', 'fila.gerenciar', 'convenio.visualizar',
                 'convenio.autorizar', 'caixa.operar', 'pagamento.visualizar', 'pagamento.cobrar',

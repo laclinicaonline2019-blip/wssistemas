@@ -140,6 +140,14 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `patient_insurances` | + `insurer_id`, `plan_id`, `is_active` | FKs compostas para convênio/plano |
 | `doctor_services.procedure_id` · `branches.cnes` · `split_rules.insurer_id` · `receivables.insurance_guide_id` | procedimento faturado · CNES · repasse por convênio · cobrança particular do atendimento misto | CHECK regra de convênio só com pagador "convênio" |
 
+### Fase 10 — portal do paciente
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `patient_accounts` | Acesso do paciente ao portal: e-mail (login alternativo ao CPF), senha (Argon2id), situação, bloqueio por tentativas, último acesso | `UNIQUE(company_id, patient_id)`, `UNIQUE(company_id, email)`; CHECK de situação |
+| `patient_account_tokens` | Links de ativação/redefinição: **somente o SHA-256** do token, expiração, uso único | `UNIQUE(token_hash)` |
+| `patient_files.visible_to_patient` | Arquivo liberado no portal (padrão: não) | |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

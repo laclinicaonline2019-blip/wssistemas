@@ -22,17 +22,17 @@ class AppointmentService
         private readonly GuideService $guides,
     ) {}
 
-    public function confirm(User $actor, Appointment $appointment, string $channel = 'reception'): Appointment
+    public function confirm(?User $actor, Appointment $appointment, string $channel = 'reception'): Appointment
     {
         $this->transition($appointment, 'confirmed', ['confirmed_at' => now()], ['channel' => $channel]);
 
         return $appointment;
     }
 
-    public function cancel(User $actor, Appointment $appointment, string $reason): Appointment
+    public function cancel(?User $actor, Appointment $appointment, string $reason): Appointment
     {
         $this->transition($appointment, 'cancelled', [
-            'cancelled_at' => now(), 'cancel_reason' => $reason, 'cancelled_by' => $actor->id,
+            'cancelled_at' => now(), 'cancel_reason' => $reason, 'cancelled_by' => $actor?->id,
         ], ['reason' => $reason]);
         $this->finance->cancelAppointmentReceivable($appointment, $actor, 'Agendamento cancelado: '.$reason);
 

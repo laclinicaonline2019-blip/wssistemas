@@ -60,7 +60,14 @@ class AuditLogger
             $subject !== null && array_key_exists('company_id', $subject->getAttributes()) => $subject->getAttributes()['company_id'],
             default => null,
         } ?? $this->context->companyIdOrNull();
-        $userId ??= Auth::id();
+        // Portal do paciente: o ator é a conta do paciente — nunca um usuário da clínica que
+        // por acaso esteja logado no mesmo navegador.
+        if ($userId === null && $actorType === 'user' && ($portalAccount = $request?->attributes->get('portal_account_id'))) {
+            $actorType = 'patient';
+            $metadata['patient_account_id'] = $portalAccount;
+        } else {
+            $userId ??= Auth::id();
+        }
 
         if ($userId === null && $actorType === 'user') {
             $actorType = app()->runningInConsole() && ! app()->runningUnitTests() ? 'system' : 'anonymous';

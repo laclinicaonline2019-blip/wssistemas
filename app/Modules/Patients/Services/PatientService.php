@@ -15,6 +15,7 @@ use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Patients\Models\PatientConsent;
+use App\Modules\Portal\Models\PatientAccount;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -171,6 +172,8 @@ class PatientService
             });
 
             $patient->contacts()->delete();
+            // Portal: acesso bloqueado e e-mail de login removido.
+            PatientAccount::query()->where('patient_id', $patient->id)->update(['status' => 'blocked', 'email' => null, 'updated_at' => now()]);
             // Carteirinhas usadas em guias ficam (faturamento ao convênio é obrigação legal — LGPD art. 16, I),
             // mas desativadas e com o número mascarado no cadastro; as demais são apagadas.
             foreach ($patient->allInsurances()->get() as $insurance) {

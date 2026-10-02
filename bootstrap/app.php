@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureSuperAdmin;
 use App\Http\Middleware\EnsureTwoFactorEnrolled;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SecurityHeaders;
+use App\Modules\Portal\Http\Middleware\ResolvePortalTenant;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -42,6 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // para que {branch}/{user}/{role} sejam resolvidos já filtrados pela empresa.
         $middleware->prependToPriorityList(SubstituteBindings::class, ResolveTenant::class);
         $middleware->prependToPriorityList(SubstituteBindings::class, EnsureSuperAdmin::class);
+        $middleware->prependToPriorityList(SubstituteBindings::class, ResolvePortalTenant::class);
 
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
