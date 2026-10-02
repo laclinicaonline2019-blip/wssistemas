@@ -31,7 +31,8 @@ class PatientService
     /**
      * @param  array<string, mixed>  $data  validado (PatientRequest)
      */
-    public function create(User $actor, array $data, bool $confirmDuplicate = false): Patient
+    /** @param User|null $actor null = canal automático (assistente virtual) */
+    public function create(?User $actor, array $data, bool $confirmDuplicate = false): Patient
     {
         $data = $this->normalize($data);
         $this->ensureGuardianForMinor($data);
@@ -50,7 +51,7 @@ class PatientService
         return DB::transaction(function () use ($actor, $data) {
             $patient = new Patient($this->attributes($data));
             $patient->record_number = $this->sequences->next($this->context->companyId(), 'patient_record');
-            $patient->created_by = $actor->id;
+            $patient->created_by = $actor?->id;
             $patient->save();
 
             $this->syncContacts($patient, $data['contacts'] ?? [], isNew: true);
@@ -93,7 +94,7 @@ class PatientService
         return $patient;
     }
 
-    public function recordConsent(User $actor, Patient $patient, string $purpose, bool $granted, string $channel, ?string $notes = null): PatientConsent
+    public function recordConsent(?User $actor, Patient $patient, string $purpose, bool $granted, string $channel, ?string $notes = null): PatientConsent
     {
         $this->ensureNotAnonymized($patient);
 
@@ -104,7 +105,7 @@ class PatientService
             'granted' => $granted,
             'channel' => $channel,
             'notes' => $notes,
-            'recorded_by' => $actor->id,
+            'recorded_by' => $actor?->id,
             'ip_address' => request()->ip(),
         ]);
 

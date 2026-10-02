@@ -103,7 +103,7 @@ class PaymentService
 
     // ------------------------------------------------------------------ cobrança
 
-    public function createCharge(User $actor, Receivable $receivable, PaymentGateway $gateway, string $billingType, int $amountCents, string $dueDate, string $idempotencyKey): PaymentCharge
+    public function createCharge(?User $actor, Receivable $receivable, PaymentGateway $gateway, string $billingType, int $amountCents, string $dueDate, string $idempotencyKey): PaymentCharge
     {
         if ($existing = PaymentCharge::query()->where('idempotency_key', $idempotencyKey)->first()) {
             return $existing; // repetição (clique duplo / reenvio) devolve a mesma cobrança
@@ -134,7 +134,7 @@ class PaymentService
                 'branch_id' => $receivable->branch_id, 'receivable_id' => $receivable->id, 'gateway_id' => $gateway->id,
                 'provider' => $gateway->provider, 'mode' => $gateway->mode, 'patient_id' => $patient?->id, 'amount_cents' => $amountCents,
                 'billing_type' => $billingType, 'due_date' => $dueDate, 'idempotency_key' => $idempotencyKey,
-                'public_token' => Str::random(40), 'split_snapshot' => $split, 'created_by' => $actor->id,
+                'public_token' => Str::random(40), 'split_snapshot' => $split, 'created_by' => $actor?->id,
             ]));
         } catch (QueryException $e) {
             return PaymentCharge::query()->where('idempotency_key', $idempotencyKey)->first() ?? throw $e;

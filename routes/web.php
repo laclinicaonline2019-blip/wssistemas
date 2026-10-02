@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\UtilityController;
+use App\Modules\Ai\Http\Controllers\AiConfigWebController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
 use App\Modules\Clinical\Http\Controllers\Platform\ClinicalCatalogController;
 use App\Modules\Clinical\Http\Controllers\Web\ClinicalSupportController;
@@ -351,6 +352,15 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/responder', [InboxWebController::class, 'reply'])->middleware('throttle:30,1')->name('messaging.threads.reply');
         Route::post('conversas/{thread}/encerrar', [InboxWebController::class, 'close'])->name('messaging.threads.close');
         Route::post('conversas/{thread}/simular', [InboxWebController::class, 'simulate'])->name('messaging.threads.simulate');
+        Route::post('conversas/{thread}/assumir', [InboxWebController::class, 'takeOver'])->name('messaging.threads.take_over');
+        Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
+    });
+
+    // Fase 12 — recepcionista virtual (IA)
+    Route::middleware('permission:ia.configurar')->group(function () {
+        Route::get('atendimento-ia', [AiConfigWebController::class, 'index'])->name('ai.settings');
+        Route::put('atendimento-ia', [AiConfigWebController::class, 'save'])->name('ai.save');
+        Route::post('atendimento-ia/testar', [AiConfigWebController::class, 'test'])->middleware('throttle:6,1')->name('ai.test');
     });
     Route::get('notificacoes', [NotificationWebController::class, 'index'])->name('notifications.index');
     Route::get('notificacoes/{notification}', [NotificationWebController::class, 'open'])->name('notifications.open');

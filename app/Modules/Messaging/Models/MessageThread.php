@@ -3,11 +3,13 @@
 namespace App\Modules\Messaging\Models;
 
 use App\Core\Tenancy\BelongsToCompany;
+use App\Modules\Ai\Models\AiSession;
 use App\Modules\Patients\Models\Patient;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /** Conversa de WhatsApp com um telefone. */
 class MessageThread extends Model
@@ -36,6 +38,11 @@ class MessageThread extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class, 'thread_id');
+    }
+
+    public function aiSession(): HasOne
+    {
+        return $this->hasOne(AiSession::class, 'thread_id');
     }
 
     /** WhatsApp: texto livre só até 24 h após a última mensagem do paciente; depois, só modelo aprovado. */

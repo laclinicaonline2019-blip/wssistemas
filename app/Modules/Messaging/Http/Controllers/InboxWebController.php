@@ -3,6 +3,10 @@
 namespace App\Modules\Messaging\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Ai\Models\AiSession;
+use App\Modules\Ai\Models\AiToolCall;
+use App\Modules\Ai\Services\AiReceptionist;
+use App\Modules\Ai\Services\HandoffService;
 use App\Modules\Messaging\Models\Message;
 use App\Modules\Messaging\Models\MessageThread;
 use App\Modules\Messaging\Providers\InboundEvent;
@@ -22,7 +26,7 @@ class InboxWebController extends Controller
         $q = $request->validate(['q' => ['nullable', 'string', 'max:60']])['q'] ?? null;
 
         return view('messaging.inbox', [
-            'threads' => MessageThread::query()->with(['patient:id,name,social_name,record_number', 'channel:id,provider,mode'])
+            'threads' => MessageThread::query()->with(['patient:id,name,social_name,record_number', 'channel:id,provider,mode', 'aiSession:id,thread_id,status'])
                 ->when($q, fn ($w) => $w->where(fn ($x) => $x->where('phone', 'like', '%'.preg_replace('/\D/', '', $q).'%')->when(preg_replace('/\D/', '', $q) === '', fn ($y) => $y->whereRaw('1=0'))
                     ->orWhere('contact_name', 'like', '%'.addcslashes($q, '%_\\').'%')->orWhereIn('patient_id', Patient::query()->search($q)->select('id'))))
                 ->orderByDesc('last_message_at')->paginate(30)->withQueryString(),
@@ -30,22 +34,41 @@ class InboxWebController extends Controller
         ]);
     }
 
-    public function show(MessageThread $thread): View
+    public function show(MessageThread $thread, AiReceptionist $ai): View
     {
         $thread->forceFill(['unread_count' => 0])->save();
+        $session = AiSession::query()->where('thread_id', $thread->id)->first();
 
         return view('messaging.thread', [
             'thread' => $thread->load(['patient', 'channel']),
             'messages' => Message::query()->with('creator:id,name')->where('thread_id', $thread->id)->orderBy('created_at')->orderBy('id')->limit(300)->get(),
+            'aiConfig' => $ai->config(), 'aiSession' => $session,
+            'toolCalls' => $session ? AiToolCall::query()->where('session_id', $session->id)->latest('created_at')->limit(30)->get() : collect(),
         ]);
     }
 
-    public function reply(Request $request, MessageThread $thread, MessageService $messages): RedirectResponse
+    public function reply(Request $request, MessageThread $thread, MessageService $messages, HandoffService $handoff): RedirectResponse
     {
         $text = $request->validate(['text' => ['required', 'string', 'max:4000']], [], ['text' => 'mensagem'])['text'];
         $messages->sendManual($request->user(), $thread, $text);
+        // Quem responde manualmente assume a conversa: a IA para de responder até ser devolvida.
+        $handoff->takeOver($request->user(), $thread);
 
-        return back()->with('success', 'Mensagem enviada.');
+        return back()->with('success', 'Mensagem enviada. A assistente virtual fica pausada nesta conversa.');
+    }
+
+    public function takeOver(Request $request, MessageThread $thread, HandoffService $handoff): RedirectResponse
+    {
+        $handoff->takeOver($request->user(), $thread);
+
+        return back()->with('success', 'Você assumiu a conversa. A assistente virtual não responde mais aqui até ser devolvida.');
+    }
+
+    public function release(Request $request, MessageThread $thread, HandoffService $handoff): RedirectResponse
+    {
+        $handoff->release($request->user(), $thread);
+
+        return back()->with('success', 'Conversa devolvida à assistente virtual. Ela responde a partir da próxima mensagem do paciente.');
     }
 
     public function close(MessageThread $thread): RedirectResponse

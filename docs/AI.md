@@ -2,47 +2,83 @@
 
 ## Princípios
 
-1. **A IA não substitui o médico.** Não diagnostica, não prescreve, não interpreta exames para o paciente.
-2. **Nada inventado:** a IA só informa dados vindos de ferramentas do sistema (agenda, preços,
-   endereço, horários). Se não sabe, diz que não sabe e oferece atendimento humano.
-3. **Revisão humana obrigatória** para qualquer conteúdo clínico gerado (resumos, extrações de OCR).
-4. **Tudo registrado:** conversas, chamadas de ferramentas, custo/tokens (`ai_conversations`,
-   `ai_messages`, `ai_tool_calls`, `ai_usage`).
-5. **Minimização (LGPD):** apenas o necessário é enviado ao provedor; provedores com contrato de
-   tratamento de dados e sem uso dos dados para treinamento.
+1. **A IA não substitui o médico.** Não diagnostica, não prescreve, não interpreta exames, não diz se
+   algo é grave. Dúvida clínica → oferece consulta ou a equipe.
+2. **Nada inventado:** médicos, horários, valores, convênios e endereços só vêm das ferramentas do
+   sistema (agenda real, cadastros) ou das informações escritas pela clínica. Se não sabe, diz que
+   não sabe e oferece atendimento humano.
+3. **Humano sempre disponível:** "ATENDENTE" passa a conversa para a equipe; a equipe pode assumir e
+   devolver a conversa a qualquer momento.
+4. **Tudo registrado:** cada chamada ao modelo (`ai_requests`: provedor, modelo, tokens, cache,
+   tempo, erro) e cada ação (`ai_tool_calls`: entrada com CPF mascarado e resultado).
+5. **Minimização (LGPD):** ao provedor vão só a conversa e os resultados das ações (sem prontuário).
 
-## Arquitetura
+## Recepcionista virtual (Fase 12) — WhatsApp
 
 ```
-Canal (WhatsApp / chat do site / painel) → fila → ConversationOrchestrator
-   → AiProviderInterface (Claude via API Anthropic | MockAiProvider)
-   → Ferramentas (tool use) executadas NO BACKEND com o TenantContext da clínica:
-       list_specialties · find_doctors · check_availability · hold_slot · book_appointment
-       · cancel_appointment · reschedule · create_charge · get_payment_status
-       · get_clinic_info · handoff_to_human
+Webhook do WhatsApp → InboundService (respostas 1/2/3 e botões continuam automáticos)
+   → mensagem livre + IA ativa → AiReply (dispatchAfterResponse: roda depois do 200 à Meta)
+   → AiReceptionist
+        regras fixas ANTES do modelo: emergência (SAMU 192 / CVV 188) · "atendente" · consentimento
+        revogado · limites por conversa/hora e por clínica/dia
+        → LlmProvider: ClaudeProvider (SDK oficial anthropic-ai/sdk) | OpenAiProvider (ChatGPT) | MockLlmProvider
+        → ReceptionistTools (executadas NO BACKEND, com o TenantContext da clínica)
+   → resposta pelo WhatsApp (janela de 24 h) · erro/recusa → mensagem padrão + equipe avisada
 ```
 
-- **Agendamento:** `check_availability` consulta a agenda real (grade, limites por período,
-  encaixes, bloqueios, feriados). `hold_slot` reserva o horário por poucos minutos com lock;
-  `book_appointment` só confirma após validação transacional (a mesma usada pela recepção),
-  protegida pelo índice único de horário e lock transacional. Esgotado o período, a IA procura o próximo horário livre.
-- **Pagamento:** a IA gera a cobrança e informa o link; a confirmação vem apenas do webhook
-  validado — a IA nunca "aceita" comprovante como pagamento (o comprovante vai para conferência humana).
-- **Handoff:** pedido explícito, baixa confiança, reclamação ou tema clínico → conversa marcada
-  para a fila da recepção (`ia.conversas`), com resumo.
-- **Personalidade por clínica:** nome, saudação, tom e regras configuráveis (`ia.configurar`),
-  sempre acrescidas das regras de segurança fixas do sistema.
-- **Áudio:** transcrição (speech-to-text) → mesmo fluxo; resposta por voz opcional (TTS).
-- **Imagem/OCR:** receitas, pedidos de exame e comprovantes → extração estruturada
-  (medicamento, concentração, posologia) marcada como **"não verificada"** até revisão; pergunta ao
-  paciente se deseja agendar ou apenas registrar o documento.
-- **Assistente clínico (área do médico):** resumo do histórico e preenchimento assistido de
-  campos, sempre como sugestão editável, com indicação de fonte.
-- **Limites:** recursos de IA habilitados por plano (`ai_enabled`) e quotas mensais.
-- **Hospedagem compartilhada:** mensagens são processadas pela fila via cron (atraso de até ~1 min).
-  Para respostas em tempo real no WhatsApp em alto volume, migrar para VPS com worker dedicado.
+### Ferramentas
 
-## Modelo
+| Ferramenta | O que faz | Proteções |
+|---|---|---|
+| `list_specialties`, `list_doctors` | Especialidades e médicos ativos, unidades, tipos de atendimento, valor particular, se aceita convênio | Só da clínica (escopo multiempresa) |
+| `find_available_slots` | Próximos horários **livres reais** (grade, bloqueios, feriados, limites) | Antecedência mínima e janela do portal; sem encaixe |
+| `identify_patient` | CPF + data de nascimento | Não revela se o CPF existe; 3 erros → equipe |
+| `register_patient` | Cadastro novo com o WhatsApp da conversa | Possível duplicidade → equipe |
+| `my_appointments`, `cancel_appointment` | Consultas do paciente identificado | Só do próprio paciente; prazo de cancelamento do WhatsApp |
+| `propose_appointment` → `confirm_appointment` | Agendamento em **duas etapas** | A confirmação só vale numa **mensagem nova** do paciente; reserva pela mesma regra da recepção (sem dupla marcação, idempotente) |
+| `handoff_to_human` | Passa a conversa para a equipe | Notificação no sino (`ia.conversas`) |
 
-Provedor padrão planejado: Claude (Anthropic), configurável por `AI_MODEL`; `AI_MODE=mock` em
-desenvolvimento. O provedor pode ser trocado sem alterar o orquestrador.
+Com **pré-pagamento** ligado, a confirmação gera a cobrança no gateway padrão da clínica (Fase 8) e
+a IA envia o link; o pagamento só é confirmado pelo webhook do gateway.
+
+### Fluxo de agendamento
+
+especialidade/médico → horários livres → identificação (ou cadastro: nome, CPF, nascimento) →
+particular ou convênio → **resumo com valor** → paciente confirma → consulta marcada (canal "IA",
+protocolo) → link de pagamento (opcional) → aviso de agendamento pelo modelo aprovado (Fase 11).
+
+### Provedores
+
+| Provedor | Como | Modelo |
+|---|---|---|
+| **Claude (Anthropic)** — padrão | SDK oficial PHP (`anthropic-ai/sdk`), tool use manual, *prompt caching* no prefixo fixo (ferramentas + instruções), esforço `low` configurável, fallback de recusa no servidor quando o modelo aceita | `claude-opus-5-5` (padrão) ou outro informado |
+| **ChatGPT (OpenAI)** | Chat Completions com *function calling* (`tools`, `tool_calls` → mensagens `tool`) | Obrigatório informar (o nome contratado na conta) |
+| **MOCK** | Respostas fixas marcadas `[MOCK]`, usando as ferramentas reais | — |
+
+Chave: a da clínica (criptografada no banco, nunca exibida) ou, se vazia, a da plataforma
+(`ANTHROPIC_API_KEY` / `OPENAI_API_KEY` no `.env`). Trocar de provedor descarta a chave anterior.
+
+### Configuração (Atendimento IA — `ia.configurar`)
+
+Ativar, provedor, modelo, chave, nome da assistente, **informações da clínica** (horário, convênios,
+preparo, políticas — não mudam as regras de segurança), responder no WhatsApp, permitir agendar,
+cancelar, enviar link de pagamento, esforço, limites, **teste de conexão** (sem dados de pacientes) e
+uso dos últimos 30 dias (chamadas, tokens, cache, conversas passadas para a equipe, consultas marcadas).
+
+### Conversas (`ia.conversas`)
+
+Selo "IA atendendo" / "com a equipe", motivo do handoff, **Assumir (pausar IA)**, **Devolver à IA**,
+registro das ações executadas. Responder manualmente também pausa a IA na conversa.
+
+### Hospedagem compartilhada
+
+A resposta roda depois do 200 ao webhook (`dispatchAfterResponse` — `fastcgi_finish_request` /
+LiteSpeed), sem worker de fila. Uma resposta por vez por conversa (lock em cache); várias mensagens
+seguidas recebem uma resposta. Tempo máximo do processo estendido para 240 s no job.
+
+## Próximas fases
+
+- **Fase 13:** áudio (transcrição), imagem e OCR (receitas, pedidos de exame, comprovantes — sempre
+  "não verificado" até revisão humana).
+- Assistente clínico na área do médico (resumos e preenchimento assistido, sempre como sugestão editável).
+- Limites de IA por plano (`ai_enabled`, quotas mensais) usando `ai_requests`.

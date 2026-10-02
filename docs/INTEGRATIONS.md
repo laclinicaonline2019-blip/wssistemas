@@ -87,6 +87,24 @@ Configuração: *Administração → WhatsApp e mensagens* (permissão `integrac
 **Homologação:** use o número de teste da Meta (modo "Teste"), cadastre os modelos e aguarde a aprovação,
 configure o webhook e valide: agendamento → mensagem; lembrete → botão Confirmar → agenda confirmada.
 
+## IA — recepcionista virtual (Fase 12) — implementado
+
+Configuração: *Administração → Atendimento IA* (permissão `ia.configurar`). Detalhes em [AI.md](AI.md).
+
+| Provedor | Integração | Chave | Situação |
+|---|---|---|---|
+| **Claude (Anthropic)** — padrão | SDK oficial `anthropic-ai/sdk` (PHP), Messages API com *tool use*, *prompt caching*, esforço configurável; modelo padrão `claude-opus-5-5` | `ANTHROPIC_API_KEY` (plataforma) ou chave da clínica (criptografada) | Produção (requer chave) |
+| **ChatGPT (OpenAI)** | `POST {OPENAI_BASE_URL}/chat/completions` com *function calling*; modelo **informado pela clínica** | `OPENAI_API_KEY` (plataforma) ou chave da clínica | Produção (requer chave e modelo) |
+| **MOCK** | Respostas fixas `[MOCK]` com as ferramentas reais | — | Demonstração/homologação |
+
+- Sem chave configurada, a IA não inventa resposta: a conversa vai para a equipe com o motivo.
+- "Testar conexão" envia só uma mensagem curta, sem dados de pacientes.
+- Tokens, cache, tempo e erros de cada chamada ficam em `ai_requests` (base para custos e cotas).
+- Contrate o provedor com contrato de tratamento de dados (DPA) e sem uso dos dados para treinamento.
+
+**Homologação:** ative em modo MOCK com o WhatsApp MOCK e use "Simular mensagem recebida" na conversa;
+depois troque para Claude ou ChatGPT com a chave, "Testar conexão" e uma conversa real pelo número de teste da Meta.
+
 ## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)
 
 Receita e atestado **digitais** só valem com assinatura qualificada ICP-Brasil (MP 2.200-2/2001,

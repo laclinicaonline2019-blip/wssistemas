@@ -57,6 +57,6 @@ class Message extends Model
 
     public function purposeLabel(): string
     {
-        return config("messaging.purposes.{$this->purpose}.label") ?? ['manual' => 'Mensagem da equipe', 'inbound' => 'Mensagem do paciente', 'auto_reply' => 'Resposta automática'][$this->purpose] ?? $this->purpose;
+        return config("messaging.purposes.{$this->purpose}.label") ?? ['manual' => 'Mensagem da equipe', 'inbound' => 'Mensagem do paciente', 'auto_reply' => 'Resposta automática', 'ai_reply' => 'Assistente virtual (IA)'][$this->purpose] ?? $this->purpose;
     }
 }

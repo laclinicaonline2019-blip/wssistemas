@@ -244,11 +244,11 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 6 | Receitas (Portaria 344/98: simples, controle especial 2 vias, notificação), atestados, exames, relatórios, **impressão A4/A5/térmica e PDF**, QR Code de validação, anexos do paciente, arquitetura de assinatura ICP-Brasil | **Concluída** |
 | 7 | Financeiro: contas a receber/pagar, caixa por operador (fechamento cego + conferência), livro imutável com estornos, recibos, fluxo de caixa | **Concluída** |
 | 8 | ASAAS e Cielo (SANDBOX/produção) + MOCK, links de pagamento com PIX/QR, webhooks autenticados e idempotentes com confirmação por API, sincronização periódica, tarifas, estornos, split nativo e repasse interno | **Concluída** |
-| 9 ▶ | Convênios (preparado para TISS) | Próxima |
-| 10 | Portal do paciente | |
-| 11 | WhatsApp oficial | |
-| 12 | IA recepcionista (agendamento com tool use) | |
-| 13 | IA com áudio, imagem e OCR | |
+| 9 | Convênios: operadoras, planos, tabelas, autorizações, guias, lotes XML TISS 4.01.00 validados, glosas e recursos | **Concluída** |
+| 10 | Portal do paciente | **Concluída** |
+| 11 | WhatsApp oficial (Cloud API), lembretes, notificações | **Concluída** |
+| 12 | IA recepcionista no WhatsApp (Claude padrão, ChatGPT opcional, MOCK; agendamento com tool use em duas etapas, handoff) | **Concluída** |
+| 13 ▶ | IA com áudio, imagem e OCR | Próxima |
 | 14 | Conciliação bancária (OFX/CSV/Open Finance) | |
 | 15 | Relatórios (PDF/Excel/CSV), conferência médico × clínica | |
 | 16 | SaaS comercial: assinatura recorrente, upgrade/downgrade, bloqueio por inadimplência | |

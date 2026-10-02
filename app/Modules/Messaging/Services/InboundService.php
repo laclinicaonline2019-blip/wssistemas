@@ -5,6 +5,8 @@ namespace App\Modules\Messaging\Services;
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRuleViolation;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Ai\Jobs\AiReply;
+use App\Modules\Ai\Services\AiReceptionist;
 use App\Modules\Messaging\Models\Message;
 use App\Modules\Messaging\Models\MessageThread;
 use App\Modules\Messaging\Models\MessagingChannel;
@@ -24,8 +26,9 @@ use Illuminate\Support\Facades\Log;
  * - Status (enviada/entregue/lida/falhou) atualiza a mensagem pelo ID do provedor.
  * - Mensagem do paciente: abre/atualiza a conversa (janela de 24 h), identifica o paciente pelo
  *   telefone e trata a resposta ao lembrete — botão (payload "CONFIRM:{agendamento}") ou texto
- *   1/2/3. Cancelamento respeita o prazo da clínica; "remarcar" e mensagens livres viram aviso
- *   para a recepção (o atendimento por IA chega na Fase 12).
+ *   1/2/3. Cancelamento respeita o prazo da clínica; "remarcar" vira aviso para a recepção.
+ * - Mensagem livre: a recepcionista virtual (Fase 12) responde depois do 200 ao webhook; com a IA
+ *   desligada ou a conversa com a equipe, vira aviso para a recepção.
  * - Idempotente: o mesmo ID de mensagem (wamid) nunca é processado duas vezes.
  */
 class InboundService
@@ -36,6 +39,7 @@ class InboundService
         private readonly AppointmentService $appointments,
         private readonly NotificationCenter $notifications,
         private readonly AuditLogger $audit,
+        private readonly AiReceptionist $ai,
     ) {}
 
     /** @return array{0: int, 1: mixed} status HTTP e corpo */
@@ -131,9 +135,11 @@ class InboundService
             'CONFIRM' => $this->confirm($thread, $appointment),
             'CANCEL' => $this->cancel($thread, $appointment),
             'RESCHEDULE' => $this->reschedule($thread, $appointment),
-            default => $this->notifications->notify('whatsapp_message', 'Nova mensagem no WhatsApp',
-                ($thread->patient?->displayName() ?? $thread->contact_name ?? '+'.$phone).': '.mb_substr((string) $e->text, 0, 160),
-                route('messaging.threads.show', $thread), null, 'ia.conversas'),
+            default => $this->ai->accepts($thread)
+                ? AiReply::dispatchAfterResponse($channel->company_id, $thread->id, $message->id)
+                : $this->notifications->notify('whatsapp_message', 'Nova mensagem no WhatsApp',
+                    ($thread->patient?->displayName() ?? $thread->contact_name ?? '+'.$phone).': '.mb_substr((string) $e->text, 0, 160),
+                    route('messaging.threads.show', $thread), null, 'ia.conversas'),
         };
 
         return $message;

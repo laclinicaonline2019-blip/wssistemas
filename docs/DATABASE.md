@@ -157,6 +157,15 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `messages` | Caixa de saída/entrada (WhatsApp/e-mail): finalidade, modelo, parâmetros, texto, status, tentativas, próxima tentativa | **`UNIQUE(company_id, dedupe_key)`** (aviso nunca duplica), **`UNIQUE(provider_message_id)`** (webhook idempotente) |
 | `staff_notifications` / `staff_notification_reads` | Avisos internos por unidade/permissão e leitura por usuário | |
 
+### Fase 12 — recepcionista virtual (IA)
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `ai_configs` | Por clínica: provedor (claude/openai/mock), modelo, **chave própria criptografada**, nome da assistente, informações da clínica, opções (agendar, cancelar, pré-pagamento, esforço, limites) | `UNIQUE(company_id)`; CHECK provedor |
+| `ai_sessions` | Estado da IA em cada conversa: ativa/com a equipe (motivo), paciente identificado, rascunho de agendamento, tentativas de identificação, respostas e tokens | `UNIQUE(thread_id)`; FK composta para conversa e paciente; CHECK status |
+| `ai_requests` | Cada chamada ao modelo: provedor, modelo, tokens de entrada/saída/cache, motivo de parada, latência, erro | índice `(company_id, created_at)` |
+| `ai_tool_calls` | Cada ação da IA: ferramenta, entrada (**CPF mascarado**, nascimento oculto), resultado, erro | FK composta para a sessão |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

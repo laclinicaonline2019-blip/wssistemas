@@ -2,6 +2,31 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.13.0] — 2026-10-02 — Fase 12: recepcionista virtual (IA)
+
+### Adicionado
+- **Recepcionista virtual no WhatsApp**: responde mensagens livres (as respostas 1/2/3 e botões continuam
+  automáticos). Informa especialidades, médicos, unidades e valores; busca **horários livres reais**; identifica o
+  paciente pelo telefone ou CPF + nascimento (3 tentativas) ou cadastra paciente novo; lista e cancela consultas
+  (no prazo); **agenda em duas etapas** — resumo com valor e confirmação numa mensagem nova do paciente — pela
+  mesma regra da recepção (sem encaixe, sem dupla marcação, idempotente, canal "IA"); link de pagamento opcional.
+- **Provedores por clínica**: **Claude (Anthropic)** — padrão, SDK oficial PHP, modelo `claude-opus-5-5`, *prompt
+  caching*, esforço configurável; **ChatGPT (OpenAI)** — *function calling*, modelo informado pela clínica;
+  **MOCK** identificado. Chave própria criptografada (ou a da plataforma pelo `.env`), teste de conexão.
+- **Regras fixas** aplicadas pelo sistema: sem diagnóstico/prescrição/interpretação de exames; nada inventado;
+  emergência → orientação SAMU 192 (e CVV 188) e equipe avisada sem chamar o modelo; "ATENDENTE" → equipe;
+  consentimento "atendimento por IA" revogado → equipe; limites por conversa/hora e por clínica/dia; erro ou
+  recusa do modelo → mensagem padrão e equipe avisada; primeira resposta sempre identificada como assistente virtual.
+- **Handoff**: conversa "com a equipe" com motivo e aviso no sino; **Assumir (pausar IA)** e **Devolver à IA** na
+  conversa; responder manualmente pausa a IA.
+- **Registro**: cada chamada (provedor, modelo, tokens, cache, tempo, erro) e cada ação da IA (CPF mascarado);
+  painel de uso de 30 dias e últimas ações em *Atendimento IA* (`ia.configurar`).
+- Resposta gerada depois do 200 ao webhook (sem worker; compatível com HostGator), uma por vez por conversa.
+- Demo com IA em modo MOCK.
+
+### Alterado
+- `PatientService::create`, `recordConsent` e `PaymentService::createCharge` aceitam ator nulo (ações automáticas).
+
 ## [0.12.0] — 2026-10-02 — Fase 11: WhatsApp, lembretes e notificações
 
 ### Adicionado

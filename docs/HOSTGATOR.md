@@ -227,6 +227,16 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
 4. O cron (item 7) envia os lembretes e reenvia mensagens pendentes a cada 5 minutos.
 5. Registre o consentimento de WhatsApp na ficha do paciente (ou desmarque "exigir consentimento").
 
+## Atendimento por IA (recepcionista virtual)
+
+1. Configure o WhatsApp (seção anterior).
+2. Em *Administração → Atendimento IA*: escolha **Claude** (padrão) ou **ChatGPT**, informe a chave da API da
+   clínica (ou deixe vazio para usar `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` do `.env`), escreva as informações da
+   clínica, marque "Ativar" e clique em **Testar conexão**.
+3. A resposta é gerada logo depois de o servidor confirmar o recebimento à Meta (não depende da fila) — o
+   PHP-FPM/LiteSpeed da HostGator libera a conexão antes. Em alto volume, prefira VPS (veja o fim deste guia).
+4. O servidor precisa acessar `api.anthropic.com` (ou `api.openai.com`) por HTTPS — liberado por padrão.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

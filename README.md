@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.12.0 (Fases 1 a 11 concluídas, pronto para HostGator)
+## Estado atual — v0.13.0 (Fases 1 a 12 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -31,11 +31,12 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Convênios**: operadoras, planos, credenciamento, procedimentos TUSS, tabelas de valores com vigência, autorizações prévias, guias de consulta e SP/SADT geradas na chegada, atendimento misto (coparticipação), **lotes XML TISS 4.01.00 validados no schema oficial da ANS**, retorno com glosas, recurso e repasse por convênio
 - ✅ **Portal do paciente** (celular): login próprio e seguro, consultas, agendamento e cancelamento online, histórico, documentos em PDF, exames liberados pela clínica, pagamentos e recibos
 - ✅ **WhatsApp oficial** (Cloud API da Meta) e e-mail: confirmação de agendamento, lembretes 24 h/2 h/personalizados com botões confirmar/cancelar/remarcar, avisos de cancelamento, remarcação e falta, com consentimento LGPD; conversas para a recepção e central de notificações
+- ✅ **Recepcionista virtual (IA) no WhatsApp** — **Claude** (padrão, SDK oficial da Anthropic) ou **ChatGPT** (OpenAI), por clínica, com chave própria criptografada; especialidades, médicos, valores, horários livres reais, identificação/cadastro do paciente, **agendamento em duas etapas**, cancelamento e link de pagamento; sem diagnóstico ou prescrição, emergência → SAMU 192, "ATENDENTE" e handoff para a equipe, registro de chamadas/tokens e ações; modo MOCK
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 186 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 193 testes
 
-Próxima fase: **Fase 12** — IA de atendimento (recepcionista digital).
+Próxima fase: **Fase 13** — IA com áudio, imagem e OCR.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

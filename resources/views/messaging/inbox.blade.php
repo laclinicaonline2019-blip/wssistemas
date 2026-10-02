@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="page-head">
-    <div><h1>Conversas do WhatsApp</h1><p>Respostas dos pacientes aos lembretes e mensagens livres. Respostas "1/2/3" e botões são tratados automaticamente.</p></div>
+    <div><h1>Conversas do WhatsApp</h1><p>Respostas dos pacientes aos lembretes e mensagens livres. Respostas "1/2/3" e botões são tratados automaticamente; mensagens livres, pela assistente virtual (se ativada).</p></div>
     <form method="get" class="row"><label class="sr-only" for="iq">Buscar</label><input id="iq" name="q" value="{{ $q }}" class="input w-auto" placeholder="Paciente ou telefone"><button class="btn" type="submit">Buscar</button></form>
 </div>
 <section class="card">
@@ -18,6 +18,7 @@
                 <td class="small">{{ $t->last_message_at?->timezone('America/Sao_Paulo')->format('d/m H:i') ?? '—' }}</td>
                 <td>@if ($t->unread_count)<span class="badge badge-danger">{{ $t->unread_count }} nova(s)</span>@endif
                     @if ($t->windowOpen())<span class="badge badge-success">janela aberta</span>@endif
+                    @if ($t->aiSession?->status === 'active')<span class="badge badge-info">IA atendendo</span>@elseif ($t->aiSession?->status === 'handoff')<span class="badge badge-warning">com a equipe</span>@endif
                     @if ($t->status === 'closed')<span class="badge">encerrada</span>@endif</td>
                 <td class="actions"><a class="btn btn-sm" href="{{ route('messaging.threads.show', $t) }}">Abrir</a></td>
             </tr>

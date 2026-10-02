@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    // IA de atendimento (Fase 12). Chave da plataforma — cada clínica pode usar a própria (criptografada).
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+    ],
+
+    'openai' => [
+        'key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+    ],
+
 ];

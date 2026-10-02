@@ -12,6 +12,38 @@
 </div>
 @unless ($thread->patient)<div class="alert alert-warning">Telefone não vinculado a um único paciente — confira antes de passar informações.</div>@endunless
 
+@if ($aiConfig?->is_active || $aiSession)
+    <section class="card mb-2">
+        <div class="card__head"><h2>Assistente virtual (IA)</h2>
+            @if ($aiSession?->status === 'handoff')<span class="badge badge-warning">Pausada — conversa com a equipe</span>
+            @elseif ($aiConfig?->is_active)<span class="badge badge-info">Atendendo · {{ \App\Modules\Ai\Models\AiConfig::PROVIDERS[$aiConfig->provider] ?? $aiConfig->provider }}</span>
+            @else<span class="badge">IA desligada na clínica</span>@endif</div>
+        <div class="card__body stack small">
+            @if ($aiSession?->handoff_reason)<div><strong>Motivo:</strong> {{ $aiSession->handoff_reason }}</div>@endif
+            @if ($aiSession)<div class="muted">{{ $aiSession->replies }} resposta(s) da IA · {{ number_format($aiSession->input_tokens + $aiSession->output_tokens, 0, ',', '.') }} tokens</div>@endif
+            <div class="row">
+                @if ($aiSession?->status === 'handoff')
+                    <form method="post" action="{{ route('messaging.threads.release', $thread) }}">@csrf<button class="btn btn-sm" type="submit">Devolver à IA</button></form>
+                @else
+                    <form method="post" action="{{ route('messaging.threads.take_over', $thread) }}">@csrf<button class="btn btn-sm btn-primary" type="submit">Assumir (pausar IA)</button></form>
+                @endif
+            </div>
+            @if ($toolCalls->isNotEmpty())
+                <details class="ai-log"><summary>Ações executadas pela IA ({{ $toolCalls->count() }})</summary>
+                    <div class="table-wrap"><table class="table">
+                        <thead><tr><th>Quando</th><th>Ação</th><th>Entrada</th><th>Resultado</th></tr></thead>
+                        <tbody>@foreach ($toolCalls as $c)
+                            <tr><td class="nowrap">{{ $c->created_at->timezone('America/Sao_Paulo')->format('d/m H:i:s') }}</td><td class="mono">{{ $c->tool }}</td>
+                                <td class="mono small">{{ \Illuminate\Support\Str::limit(json_encode($c->input, JSON_UNESCAPED_UNICODE), 120) }}</td>
+                                <td class="small">@if ($c->is_error)<span class="badge badge-danger">erro</span> {{ $c->result['error'] ?? '' }}@else{{ \Illuminate\Support\Str::limit(json_encode($c->result, JSON_UNESCAPED_UNICODE), 160) }}@endif</td></tr>
+                        @endforeach</tbody>
+                    </table></div>
+                </details>
+            @endif
+        </div>
+    </section>
+@endif
+
 <section class="card mb-2">
     <ul class="chat">
         @forelse ($messages as $msg)
@@ -33,7 +65,7 @@
         @if ($thread->windowOpen())
             <form method="post" action="{{ route('messaging.threads.reply', $thread) }}" class="card__body stack">@csrf
                 <label class="sr-only" for="rp">Mensagem</label><textarea id="rp" name="text" class="input" rows="3" maxlength="4000" required></textarea>
-                <p class="help">Não envie resultados de exames ou diagnósticos por aqui — use o portal do paciente.</p>
+                <p class="help">Não envie resultados de exames ou diagnósticos por aqui — use o portal do paciente. Ao responder, você assume a conversa (a IA pausa).</p>
                 <button class="btn btn-primary" type="submit">Enviar</button></form>
         @else
             <p class="card__body small muted">O WhatsApp só permite texto livre até 24 horas depois da última mensagem do paciente. Fora disso, só modelos aprovados (lembretes e avisos automáticos).</p>

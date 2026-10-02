@@ -128,11 +128,11 @@ class MessageService
     }
 
     /** Resposta automática (dentro da janela aberta pela mensagem do paciente). */
-    public function autoReply(MessageThread $thread, string $text, ?string $appointmentId = null): Message
+    public function autoReply(MessageThread $thread, string $text, ?string $appointmentId = null, string $purpose = 'auto_reply'): Message
     {
         $message = Message::create([
             'channel' => 'whatsapp', 'channel_id' => $thread->channel_id, 'thread_id' => $thread->id, 'patient_id' => $thread->patient_id,
-            'appointment_id' => $appointmentId, 'direction' => 'out', 'purpose' => 'auto_reply', 'recipient' => $thread->phone, 'body' => $text,
+            'appointment_id' => $appointmentId, 'direction' => 'out', 'purpose' => $purpose, 'recipient' => $thread->phone, 'body' => mb_substr($text, 0, 4096),
         ]);
         $this->deliver($message);
 
