@@ -154,8 +154,8 @@ class PortalTest extends TestCase
 
         Storage::fake('local');
         [$shared, $hidden] = $this->tenant(function () {
-            $make = fn (string $title, bool $visible) => new PatientFile(['patient_id' => $this->pat->id, 'category' => 'exam', 'title' => $title, 'original_name' => $title.'.pdf',
-                'mime' => 'application/pdf', 'size_bytes' => 10, 'disk' => 'local', 'path' => 'p/'.$title.'.pdf', 'sha256' => str_repeat('a', 64), 'uploaded_by' => $this->clinic['admin']->id])->forceFill(['visible_to_patient' => $visible]);
+            $make = fn (string $title, bool $visible) => (new PatientFile(['patient_id' => $this->pat->id, 'category' => 'exam', 'title' => $title, 'original_name' => $title.'.pdf',
+                'mime' => 'application/pdf', 'size_bytes' => 10, 'disk' => 'local', 'path' => 'p/'.$title.'.pdf', 'sha256' => str_repeat('a', 64), 'uploaded_by' => $this->clinic['admin']->id]))->forceFill(['visible_to_patient' => $visible]);
             $a = $make('Laudo liberado', true);
             $a->save();
             $b = $make('Laudo interno', false);
