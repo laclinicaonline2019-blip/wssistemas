@@ -2,6 +2,23 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.14.0] — 2026-10-03 — Fase 13: IA com áudio, imagem e OCR
+
+### Adicionado
+- **Mídia no WhatsApp** (API oficial, Z-API, Evolution e MOCK): áudio, imagem e PDF baixados depois do 200 ao
+  webhook e guardados em disco privado (tipo pelo conteúdo, limites de tamanho).
+- **Transcrição de áudio** pela OpenAI (português, modelo configurável, chave própria para áudio); a transcrição
+  entra na conversa e passa pelas mesmas regras (emergência → SAMU sem chamar o modelo).
+- **Leitura de imagem/PDF (OCR estruturado)** pelo provedor da clínica — Claude (blocos de imagem/documento com
+  *structured outputs*) ou ChatGPT (json_schema estrito): tipo do documento, profissional, medicamentos, exames,
+  dados do comprovante, legibilidade, trechos incertos e texto completo. **A IA só transcreve** — sem deduzir doses
+  nem interpretar exames.
+- Tudo **NÃO VERIFICADO** até a **conferência** em *Documentos recebidos*: original, dados lidos, conferir,
+  descartar (com motivo, nada é apagado), anexar à ficha do paciente; aviso à equipe (comprovante em destaque,
+  sem baixa financeira). **Ler com IA** em arquivos já anexados à ficha.
+- A recepcionista virtual usa o resumo na conversa e pergunta se o paciente quer agendar ou só registrar.
+- Simulação de envio de foto/PDF/áudio no modo MOCK. Opções na tela *Atendimento IA*.
+
 ## [0.13.1] — 2026-10-03 — WhatsApp oficial ou não oficial (escolha da clínica)
 
 ### Adicionado

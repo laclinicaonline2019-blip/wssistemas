@@ -47,7 +47,8 @@
                 {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $nav($can('convenio.faturar') ? 'guides.index' : ($can('convenio.autorizar') ? 'authorizations.index' : 'insurers.index'), ['insurers.*', 'procedures.*', 'authorizations.*', 'guides.*', 'batches.*'], 'shield', 'Convênios', $can('convenio.visualizar') || $can('convenio.gerenciar') || $can('convenio.autorizar') || $can('convenio.faturar')) !!}
                 {!! $nav('messaging.inbox', ['messaging.inbox', 'messaging.threads.*'], 'chat', 'Conversas WhatsApp', $can('ia.conversas')) !!}
-                {!! $nav('ai.settings', 'ai.*', 'activity', 'Atendimento IA', $can('ia.configurar')) !!}
+                {!! $nav('ai.media.index', 'ai.media.*', 'file', 'Documentos recebidos', $can('ia.conversas')) !!}
+                {!! $nav('ai.settings', 'ai.settings', 'activity', 'Atendimento IA', $can('ia.configurar')) !!}
             </ul>
             @php
                 $adminNav = implode('', [
@@ -70,7 +71,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.13.1') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.14.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

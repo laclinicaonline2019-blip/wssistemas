@@ -34,6 +34,17 @@ class MockWhatsAppProvider implements WhatsAppProvider
         return $token !== '' && hash_equals((string) $channel->verify_token, $token);
     }
 
+    /** MOCK: o conteúdo vem junto do evento simulado (base64). */
+    public function downloadMedia(MessagingChannel $channel, array $media): array
+    {
+        $data = base64_decode((string) ($media['data'] ?? ''), true);
+        if ($data === false || $data === '') {
+            throw new MessagingException('MOCK: mídia sem conteúdo.', false);
+        }
+
+        return [$data, $media['mime'] ?? null];
+    }
+
     public function parseWebhook(array $payload): array
     {
         return (new MetaCloudProvider)->parseWebhook($payload); // mesmo formato da Meta

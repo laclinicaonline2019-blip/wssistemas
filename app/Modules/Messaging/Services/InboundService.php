@@ -6,6 +6,7 @@ use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRuleViolation;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Ai\Jobs\AiReply;
+use App\Modules\Ai\Jobs\ProcessInboundMedia;
 use App\Modules\Ai\Services\AiReceptionist;
 use App\Modules\Messaging\Models\Message;
 use App\Modules\Messaging\Models\MessageThread;
@@ -115,6 +116,7 @@ class InboundService
             $message = DB::transaction(fn () => Message::create([
                 'channel' => 'whatsapp', 'channel_id' => $channel->id, 'thread_id' => $thread->id, 'patient_id' => $thread->patient_id,
                 'direction' => 'in', 'purpose' => 'inbound', 'recipient' => $phone, 'body' => mb_substr((string) $e->text, 0, 4096),
+                'params' => $e->media ? ['media' => array_diff_key($e->media, ['data' => true])] : null,
                 'status' => 'received', 'provider_message_id' => $e->providerId ?: null,
             ]));
         } catch (QueryException) {
@@ -125,6 +127,13 @@ class InboundService
             'last_inbound_at' => now(), 'last_message_at' => now(), 'unread_count' => $thread->unread_count + 1, 'status' => 'open',
             'contact_name' => $thread->contact_name ?: $e->contactName,
         ])->save();
+
+        // Áudio, imagem ou documento: baixa, transcreve/lê e só então a IA (ou a equipe) responde.
+        if ($e->media) {
+            ProcessInboundMedia::dispatchAfterResponse($channel->company_id, $message->id, $e->media);
+
+            return $message;
+        }
 
         [$intent, $appointment] = $this->intent($thread, $e);
         if ($appointment) {

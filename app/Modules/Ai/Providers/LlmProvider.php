@@ -20,4 +20,12 @@ interface LlmProvider
      * @param  callable(array $usage): void  $onRequest  registra tokens/latência de cada chamada
      */
     public function run(AiConfig $config, string $staticSystem, string $dynamicContext, array $history, array $tools, callable $execute, callable $onRequest): AgentResult;
+
+    /**
+     * Lê uma imagem ou PDF e devolve os dados no formato do $schema (JSON garantido pelo provedor).
+     *
+     * @param  callable(array $usage): void  $onRequest
+     * @return array<string, mixed>
+     */
+    public function extractDocument(AiConfig $config, string $instructions, string $bytes, string $mime, array $schema, callable $onRequest): array;
 }

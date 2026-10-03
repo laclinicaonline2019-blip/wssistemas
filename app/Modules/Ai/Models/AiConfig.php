@@ -22,17 +22,17 @@ class AiConfig extends Model
 
     protected string $auditName = 'ai_config';
 
-    protected array $auditExclude = ['api_key'];
+    protected array $auditExclude = ['api_key', 'transcription_api_key'];
 
     protected $fillable = ['provider', 'model', 'api_key', 'assistant_name', 'instructions', 'settings', 'is_active'];
 
-    protected $hidden = ['api_key'];
+    protected $hidden = ['api_key', 'transcription_api_key'];
 
     protected $attributes = ['provider' => 'claude', 'assistant_name' => 'Assistente virtual', 'is_active' => false];
 
     protected function casts(): array
     {
-        return ['api_key' => 'encrypted', 'settings' => 'array', 'is_active' => 'boolean'];
+        return ['api_key' => 'encrypted', 'transcription_api_key' => 'encrypted', 'settings' => 'array', 'is_active' => 'boolean'];
     }
 
     public function setting(string $key, mixed $default = null): mixed
@@ -43,6 +43,12 @@ class AiConfig extends Model
     public function modelName(): string
     {
         return $this->model ?: (string) (self::DEFAULT_MODELS[$this->provider] ?? '');
+    }
+
+    /** Transcrição de áudio (OpenAI): chave própria para isso, a da clínica se o provedor já é OpenAI, ou a da plataforma. */
+    public function transcriptionKey(): ?string
+    {
+        return $this->transcription_api_key ?: ($this->provider === 'openai' ? $this->api_key : null) ?: config('services.openai.key');
     }
 
     /** Chave da clínica ou, se vazia, a da plataforma (.env). */

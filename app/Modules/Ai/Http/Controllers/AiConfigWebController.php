@@ -49,6 +49,8 @@ class AiConfigWebController extends Controller
             'effort' => ['required', Rule::in(['low', 'medium', 'high'])],
             'max_replies_per_hour' => ['required', 'integer', 'between:5,200'],
             'max_daily_replies' => ['required', 'integer', 'between:10,20000'],
+            'transcription_model' => ['nullable', 'regex:/^[A-Za-z0-9][A-Za-z0-9._:\-]{1,79}$/'],
+            'transcription_api_key' => ['nullable', 'string', 'min:20', 'max:300'],
         ], ['model.required_if' => 'Informe o modelo da OpenAI (ex.: o nome exato do modelo contratado na sua conta).', 'model.regex' => 'Nome de modelo inválido.'],
             ['model' => 'modelo', 'api_key' => 'chave da API', 'assistant_name' => 'nome da assistente', 'instructions' => 'informações da clínica']);
 
@@ -61,6 +63,8 @@ class AiConfigWebController extends Controller
                 'whatsapp_enabled' => $request->boolean('whatsapp_enabled'), 'allow_booking' => $request->boolean('allow_booking'),
                 'allow_cancel' => $request->boolean('allow_cancel'), 'prepayment' => $request->boolean('prepayment'),
                 'effort' => $data['effort'], 'max_replies_per_hour' => (int) $data['max_replies_per_hour'], 'max_daily_replies' => (int) $data['max_daily_replies'],
+                'media_enabled' => $request->boolean('media_enabled'), 'audio_enabled' => $request->boolean('audio_enabled'),
+                'transcription_model' => ($data['transcription_model'] ?? null) ?: 'whisper-1',
             ]),
         ]);
         // Chave: vazio mantém a atual (nunca é exibida de volta); trocar de provedor descarta a chave anterior.
@@ -68,6 +72,11 @@ class AiConfigWebController extends Controller
             $config->api_key = trim($data['api_key']);
         } elseif ($request->boolean('remove_key') || $providerChanged) {
             $config->api_key = null;
+        }
+        if (! empty($data['transcription_api_key'])) {
+            $config->transcription_api_key = trim($data['transcription_api_key']);
+        } elseif ($request->boolean('remove_transcription_key')) {
+            $config->transcription_api_key = null;
         }
         $config->save();
 

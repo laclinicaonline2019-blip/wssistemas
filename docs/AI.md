@@ -76,9 +76,36 @@ A resposta roda depois do 200 ao webhook (`dispatchAfterResponse` — `fastcgi_f
 LiteSpeed), sem worker de fila. Uma resposta por vez por conversa (lock em cache); várias mensagens
 seguidas recebem uma resposta. Tempo máximo do processo estendido para 240 s no job.
 
+## Áudio, imagem e OCR (Fase 13)
+
+```
+WhatsApp (oficial, Z-API, Evolution ou MOCK) → mídia → ProcessInboundMedia (depois do 200)
+   → download (Meta: GET /{media_id} + URL temporária com token; Z-API: URL https; Evolution: base64)
+   → MediaStore: disco PRIVADO, tipo pelo CONTEÚDO, limites (imagem 5 MB, PDF 10 MB, áudio 16 MB)
+   → áudio: Transcriber (OpenAI /audio/transcriptions, pt, modelo configurável — padrão whisper-1)
+     imagem/PDF: DocumentReader (Claude: bloco image/document + structured outputs;
+                                 ChatGPT: image_url/file + json_schema estrito; MOCK)
+   → mensagem vira o resumo "NÃO VERIFICADO" → equipe avisada (comprovante: alerta)
+   → recepcionista virtual responde (se estiver atendendo) — regras de emergência valem para áudio
+```
+
+- **A IA só transcreve:** não corrige, não completa, não deduz medicamentos/doses/exames; trechos
+  ilegíveis ficam vazios e listados como incertos; resultado de exame só como texto, sem interpretação.
+- Campos: tipo (receita, pedido de exame, resultado, comprovante, atestado, carteirinha, documento pessoal,
+  outro, ilegível), resumo, paciente, data, profissional e registro, medicamentos (nome, concentração,
+  forma, posologia, quantidade), exames, pagamento (valor, data, pagador, recebedor, forma, identificador),
+  legibilidade, incertezas e texto completo.
+- **Conferência humana** em *Documentos recebidos* (`ia.conversas`): original (download auditado, sem
+  cache), dados lidos, **Marcar como conferido** (com observação), **Descartar** (com motivo — nada é
+  apagado), **Anexar à ficha** (vira arquivo do paciente, não liberado no portal; `documento.anexar`).
+- **Comprovante nunca dá baixa**: o pagamento só é confirmado pelo financeiro/gateway.
+- **Ler com IA** em qualquer imagem/PDF já anexado à ficha do paciente.
+- A IA na conversa diz o que foi identificado deixando claro que a equipe vai conferir, pergunta se o
+  paciente quer agendar ou só registrar, e nunca comenta receitas, doses ou resultados.
+- Configuração: ligar/desligar leitura de documentos e transcrição; modelo e chave da OpenAI para áudio
+  (o Claude não recebe áudio — com o Claude na conversa, o áudio usa a chave OpenAI da clínica ou da plataforma).
+
 ## Próximas fases
 
-- **Fase 13:** áudio (transcrição), imagem e OCR (receitas, pedidos de exame, comprovantes — sempre
-  "não verificado" até revisão humana).
 - Assistente clínico na área do médico (resumos e preenchimento assistido, sempre como sugestão editável).
 - Limites de IA por plano (`ai_enabled`, quotas mensais) usando `ai_requests`.

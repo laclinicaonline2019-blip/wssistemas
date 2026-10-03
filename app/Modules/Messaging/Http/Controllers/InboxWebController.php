@@ -3,6 +3,7 @@
 namespace App\Modules\Messaging\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Ai\Models\AiMedia;
 use App\Modules\Ai\Models\AiSession;
 use App\Modules\Ai\Models\AiToolCall;
 use App\Modules\Ai\Services\AiReceptionist;
@@ -43,6 +44,7 @@ class InboxWebController extends Controller
             'thread' => $thread->load(['patient', 'channel']),
             'messages' => Message::query()->with('creator:id,name')->where('thread_id', $thread->id)->orderBy('created_at')->orderBy('id')->limit(300)->get(),
             'aiConfig' => $ai->config(), 'aiSession' => $session,
+            'media' => AiMedia::query()->where('thread_id', $thread->id)->get()->keyBy('message_id'),
             'toolCalls' => $session ? AiToolCall::query()->where('session_id', $session->id)->latest('created_at')->limit(30)->get() : collect(),
         ]);
     }
@@ -82,9 +84,17 @@ class InboxWebController extends Controller
     public function simulate(Request $request, MessageThread $thread, InboundService $inbound): RedirectResponse
     {
         abort_unless($thread->channel?->isMock(), 404);
-        $data = $request->validate(['text' => ['nullable', 'string', 'max:500'], 'payload' => ['nullable', 'string', 'max:60']]);
+        $data = $request->validate(['text' => ['nullable', 'string', 'max:500'], 'payload' => ['nullable', 'string', 'max:60'], 'file' => ['nullable', 'file', 'max:10240']]);
+        $media = null;
+        if ($request->hasFile('file')) {
+            $mime = (string) $request->file('file')->getMimeType();
+            $media = ['kind' => str_starts_with($mime, 'audio/') ? 'audio' : ($mime === 'application/pdf' ? 'document' : 'image'), 'mime' => $mime,
+                'data' => base64_encode((string) file_get_contents($request->file('file')->getRealPath())), 'caption' => $data['text'] ?? null,
+                'filename' => mb_substr($request->file('file')->getClientOriginalName(), 0, 150)];
+        }
         $inbound->message($thread->channel, new InboundEvent('message', 'mock.in.'.Str::lower((string) Str::ulid()), $thread->phone, $thread->contact_name,
-            $data['text'] ?? ($data['payload'] ? Str::before($data['payload'], ':') : ''), $data['payload'] ?? null));
+            $media ? (($data['text'] ?? null) ?: '['.$media['kind'].']') : ($data['text'] ?? ($data['payload'] ? Str::before($data['payload'], ':') : '')),
+            $data['payload'] ?? null, media: $media));
 
         return back()->with('success', 'Resposta do paciente simulada (MOCK).');
     }

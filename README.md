@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.13.1 (Fases 1 a 12 concluídas, pronto para HostGator)
+## Estado atual — v0.14.0 (Fases 1 a 13 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -32,11 +32,12 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Portal do paciente** (celular): login próprio e seguro, consultas, agendamento e cancelamento online, histórico, documentos em PDF, exames liberados pela clínica, pagamentos e recibos
 - ✅ **WhatsApp oficial** (Cloud API da Meta) e e-mail: confirmação de agendamento, lembretes 24 h/2 h/personalizados com botões confirmar/cancelar/remarcar, avisos de cancelamento, remarcação e falta, com consentimento LGPD; conversas para a recepção e central de notificações; **opcionalmente, WhatsApp não oficial** (Z-API ou Evolution API) por escolha da clínica, com aceite de risco
 - ✅ **Recepcionista virtual (IA) no WhatsApp** — **Claude** (padrão, SDK oficial da Anthropic) ou **ChatGPT** (OpenAI), por clínica, com chave própria criptografada; especialidades, médicos, valores, horários livres reais, identificação/cadastro do paciente, **agendamento em duas etapas**, cancelamento e link de pagamento; sem diagnóstico ou prescrição, emergência → SAMU 192, "ATENDENTE" e handoff para a equipe, registro de chamadas/tokens e ações; modo MOCK
+- ✅ **Áudio, fotos e PDFs no WhatsApp**: áudio transcrito (OpenAI), receitas, pedidos de exame e comprovantes lidos pela IA (Claude ou ChatGPT) com campos estruturados **não verificados** até a **conferência da equipe**; anexar à ficha; "Ler com IA" em arquivos do paciente; comprovante nunca dá baixa
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 195 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 199 testes
 
-Próxima fase: **Fase 13** — IA com áudio, imagem e OCR.
+Próxima fase: **Fase 14** — conciliação bancária.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

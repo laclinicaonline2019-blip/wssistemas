@@ -74,4 +74,45 @@ class OpenAiProvider implements LlmProvider
 
         return new AgentResult('', 'max_steps');
     }
+
+    /** Imagem (image_url em data URL) ou PDF (file) + response_format json_schema estrito. */
+    public function extractDocument(AiConfig $config, string $instructions, string $bytes, string $mime, array $schema, callable $onRequest): array
+    {
+        $key = $config->apiKey();
+        $model = $config->modelName();
+        if (! $key || ! $model) {
+            throw new AiProviderException('Chave da API da OpenAI ou modelo não configurados.');
+        }
+        $dataUrl = 'data:'.$mime.';base64,'.base64_encode($bytes);
+        $part = $mime === 'application/pdf'
+            ? ['type' => 'file', 'file' => ['filename' => 'documento.pdf', 'file_data' => $dataUrl]]
+            : ['type' => 'image_url', 'image_url' => ['url' => $dataUrl]];
+        $started = microtime(true);
+
+        try {
+            $r = Http::withToken($key)->acceptJson()->asJson()->timeout(90)->retry(2, 1000, throw: false)
+                ->post(rtrim((string) config('services.openai.base_url'), '/').'/chat/completions', [
+                    'model' => $model, 'max_completion_tokens' => 8000,
+                    'messages' => [['role' => 'system', 'content' => $instructions], ['role' => 'user', 'content' => [['type' => 'text', 'text' => 'Transcreva e organize este documento conforme as regras.'], $part]]],
+                    'response_format' => ['type' => 'json_schema', 'json_schema' => ['name' => 'documento', 'strict' => true, 'schema' => $schema]],
+                ]);
+        } catch (ConnectionException $e) {
+            $onRequest(['provider' => 'openai', 'model' => $model, 'latency_ms' => (int) ((microtime(true) - $started) * 1000), 'error' => 'conexão']);
+            throw new AiProviderException('Sem conexão com a API da OpenAI.', 0, $e);
+        }
+
+        $error = $r->successful() ? null : (string) ($r->json('error.message') ?? 'HTTP '.$r->status());
+        $onRequest(['provider' => 'openai', 'model' => (string) $r->json('model', $model), 'input_tokens' => (int) $r->json('usage.prompt_tokens'),
+            'output_tokens' => (int) $r->json('usage.completion_tokens'), 'stop_reason' => (string) $r->json('choices.0.finish_reason'),
+            'latency_ms' => (int) ((microtime(true) - $started) * 1000), 'error' => $error ? mb_substr($error, 0, 500) : null]);
+        if ($error) {
+            throw new AiProviderException('OpenAI não leu o documento: '.mb_substr($error, 0, 200));
+        }
+        if ($r->json('choices.0.message.refusal')) {
+            throw new AiProviderException('A IA recusou ler o documento.');
+        }
+        $data = json_decode((string) $r->json('choices.0.message.content'), true);
+
+        return is_array($data) ? $data : throw new AiProviderException('A IA devolveu um formato inválido.');
+    }
 }

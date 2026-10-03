@@ -16,5 +16,7 @@ final class InboundEvent
         public readonly ?string $error = null,
         public readonly ?int $timestamp = null,
         public readonly ?string $phoneNumberId = null,
+        /** Mídia recebida: {kind: audio|image|document, id?, url?, data?(base64), mime?, filename?, caption?} */
+        public readonly ?array $media = null,
     ) {}
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\UtilityController;
 use App\Modules\Ai\Http\Controllers\AiConfigWebController;
+use App\Modules\Ai\Http\Controllers\AiMediaWebController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
 use App\Modules\Clinical\Http\Controllers\Platform\ClinicalCatalogController;
 use App\Modules\Clinical\Http\Controllers\Web\ClinicalSupportController;
@@ -356,6 +357,17 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/assumir', [InboxWebController::class, 'takeOver'])->name('messaging.threads.take_over');
         Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
     });
+
+    // Fase 13 — áudio, imagem e OCR (conferência humana)
+    Route::middleware('permission:ia.conversas')->group(function () {
+        Route::get('documentos-recebidos', [AiMediaWebController::class, 'index'])->name('ai.media.index');
+        Route::get('documentos-recebidos/{media}', [AiMediaWebController::class, 'show'])->name('ai.media.show');
+        Route::get('documentos-recebidos/{media}/arquivo', [AiMediaWebController::class, 'file'])->name('ai.media.file');
+        Route::post('documentos-recebidos/{media}/conferir', [AiMediaWebController::class, 'verify'])->name('ai.media.verify');
+        Route::post('documentos-recebidos/{media}/descartar', [AiMediaWebController::class, 'discard'])->name('ai.media.discard');
+        Route::post('documentos-recebidos/{media}/anexar', [AiMediaWebController::class, 'attach'])->middleware('permission:documento.anexar')->name('ai.media.attach');
+    });
+    Route::post('arquivos/{file}/ler-com-ia', [AiMediaWebController::class, 'readFile'])->middleware(['permission:documento.anexar', 'throttle:10,1'])->name('patient_files.ai_read');
 
     // Fase 12 — recepcionista virtual (IA)
     Route::middleware('permission:ia.configurar')->group(function () {

@@ -65,6 +65,17 @@ abstract class UnofficialWhatsAppProvider implements WhatsAppProvider
         return $response;
     }
 
+    /** Mídia por URL temporária do serviço (só https). */
+    protected function fetchUrl(string $url, ?string $mime, string $service): array
+    {
+        if (! str_starts_with($url, 'https://')) {
+            throw new MessagingException("{$service}: URL de mídia inválida.", false);
+        }
+        $r = $this->call(fn () => Http::timeout(60)->get($url), $service);
+
+        return [$r->body(), $mime ?: ($r->header('Content-Type') ?: null)];
+    }
+
     protected function http(): PendingRequest
     {
         return Http::acceptJson()->asJson()->timeout(20);

@@ -115,6 +115,10 @@ Configuração: *Administração → Atendimento IA* (permissão `ia.configurar`
 | **ChatGPT (OpenAI)** | `POST {OPENAI_BASE_URL}/chat/completions` com *function calling*; modelo **informado pela clínica** | `OPENAI_API_KEY` (plataforma) ou chave da clínica | Produção (requer chave e modelo) |
 | **MOCK** | Respostas fixas `[MOCK]` com as ferramentas reais | — | Demonstração/homologação |
 
+- **Fase 13 — áudio, imagem e PDF:** leitura de imagem/PDF pelo provedor escolhido (Claude: blocos `image`/`document`
+  + `output_config.format` JSON schema; ChatGPT: `image_url`/`file` + `response_format` json_schema estrito);
+  transcrição de áudio pela OpenAI (`POST /audio/transcriptions`, `language=pt`, modelo configurável, padrão `whisper-1`)
+  com chave própria para áudio, a do ChatGPT ou a da plataforma. Mídia baixada da Meta (`GET /{media_id}`), da Z-API (URL) ou da Evolution (base64).
 - Sem chave configurada, a IA não inventa resposta: a conversa vai para a equipe com o motivo.
 - "Testar conexão" envia só uma mensagem curta, sem dados de pacientes.
 - Tokens, cache, tempo e erros de cada chamada ficam em `ai_requests` (base para custos e cotas).

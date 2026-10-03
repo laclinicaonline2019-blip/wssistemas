@@ -57,6 +57,14 @@ class ZApiProvider extends UnofficialWhatsAppProvider
 
         $text = $payload['text']['message'] ?? $payload['buttonsResponseMessage']['message'] ?? $payload['listResponseMessage']['title']
             ?? $payload['buttonReply']['message'] ?? null;
+        $media = null;
+        foreach (['audio' => ['audio', 'audioUrl'], 'image' => ['image', 'imageUrl'], 'document' => ['document', 'documentUrl']] as $kind => [$key, $urlKey]) {
+            if (! empty($payload[$key][$urlKey])) {
+                $media = ['kind' => $kind, 'url' => (string) $payload[$key][$urlKey], 'mime' => $payload[$key]['mimeType'] ?? null,
+                    'filename' => $payload[$key]['fileName'] ?? null, 'caption' => $payload[$key]['caption'] ?? null];
+                $text = $media['caption'] ?: '['.$kind.']';
+            }
+        }
         if ($text === null) {
             $kind = collect(['audio', 'image', 'video', 'document', 'sticker', 'location', 'contact'])->first(fn ($k) => isset($payload[$k])) ?? 'mensagem';
             $text = '['.$kind.']'; // tratados na Fase 13 (IA multimodal)
@@ -64,7 +72,12 @@ class ZApiProvider extends UnofficialWhatsAppProvider
 
         return [new InboundEvent('message', (string) $payload['messageId'], $this->digits($payload['phone'] ?? null),
             $payload['senderName'] ?? $payload['chatName'] ?? null, (string) $text, $payload['buttonsResponseMessage']['buttonId'] ?? null,
-            timestamp: isset($payload['momment']) ? intdiv((int) $payload['momment'], 1000) : null)];
+            timestamp: isset($payload['momment']) ? intdiv((int) $payload['momment'], 1000) : null, media: $media)];
+    }
+
+    public function downloadMedia(MessagingChannel $channel, array $media): array
+    {
+        return $this->fetchUrl((string) ($media['url'] ?? ''), $media['mime'] ?? null, 'Z-API');
     }
 
     private function url(MessagingChannel $channel, string $action): string

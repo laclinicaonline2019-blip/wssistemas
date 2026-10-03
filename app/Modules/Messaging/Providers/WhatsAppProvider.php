@@ -20,4 +20,11 @@ interface WhatsAppProvider
 
     /** @return list<InboundEvent> */
     public function parseWebhook(array $payload): array;
+
+    /**
+     * Baixa a mídia de um evento recebido (áudio, imagem, documento).
+     *
+     * @return array{0: string, 1: ?string} conteúdo binário e tipo informado pelo provedor
+     */
+    public function downloadMedia(MessagingChannel $channel, array $media): array;
 }

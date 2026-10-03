@@ -391,7 +391,17 @@ class ScriptedProvider implements LlmProvider
 {
     public array $calls = [];
 
+    /** @var (Closure(string, string): array)|null */
+    public ?Closure $extract = null;
+
     public function __construct(public array $steps = []) {}
+
+    public function extractDocument(AiConfig $config, string $instructions, string $bytes, string $mime, array $schema, callable $onRequest): array
+    {
+        $onRequest(['provider' => 'claude', 'model' => 'claude-opus-5-5', 'input_tokens' => 1000, 'output_tokens' => 200, 'stop_reason' => 'end_turn']);
+
+        return ($this->extract ?? throw new \RuntimeException('Leitura sem roteiro'))($bytes, $mime);
+    }
 
     public function run(AiConfig $config, string $staticSystem, string $dynamicContext, array $history, array $tools, callable $execute, callable $onRequest): AgentResult
     {

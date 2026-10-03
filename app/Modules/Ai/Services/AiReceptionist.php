@@ -169,6 +169,12 @@ class AiReceptionist
         $this->send($thread, $session->refresh(), $result->text);
     }
 
+    /** Sessão da IA na conversa (para vincular as chamadas de leitura de mídia), se existir. */
+    public function sessionIdFor(?MessageThread $thread): ?string
+    {
+        return $thread ? AiSession::query()->where('thread_id', $thread->id)->value('id') : null;
+    }
+
     /** Teste de conexão (tela de configuração): uma chamada curta, sem ferramentas e sem dados de paciente. */
     public function testConnection(AiConfig $config): string
     {
@@ -227,6 +233,13 @@ class AiReceptionist
 
         ## Quando passar para a equipe (handoff_to_human)
         Pedido do paciente, reclamação, assunto financeiro ou de convênio que as ferramentas não resolvem, resultado de exame, receita, atestado, dúvida clínica, emergência, ou sempre que você não tiver certeza. Depois do handoff, avise em uma frase que a equipe vai continuar por aqui.
+
+        ## Áudios, fotos e documentos
+        Mensagens que começam com "🎤 Áudio (transcrição automática)" são áudios do paciente transcritos pelo sistema: podem ter erros de transcrição; se algo importante estiver confuso, peça confirmação por escrito.
+        Mensagens entre colchetes como "[Imagem recebida — lida automaticamente como …]" são arquivos enviados pelo paciente e lidos pelo sistema. Essa leitura é NÃO VERIFICADA e fica para conferência da equipe. Você pode dizer o que foi identificado (por exemplo, os exames de um pedido) para ajudar a agendar, sempre deixando claro que a equipe vai conferir. Nunca interprete resultado de exame, nunca comente medicamentos, doses ou receitas e nunca diga se algo está normal ou alterado.
+        Receita ou pedido de exame: pergunte se o paciente quer agendar (consulta ou exame, se a clínica oferecer) ou só deixar o documento registrado.
+        Comprovante de pagamento: agradeça e diga que a equipe vai conferir; nunca confirme pagamento — só o sistema financeiro confirma.
+        Se a leitura falhou ou o arquivo está ilegível, peça uma foto mais nítida ou ofereça falar com a equipe.
 
         ## Estilo
         Mensagens curtas de WhatsApp: no máximo 3 parágrafos curtos, linguagem simples e cordial, sem jargão. Use *negrito* do WhatsApp só para data, hora e protocolo. Não use títulos, tabelas nem links que não vieram do sistema. Datas como "terça, 14/10 às 09:30".

@@ -166,6 +166,14 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `ai_requests` | Cada chamada ao modelo: provedor, modelo, tokens de entrada/saída/cache, motivo de parada, latência, erro | índice `(company_id, created_at)` |
 | `ai_tool_calls` | Cada ação da IA: ferramenta, entrada (**CPF mascarado**, nascimento oculto), resultado, erro | FK composta para a sessão |
 
+### Fase 13 — áudio, imagem e OCR
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `ai_media` | Arquivo recebido no WhatsApp ou lido da ficha: tipo (áudio/imagem/PDF), arquivo privado (caminho, SHA-256, tamanho), legenda, transcrição, tipo de documento e dados extraídos (JSON), provedor/modelo, erro, **conferência** (pendente/conferido/descartado, por quem, quando, observação), arquivo da ficha vinculado | FK composta para paciente; CHECK origem/tipo/status; nunca excluído |
+| `ai_configs.transcription_api_key` | Chave da OpenAI para áudio, **criptografada** | |
+| `messaging_channels.risk_accepted_*` | Aceite do risco do WhatsApp não oficial (quem/quando) | CHECK provedor inclui `zapi`, `evolution` |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

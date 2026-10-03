@@ -246,6 +246,7 @@
                             @if ($f->visible_to_patient)<span class="badge badge-info">no portal</span>@endif</span>
                         @if ($me->hasPermission('documento.anexar'))
                             <span class="row">
+                            @if ($f->status === 'active')<form method="post" action="{{ route('patient_files.ai_read', $f) }}" data-confirm="Enviar este arquivo para leitura pela IA da clínica? O resultado fica como NÃO VERIFICADO até a conferência.">@csrf<button class="btn btn-sm btn-ghost" type="submit">Ler com IA</button></form>@endif
                             <form method="post" action="{{ route('patient_files.share', $f) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $f->visible_to_patient ? 'Tirar do portal' : 'Liberar no portal' }}</button></form>
                             <form method="post" action="{{ route('patient_files.archive', $f) }}">@csrf @method('patch')<button class="btn btn-sm btn-ghost" type="submit">{{ $f->status === 'active' ? 'Arquivar' : 'Restaurar' }}</button></form>
                             </span>

@@ -49,6 +49,10 @@
         @forelse ($messages as $msg)
             <li class="chat__msg {{ $msg->direction === 'in' ? 'is-in' : 'is-out' }}">
                 <div class="chat__bubble">{{ $msg->body }}</div>
+                    @if ($m = $media[$msg->id] ?? null)
+                        <div class="chat__media">@if ($m->path)<a href="{{ route('ai.media.file', [$m, 'inline' => 1]) }}" target="_blank" rel="noopener">{{ $m->kind === 'audio' ? 'Ouvir áudio' : 'Ver arquivo' }}</a>@endif
+                            @if ($m->kind !== 'audio')· <a href="{{ route('ai.media.show', $m) }}">Conferir leitura</a> <span class="badge {{ $m->review_status === 'verified' ? 'badge-success' : 'badge-warning' }}">{{ $m->reviewLabel() }}</span>@endif</div>
+                    @endif
                 <div class="small muted">{{ $msg->created_at->timezone('America/Sao_Paulo')->format('d/m H:i') }} ·
                     {{ $msg->direction === 'in' ? 'paciente' : ($msg->creator?->name ?? $msg->purposeLabel()) }}
                     @if ($msg->direction === 'out') · {{ $msg->statusLabel() }}@endif @if ($msg->error) · <span class="text-danger">{{ $msg->error }}</span>@endif</div>
@@ -73,8 +77,9 @@
     </section>
     @if ($thread->channel?->isMock())
         <section class="card"><div class="card__head"><h2>Simular resposta do paciente (MOCK)</h2></div>
-            <form method="post" action="{{ route('messaging.threads.simulate', $thread) }}" class="card__body stack">@csrf
+            <form method="post" action="{{ route('messaging.threads.simulate', $thread) }}" class="card__body stack" enctype="multipart/form-data">@csrf
                 <label for="sm">Texto</label><input id="sm" name="text" class="input" placeholder="1, 2, 3 ou qualquer texto">
+                <label for="sf">ou arquivo (foto, PDF ou áudio)</label><input id="sf" name="file" type="file" class="input" accept="image/jpeg,image/png,image/webp,application/pdf,audio/*">
                 <button class="btn" type="submit">Simular mensagem recebida</button></form></section>
     @endif
 </div>

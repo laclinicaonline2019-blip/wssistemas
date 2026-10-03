@@ -199,7 +199,7 @@ class DemoSeeder extends Seeder
             'verify_token' => Str::random(40), 'credentials' => []]);
         AiConfig::create(['provider' => 'mock', 'assistant_name' => 'Aivi', 'is_active' => true,
             'instructions' => 'Funcionamos de segunda a sexta, das 8h às 18h. Chegue 15 minutos antes da consulta com documento com foto.',
-            'settings' => ['whatsapp_enabled' => true, 'allow_booking' => true, 'allow_cancel' => true, 'prepayment' => false, 'effort' => 'low']]);
+            'settings' => ['whatsapp_enabled' => true, 'allow_booking' => true, 'allow_cancel' => true, 'prepayment' => false, 'effort' => 'low', 'media_enabled' => true, 'audio_enabled' => true]]);
         foreach ([$carla, $rafael, $beatriz] as $doctor) {
             SplitRule::create(['doctor_id' => $doctor->id, 'type' => 'percent', 'value' => 6000]);
         }

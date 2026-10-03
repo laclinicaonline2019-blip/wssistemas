@@ -51,6 +51,15 @@
             <label class="check col-6"><input type="checkbox" name="allow_booking" value="1" @checked($s('allow_booking'))><span>Agendar (com confirmação do paciente)</span></label>
             <label class="check col-6"><input type="checkbox" name="allow_cancel" value="1" @checked($s('allow_cancel'))><span>Cancelar (respeita o prazo do WhatsApp)</span></label>
             <label class="check col-6"><input type="checkbox" name="prepayment" value="1" @checked($s('prepayment', false))><span>Enviar link de pagamento (particular)</span></label>
+            <h3 class="col-12 mb-0">Áudio, fotos e documentos (Fase 13)</h3>
+            <label class="check col-6"><input type="checkbox" name="media_enabled" value="1" @checked($s('media_enabled'))><span>Ler fotos e PDFs (receitas, pedidos de exame, comprovantes)</span></label>
+            <label class="check col-6"><input type="checkbox" name="audio_enabled" value="1" @checked($s('audio_enabled'))><span>Transcrever áudios do WhatsApp</span></label>
+            <p class="help col-12">A leitura usa o provedor acima (Claude ou ChatGPT) e fica sempre como <strong>não verificada</strong> até a conferência em "Documentos recebidos". Áudio: transcrição pela OpenAI (o Claude não recebe áudio).</p>
+            <x-field name="transcription_model" label="Modelo de transcrição (OpenAI)" col="col-6" :value="$config->setting('transcription_model', 'whisper-1')" />
+            <x-field name="transcription_api_key" label="Chave da OpenAI para áudio" type="password" col="col-6" autocomplete="off"
+                :help="$config->transcription_api_key ? 'Configurada — deixe vazio para manter.' : ($config->provider === 'openai' ? 'Vazio = usa a chave do ChatGPT acima.' : (config('services.openai.key') ? 'Vazio = chave da plataforma.' : 'Necessária para transcrever áudio.'))" />
+            @if ($config->transcription_api_key)<label class="check col-12"><input type="checkbox" name="remove_transcription_key" value="1"><span>Remover a chave de áudio</span></label>@endif
+            <h3 class="col-12 mb-0">Limites</h3>
             <x-field name="max_replies_per_hour" label="Máx. respostas por conversa/hora" type="number" min="5" max="200" col="col-6" :value="(int) $config->setting('max_replies_per_hour', 30)" required />
             <x-field name="max_daily_replies" label="Máx. respostas da clínica/dia" type="number" min="10" max="20000" col="col-6" :value="(int) $config->setting('max_daily_replies', 500)" required />
             <div class="col-12 form-actions"><button class="btn btn-primary" type="submit">Salvar</button></div>
@@ -75,9 +84,10 @@
                 <li><strong>Humano a qualquer momento:</strong> "ATENDENTE" passa a conversa para a equipe; responder pela tela de conversas pausa a IA.</li>
                 <li><strong>Transparência:</strong> a primeira resposta sempre informa que é uma assistente virtual.</li>
                 <li><strong>Registro:</strong> cada chamada (tokens, tempo) e cada ação da IA ficam registradas; CPF mascarado.</li>
+                <li><strong>Fotos, PDFs e áudios:</strong> a IA só transcreve (sem interpretar exames ou receitas); tudo fica "não verificado" até a conferência; comprovante nunca dá baixa em pagamento.</li>
                 <li><strong>LGPD:</strong> paciente que revogar o consentimento "atendimento por assistente virtual" é atendido pela equipe.</li>
             </ul>
-            <p class="muted">Os dados enviados ao provedor de IA limitam-se à conversa e aos resultados das ações (sem prontuário). Revise o contrato/DPA do provedor escolhido.</p>
+            <p class="muted">Ao provedor de IA vão só a conversa, os resultados das ações e — se ligado — as fotos/PDFs/áudios enviados pelo paciente (sem prontuário). Revise o contrato/DPA do provedor escolhido.</p>
         </div>
     </section>
 </div>

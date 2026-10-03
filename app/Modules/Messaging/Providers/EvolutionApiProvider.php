@@ -61,15 +61,43 @@ class EvolutionApiProvider extends UnofficialWhatsAppProvider
             $m = $d['message'] ?? [];
             $text = $m['conversation'] ?? $m['extendedTextMessage']['text'] ?? $m['buttonsResponseMessage']['selectedDisplayText']
                 ?? $m['templateButtonReplyMessage']['selectedDisplayText'] ?? $m['listResponseMessage']['title'] ?? null;
+            $media = null;
+            foreach (['audio' => 'audioMessage', 'image' => 'imageMessage', 'document' => 'documentMessage'] as $kind => $key) {
+                if (isset($m[$key])) {
+                    $media = ['kind' => $kind, 'id' => (string) $d['key']['id'], 'data' => $m['base64'] ?? $d['base64'] ?? null, 'mime' => $m[$key]['mimetype'] ?? null,
+                        'filename' => $m[$key]['fileName'] ?? null, 'caption' => $m[$key]['caption'] ?? null];
+                    $text = $media['caption'] ?: '['.$kind.']';
+                }
+            }
             if ($text === null) {
-                $text = '['.str_replace('Message', '', (string) ($d['messageType'] ?? 'mensagem')).']'; // áudio/imagem: Fase 13
+                $text = '['.str_replace('Message', '', (string) ($d['messageType'] ?? 'mensagem')).']';
             }
 
             $events[] = new InboundEvent('message', (string) $d['key']['id'], $this->digits($jid), $d['pushName'] ?? null, (string) $text,
-                $m['buttonsResponseMessage']['selectedButtonId'] ?? null, timestamp: isset($d['messageTimestamp']) ? (int) $d['messageTimestamp'] : null);
+                $m['buttonsResponseMessage']['selectedButtonId'] ?? null, timestamp: isset($d['messageTimestamp']) ? (int) $d['messageTimestamp'] : null, media: $media);
         }
 
         return $events;
+    }
+
+    /** Base64 no webhook (opção "webhook base64") ou pela rota chat/getBase64FromMediaMessage. */
+    public function downloadMedia(MessagingChannel $channel, array $media): array
+    {
+        $b64 = $media['data'] ?? null;
+        $mime = $media['mime'] ?? null;
+        if (! $b64) {
+            $r = $this->call(fn () => $this->client($channel)->post($this->url($channel, 'chat/getBase64FromMediaMessage'), [
+                'message' => ['key' => ['id' => (string) ($media['id'] ?? '')]], 'convertToMp4' => false,
+            ]), 'Evolution API');
+            $b64 = $r->json('base64');
+            $mime = $r->json('mimetype') ?: $mime;
+        }
+        $data = base64_decode(preg_replace('/^data:[^,]+,/', '', (string) $b64), true);
+        if ($data === false || $data === '') {
+            throw new MessagingException('Evolution API não devolveu a mídia.', false);
+        }
+
+        return [$data, $mime];
     }
 
     private function url(MessagingChannel $channel, string $action): string

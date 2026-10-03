@@ -75,9 +75,17 @@ class MetaCloudProvider implements WhatsAppProvider
                         default => '['.$type.']', // áudio/imagem/documento: tratados na Fase 13 (IA multimodal)
                     };
                     $payloadId = $m['button']['payload'] ?? ($m['interactive']['button_reply']['id'] ?? null);
+                    $media = null;
+                    if (in_array($type, ['audio', 'voice', 'image', 'document'], true) && ! empty($m[$type]['id'])) {
+                        $media = ['kind' => match ($type) {
+                            'image' => 'image', 'document' => 'document', default => 'audio'
+                        }, 'id' => (string) $m[$type]['id'],
+                            'mime' => $m[$type]['mime_type'] ?? null, 'filename' => $m[$type]['filename'] ?? null, 'caption' => $m[$type]['caption'] ?? null];
+                        $text = $media['caption'] ?: '['.$media['kind'].']';
+                    }
 
                     $events[] = new InboundEvent('message', (string) ($m['id'] ?? ''), (string) ($m['from'] ?? ''), $names[$m['from'] ?? ''] ?? null,
-                        $text, $payloadId, timestamp: isset($m['timestamp']) ? (int) $m['timestamp'] : null, phoneNumberId: $phoneNumberId);
+                        $text, $payloadId, timestamp: isset($m['timestamp']) ? (int) $m['timestamp'] : null, phoneNumberId: $phoneNumberId, media: $media);
                 }
 
                 foreach ($value['statuses'] ?? [] as $s) {
@@ -89,6 +97,31 @@ class MetaCloudProvider implements WhatsAppProvider
         }
 
         return $events;
+    }
+
+    /** Cloud API: GET /{media_id} devolve uma URL temporária, baixada com o mesmo token. */
+    public function downloadMedia(MessagingChannel $channel, array $media): array
+    {
+        $token = $channel->credential('access_token');
+        if (! $token || empty($media['id'])) {
+            throw new MessagingException('Mídia sem identificação ou WhatsApp sem token.', false);
+        }
+
+        try {
+            $info = Http::withToken($token)->acceptJson()->timeout(20)->get("https://graph.facebook.com/{$channel->api_version}/".rawurlencode($media['id']));
+            $url = (string) $info->json('url');
+            if (! $info->successful() || ! str_starts_with($url, 'https://')) {
+                throw new MessagingException('Meta não devolveu a mídia ('.$info->status().').', $info->serverError());
+            }
+            $file = Http::withToken($token)->timeout(60)->get($url);
+        } catch (ConnectionException) {
+            throw new MessagingException('Sem conexão para baixar a mídia do WhatsApp.');
+        }
+        if (! $file->successful()) {
+            throw new MessagingException('Falha ao baixar a mídia do WhatsApp ('.$file->status().').', $file->serverError());
+        }
+
+        return [$file->body(), $info->json('mime_type') ?: ($media['mime'] ?? null)];
     }
 
     private function post(MessagingChannel $channel, array $body): string
