@@ -183,6 +183,14 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `bank_statement_lines` | Lançamento do extrato (crédito +, débito −), histórico, referência, situação (a conciliar/conciliado/ignorado), quem resolveu | **`UNIQUE(bank_account_id, dedupe_key)`** (sem duplicar); CHECK valor ≠ 0 |
 | `bank_line_matches` | Vínculo linha × lançamento do livro (manual/automático/criado), desfazer com `undone_at` | **um lançamento só em UMA linha ativa** (índice único sobre coluna gerada); FKs compostas |
 
+### Fase 15 — relatórios e fechamento médico × clínica
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `doctor_closings` | Demonstrativo mensal por médico: retrato JSON (atendimentos, recebimentos, convênios, repasse), **SHA-256 do JSON canônico**, parte do médico, repasse a pagar e conta a pagar gerada, quem fechou, resposta do médico (confirmado/contestado) | `UNIQUE(company_id, doctor_id, period, version)`; correção = nova versão (anterior "substituída"); CHECK status |
+
+Relatórios não criam tabelas: são consultas sobre os dados existentes (com escopo da clínica e das unidades do usuário).
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

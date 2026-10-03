@@ -46,6 +46,8 @@
                 {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
                 {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $nav('bank.index', 'bank.*', 'cash', 'Conciliação bancária', $can('financeiro.conciliar')) !!}
+                {!! $nav('reports.index', ['reports.*', 'closings.index', 'closings.preview', 'closings.show'], 'chart', 'Relatórios', $can('relatorio.operacional') || $can('relatorio.financeiro') || $can('relatorio.clinico') || $can('financeiro.fechamento')) !!}
+                {!! $nav('closings.mine', 'closings.mine', 'file', 'Meus fechamentos', app(\App\Core\Tenancy\TenantContext::class)->companyIdOrNull() !== null && \App\Modules\Doctors\Models\Doctor::query()->where('user_id', auth()->id())->exists()) !!}
                 {!! $nav($can('convenio.faturar') ? 'guides.index' : ($can('convenio.autorizar') ? 'authorizations.index' : 'insurers.index'), ['insurers.*', 'procedures.*', 'authorizations.*', 'guides.*', 'batches.*'], 'shield', 'Convênios', $can('convenio.visualizar') || $can('convenio.gerenciar') || $can('convenio.autorizar') || $can('convenio.faturar')) !!}
                 {!! $nav('messaging.inbox', ['messaging.inbox', 'messaging.threads.*'], 'chat', 'Conversas WhatsApp', $can('ia.conversas')) !!}
                 {!! $nav('ai.media.index', 'ai.media.*', 'file', 'Documentos recebidos', $can('ia.conversas')) !!}
@@ -72,7 +74,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.15.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.16.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

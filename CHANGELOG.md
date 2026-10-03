@@ -2,6 +2,17 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.16.0] — 2026-10-03 — Fase 15: relatórios e fechamento médico × clínica
+
+### Adicionado
+- **Central de relatórios** com filtros (período, unidade, médico), resumo e exportação **PDF**, **Excel (.xlsx,
+  sem dependências)** e **CSV**: agendamentos (taxa de faltas), produção por médico, receitas e despesas por categoria,
+  recebimentos por forma, contas a receber por faixa de atraso, faturamento por convênio (apresentado/pago/glosa)
+  e atendimentos por CID-10 (agregado, sem pacientes). Permissão por relatório; exportações auditadas.
+- **Fechamento mensal médico × clínica**: prévia, fechamento de mês encerrado com **retrato imutável (SHA-256)**,
+  repasse interno lançado em contas a pagar, **Meus fechamentos** para o médico confirmar ou contestar, nova versão
+  quando contestado, PDF do demonstrativo e detecção de adulteração.
+
 ## [0.15.0] — 2026-10-03 — Fase 14: conciliação bancária
 
 ### Adicionado

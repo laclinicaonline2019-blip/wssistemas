@@ -43,6 +43,8 @@ use App\Modules\Portal\Http\Middleware\PortalAuthenticate;
 use App\Modules\Portal\Http\Middleware\ResolvePortalTenant;
 use App\Modules\Printing\Http\Controllers\PrintTestController;
 use App\Modules\Queue\Http\Controllers\Web\QueueWebController;
+use App\Modules\Reports\Http\Controllers\ClosingWebController;
+use App\Modules\Reports\Http\Controllers\ReportWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\AgendaWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\ScheduleConfigWebController;
 use Illuminate\Support\Facades\Route;
@@ -358,6 +360,20 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/assumir', [InboxWebController::class, 'takeOver'])->name('messaging.threads.take_over');
         Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
     });
+
+    // Fase 15 — relatórios e fechamento médico × clínica
+    Route::get('relatorios', [ReportWebController::class, 'index'])->middleware('permission:relatorio.operacional|relatorio.financeiro|relatorio.clinico|financeiro.fechamento')->name('reports.index');
+    Route::get('relatorios/{key}', [ReportWebController::class, 'show'])->middleware(['permission:relatorio.operacional|relatorio.financeiro|relatorio.clinico', 'throttle:60,1'])
+        ->where('key', '[a-z_]+')->name('reports.show');
+    Route::middleware('permission:financeiro.fechamento')->group(function () {
+        Route::get('fechamentos', [ClosingWebController::class, 'index'])->name('closings.index');
+        Route::get('fechamentos/medicos/{doctor}', [ClosingWebController::class, 'preview'])->name('closings.preview');
+        Route::post('fechamentos/medicos/{doctor}', [ClosingWebController::class, 'store'])->name('closings.store');
+    });
+    Route::get('fechamentos/{closing}', [ClosingWebController::class, 'show'])->name('closings.show');
+    Route::get('fechamentos/{closing}/pdf', [ClosingWebController::class, 'pdf'])->name('closings.pdf');
+    Route::post('fechamentos/{closing}/resposta', [ClosingWebController::class, 'respond'])->middleware('throttle:20,1')->name('closings.respond');
+    Route::get('meus-fechamentos', [ClosingWebController::class, 'mine'])->name('closings.mine');
 
     // Fase 14 — conciliação bancária
     Route::middleware('permission:financeiro.conciliar')->prefix('financeiro/conciliacao')->name('bank.')->group(function () {

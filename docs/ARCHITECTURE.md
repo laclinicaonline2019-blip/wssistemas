@@ -250,8 +250,8 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 12 | IA recepcionista no WhatsApp (Claude padrão, ChatGPT opcional, MOCK; agendamento com tool use em duas etapas, handoff) | **Concluída** |
 | 13 | IA com áudio (transcrição), imagem e PDF (OCR estruturado), conferência humana | **Concluída** |
 | 14 | Conciliação bancária: OFX, CSV e Open Finance (Pluggy), sugestões, automática sem ambiguidade, múltiplos lançamentos | **Concluída** |
-| 15 ▶ | Relatórios (PDF/Excel/CSV), conferência médico × clínica | Próxima |
-| 16 | SaaS comercial: assinatura recorrente, upgrade/downgrade, bloqueio por inadimplência | |
+| 15 | Relatórios (tela, PDF, Excel, CSV) e fechamento mensal médico × clínica com confirmação do médico | **Concluída** |
+| 16 ▶ | SaaS comercial: assinatura recorrente, upgrade/downgrade, bloqueio por inadimplência | Próxima |
 | 17 | Segurança avançada (WAF/Cloudflare, antivírus, pentest; RLS se migrar para PostgreSQL) | |
 | 18–20 | Testes completos, homologação, produção | |
 
