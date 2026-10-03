@@ -35,8 +35,9 @@ php artisan queue:restart
 - **Banco:** PITR do serviço gerenciado + `pg_dump -Fc` diário criptografado (`age`/KMS) em bucket
   de outra conta/região; retenção configurável (ex.: 35 dias diários, 12 mensais).
 - **Arquivos:** versionamento do bucket + replicação entre regiões.
-- **Teste de restauração mensal** em ambiente isolado, registrando data, duração e resultado
-  (o painel de backups da Fase 17 exibirá último backup, tamanho, retenção e último teste).
+- **Teste de restauração mensal** em ambiente isolado, registrando data, duração e resultado.
+- HostGator/cPanel: `php artisan aivexa:backup` (agendado) gera dump criptografado do banco e dos anexos; painel
+  Super Admin → Backups; restauração em [PRODUCAO.md](PRODUCAO.md#6-backup-e-restauração).
 - Prontuários: retenção mínima legal de 20 anos (Lei 13.787/2018) — ver LGPD.md.
 
 ## Monitoramento

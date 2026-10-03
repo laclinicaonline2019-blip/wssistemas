@@ -2,6 +2,21 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [1.0.0] — 2026-10-03 — Fases 19 e 20: homologação e produção
+
+### Adicionado
+- **Verificação de prontidão** (`php artisan aivexa:preflight [--strict] [--json]` e Super Admin → *Prontidão*):
+  ambiente (debug, HTTPS, cookies, HSTS), infraestrutura (banco, cron com sinal de vida, fila, armazenamento,
+  e-mail), integrações de cada clínica (MOCK/sandbox/produção), segurança e backup, com "como corrigir".
+- **Sinal de vida do cron** (`aivexa:heartbeat` a cada minuto): a prontidão acusa cron parado.
+- **Backup** (`php artisan aivexa:backup [--files]`): dump do banco feito pelo próprio PHP (funciona sem
+  `mysqldump` na hospedagem compartilhada; `pg_dump` no PostgreSQL), anexos em `.zip`, **criptografia
+  AES-256-GCM** com `BACKUP_PASSWORD`, retenção configurável, agendado (banco diário, anexos semanal) e auditado.
+- **Painel de backups** do Super Admin: gerar agora, listar e baixar (download auditado).
+- Restauração verificada automaticamente a cada push (dump → `mysql` → banco vazio → mesmas contagens).
+- `docs/HOMOLOGACAO.md` (ambiente sandbox, roteiro de aceite por módulo, ensaio de restauração, assinatura) e
+  `docs/PRODUCAO.md` (domínio/SSL/Cloudflare, `.env`, cron, virada sandbox → produção, deploy, rollback, operação).
+
 ## [0.19.0] — 2026-10-03 — Fase 18: testes completos
 
 ### Adicionado

@@ -446,6 +446,10 @@ Route::middleware(['auth', 'platform', '2fa.enrolled'])->prefix('plataforma')->n
     Route::get('planos', [PlatformWebController::class, 'plans'])->name('plans.index');
     Route::post('planos', [PlatformWebController::class, 'storePlan'])->name('plans.store');
     Route::put('planos/{plan}', [PlatformWebController::class, 'updatePlan'])->name('plans.update');
+    Route::get('prontidao', [PlatformWebController::class, 'readiness'])->name('readiness');
+    Route::get('backups', [PlatformWebController::class, 'backups'])->name('backups.index');
+    Route::post('backups', [PlatformWebController::class, 'runBackup'])->middleware('throttle:5,10')->name('backups.store');
+    Route::get('backups/{name}', [PlatformWebController::class, 'downloadBackup'])->where('name', '[A-Za-z0-9.\-]+')->name('backups.download');
     Route::get('assinaturas', [PlatformBillingController::class, 'index'])->name('billing.index');
     Route::get('assinaturas/{company}', [PlatformBillingController::class, 'show'])->name('billing.company');
     Route::post('assinaturas/{company}/plano', [PlatformBillingController::class, 'changePlan'])->name('billing.plan');

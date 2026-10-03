@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.19.0 (Fases 1 a 18 concluídas, pronto para HostGator)
+## Estado atual — v1.0.0 (Fases 1 a 20 concluídas)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -37,11 +37,13 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Relatórios** operacionais, financeiros, de convênios e clínico (agregado) com exportação **PDF, Excel e CSV**, e **fechamento mensal médico × clínica** (demonstrativo imutável com hash, repasse, confirmação ou contestação pelo médico, PDF)
 - ✅ **SaaS comercial**: assinatura por clínica (teste grátis, mensal/anual), faturas pela conta ASAAS da plataforma (PIX/boleto/cartão), upgrade com cobrança proporcional, downgrade na renovação, cancelamento no fim do período, régua de atraso e **bloqueio por inadimplência** (administrador entra só para pagar), painel de MRR e baixa manual
 - ✅ **Segurança avançada**: varredura de todos os uploads (PDF com script, imagem com código, EICAR; ClamAV opcional), Cloudflare/WAF como proxy confiável, **central de segurança**, **retenção LGPD** configurável e roteiro de pentest ([docs/PENTEST.md](docs/PENTEST.md))
+- ✅ **Homologação e produção**: verificação de prontidão (`php artisan aivexa:preflight` e tela do Super Admin), alerta de cron parado, roteiro de aceite ([docs/HOMOLOGACAO.md](docs/HOMOLOGACAO.md)), **backup criptografado** diário do banco e semanal dos anexos com painel de download e restauração testada, runbook de entrada no ar ([docs/PRODUCAO.md](docs/PRODUCAO.md))
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 214 testes automatizados + 6 cenários ponta a ponta no navegador e teste de carga
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 219 testes automatizados + 6 cenários ponta a ponta no navegador e teste de carga
 
-Próxima fase: **Fase 19** — homologação.
+Todas as 20 fases do roadmap foram entregues. Para ir ao ar falta o que depende de você: domínio, conta da
+HostGator, chaves reais das integrações (homologação em sandbox primeiro) e um pentest externo.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido
@@ -70,6 +72,7 @@ Abra http://localhost:8080 (demo: `admin@demo.aivexa.local` / `Demo@12345`). Det
 | [SECURITY.md](docs/SECURITY.md) | controles implementados e checklist de produção |
 | [API.md](docs/API.md) · [openapi.yaml](docs/openapi.yaml) | API REST v1 |
 | [HOSTGATOR.md](docs/HOSTGATOR.md) | **instalação em produção na HostGator (cPanel)** |
+| [HOMOLOGACAO.md](docs/HOMOLOGACAO.md) · [PRODUCAO.md](docs/PRODUCAO.md) | roteiro de aceite e runbook de produção (backup, deploy, rollback) |
 | [INSTALL.md](docs/INSTALL.md) · [DEPLOY.md](docs/DEPLOY.md) | instalação de desenvolvimento, ambientes, backup |
 | [TESTING.md](docs/TESTING.md) | estratégia e cobertura de testes |
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [AI.md](docs/AI.md) | pagamentos, WhatsApp, IA |

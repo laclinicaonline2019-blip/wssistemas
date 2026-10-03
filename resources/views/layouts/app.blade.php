@@ -30,6 +30,8 @@
                 {!! $nav('platform.companies.index', 'platform.companies.*', 'building', 'Empresas') !!}
                 {!! $nav('platform.plans.index', 'platform.plans.*', 'layers', 'Planos SaaS') !!}
                 {!! $nav('platform.billing.index', 'platform.billing.*', 'cash', 'Assinaturas e faturas') !!}
+                {!! $nav('platform.readiness', 'platform.readiness', 'shield', 'Prontidão (produção)') !!}
+                {!! $nav('platform.backups.index', 'platform.backups.*', 'file', 'Backups') !!}
                 {!! $nav('platform.catalog.index', 'platform.catalog.*', 'file', 'Bases clínicas') !!}
             </ul>
         @else
@@ -77,7 +79,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.19.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '1.0.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

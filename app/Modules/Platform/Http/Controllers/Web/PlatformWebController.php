@@ -2,7 +2,9 @@
 
 namespace App\Modules\Platform\Http\Controllers\Web;
 
+use App\Core\Audit\AuditLogger;
 use App\Core\Health\HealthChecker;
+use App\Core\Health\ReadinessChecker;
 use App\Http\Controllers\Controller;
 use App\Modules\Audit\Models\AuditLog;
 use App\Modules\Platform\Http\Controllers\Api\PlatformCompanyController;
@@ -10,6 +12,7 @@ use App\Modules\Platform\Http\Requests\CompanyStoreRequest;
 use App\Modules\Platform\Http\Requests\PlanRequest;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Platform\Models\SaasPlan;
+use App\Modules\Platform\Services\BackupService;
 use App\Modules\Platform\Services\CompanyProvisioningService;
 use App\Modules\Platform\Services\PlatformMetrics;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class PlatformWebController extends Controller
 {
@@ -81,6 +86,45 @@ class PlatformWebController extends Controller
         PlatformCompanyController::applyUpdate($request, $company);
 
         return back()->with('success', 'Empresa atualizada.');
+    }
+
+    /** Prontidão para homologação/produção (mesma verificação do aivexa:preflight). */
+    public function readiness(ReadinessChecker $checker): View
+    {
+        $items = $checker->run();
+
+        return view('platform.readiness', ['items' => collect($items)->groupBy('area'), 'summary' => $checker->summary($items)]);
+    }
+
+    public function backups(BackupService $backup): View
+    {
+        return view('platform.backups', ['backups' => $backup->list(), 'encrypted' => (bool) config('aivexa.backup.password')]);
+    }
+
+    public function runBackup(Request $request, BackupService $backup): RedirectResponse
+    {
+        try {
+            $db = $backup->database();
+            $files = $request->boolean('files') ? $backup->files() : null;
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'Falha ao gerar o backup: '.$e->getMessage());
+        }
+
+        return back()->with('success', 'Backup gerado: '.basename($db['path']).($files ? ' e '.basename($files['path']) : '').'.');
+    }
+
+    public function downloadBackup(string $name, BackupService $backup, AuditLogger $audit): BinaryFileResponse
+    {
+        try {
+            $path = $backup->path($name);
+        } catch (Throwable) {
+            abort(404);
+        }
+        $audit->record('backup.downloaded', null, metadata: ['file' => $name]);
+
+        return response()->download($path, $name);
     }
 
     public function plans(): View

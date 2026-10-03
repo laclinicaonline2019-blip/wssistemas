@@ -47,6 +47,9 @@ jobs:
         run: vendor/bin/pint --test
       - name: Auditoria de dependências
         run: composer audit
+      - name: Banco vazio para o teste de restauração de backup
+        if: matrix.db == 'mariadb'
+        run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE aivexa_restore; GRANT ALL PRIVILEGES ON aivexa_restore.* TO 'aivexa'@'%';"
       - name: Testes
         env:
           DB_CONNECTION: ${{ matrix.connection }}

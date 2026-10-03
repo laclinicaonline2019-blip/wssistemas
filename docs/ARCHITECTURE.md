@@ -254,8 +254,8 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 16 | SaaS comercial: assinatura recorrente (ASAAS da plataforma/MOCK), upgrade proporcional, downgrade agendado, régua de atraso e bloqueio | **Concluída** |
 | 17 | Segurança avançada: varredura de uploads (+ClamAV), Cloudflare/WAF, central de segurança, retenção LGPD, isolamento das rotas novas, roteiro de pentest (RLS planejado para VPS/PostgreSQL) | **Concluída** |
 | 18 | Testes completos: 6 cenários ponta a ponta no navegador, desempenho (N+1), carga, CI | **Concluída** |
-| 19 ▶ | Homologação | Próxima |
-| 20 | Produção | |
+| 19 | Homologação: verificação de prontidão (`aivexa:preflight` + tela da plataforma), sinal de vida do cron, roteiro de aceite por módulo com sandbox e assinatura ([HOMOLOGACAO.md](HOMOLOGACAO.md)) | **Concluída** |
+| 20 | Produção: backup criptografado do banco e anexos com retenção, painel de backups, restauração testada a cada push, runbook de entrada no ar, deploy e rollback ([PRODUCAO.md](PRODUCAO.md)) | **Concluída** |
 
 ### Definição de pronto (por funcionalidade)
 

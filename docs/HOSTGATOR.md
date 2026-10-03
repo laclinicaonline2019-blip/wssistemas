@@ -131,8 +131,9 @@ cPanel → **Trabalhos Cron** → *Configuração comum*: **Uma vez por minuto**
 > Use o mesmo PHP do site. Se o seu plano limitar a frequência do cron, use o menor intervalo permitido —
 > lembretes e mensagens serão processados nesse ritmo.
 
-O cron processa a fila (e-mails, WhatsApp, IA, PDFs, webhooks), limpa tokens expirados e verifica
-diariamente a integridade da auditoria. O painel do Super Admin → *Saúde do sistema* alerta se a
+O cron processa a fila (e-mails, WhatsApp, IA, PDFs, webhooks), limpa tokens expirados, verifica
+diariamente a integridade da auditoria e gera o **backup** (banco às 02:30, anexos aos domingos — defina
+`BACKUP_PASSWORD` no `.env` para criptografá-los). O painel do Super Admin → *Saúde do sistema* alerta se a
 fila ficar parada (cron não configurado).
 
 ## 8. Primeiro acesso

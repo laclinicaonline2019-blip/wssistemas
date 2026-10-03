@@ -22,6 +22,14 @@ return [
         'reset_ttl_minutes' => (int) env('PORTAL_RESET_TTL_MINUTES', 60),
     ],
 
+    // Backup do sistema (Fase 20): banco diário e anexos semanais em storage/app/backups (privado).
+    // BACKUP_PASSWORD criptografa os arquivos (AES-256-GCM) — guarde a senha fora do servidor.
+    'backup' => [
+        'password' => env('BACKUP_PASSWORD'),
+        'keep' => (int) env('BACKUP_KEEP', 14),
+        'keep_files' => (int) env('BACKUP_KEEP_FILES', 4),
+    ],
+
     'security' => [
         // Tentativas de login por e-mail+IP por minuto (rate limit).
         'login_rate_per_minute' => (int) env('LOGIN_RATE_PER_MINUTE', 5),
@@ -37,6 +45,7 @@ return [
         'api_token_ttl_minutes' => (int) env('API_TOKEN_TTL_MINUTES', 720),
         'hsts' => (bool) env('SECURITY_HSTS', false),
         'force_https' => (bool) env('FORCE_HTTPS', false),
+        'trusted_proxies' => env('TRUSTED_PROXIES'),
 
         // Varredura de arquivos enviados (Fase 17): "none" = só verificações próprias; "clamav" = também o
         // antivírus ClamAV (clamd) por socket Unix ou TCP. fail_closed: sem antivírus disponível, recusa o arquivo.

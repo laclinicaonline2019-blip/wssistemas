@@ -27,3 +27,8 @@ Schedule::command('aivexa:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)-
 Schedule::command('aivexa:billing:run')->hourlyAt(17)->withoutOverlapping(30)->onOneServer();
 // Retenção de dados operacionais (Fase 17 — LGPD).
 Schedule::command('aivexa:retention:run')->dailyAt('04:10')->withoutOverlapping(60)->onOneServer();
+// Sinal de vida do cron (Fases 19–20: aivexa:preflight e tela de prontidão alertam se parar).
+Schedule::command('aivexa:heartbeat')->everyMinute();
+// Backup (Fase 20): banco todo dia; anexos aos domingos. Baixe cópias para fora do servidor.
+Schedule::command('aivexa:backup')->dailyAt('02:30')->withoutOverlapping(120)->onOneServer();
+Schedule::command('aivexa:backup --files')->weeklyOn(0, '03:15')->withoutOverlapping(180)->onOneServer();
