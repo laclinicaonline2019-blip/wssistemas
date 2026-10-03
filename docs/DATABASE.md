@@ -174,6 +174,15 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 | `ai_configs.transcription_api_key` | Chave da OpenAI para áudio, **criptografada** | |
 | `messaging_channels.risk_accepted_*` | Aceite do risco do WhatsApp não oficial (quem/quando) | CHECK provedor inclui `zapi`, `evolution` |
 
+### Fase 14 — conciliação bancária
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `bank_accounts` | Conta bancária (banco, agência, conta, unidade), forma de extrato (manual ou Open Finance/Pluggy), credenciais **criptografadas**, última sincronização/erro | CHECK provedor |
+| `bank_statements` | Cada importação (OFX/CSV/Open Finance): período, saldo informado, total e novos, quem importou | |
+| `bank_statement_lines` | Lançamento do extrato (crédito +, débito −), histórico, referência, situação (a conciliar/conciliado/ignorado), quem resolveu | **`UNIQUE(bank_account_id, dedupe_key)`** (sem duplicar); CHECK valor ≠ 0 |
+| `bank_line_matches` | Vínculo linha × lançamento do livro (manual/automático/criado), desfazer com `undone_at` | **um lançamento só em UMA linha ativa** (índice único sobre coluna gerada); FKs compostas |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

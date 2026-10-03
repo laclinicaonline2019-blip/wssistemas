@@ -243,6 +243,12 @@ webhook** (já contém o token) para o painel do serviço e clique em **Verifica
    PHP-FPM/LiteSpeed da HostGator libera a conexão antes. Em alto volume, prefira VPS (veja o fim deste guia).
 4. O servidor precisa acessar `api.anthropic.com` (ou `api.openai.com`) por HTTPS — liberado por padrão.
 
+## Conciliação bancária
+
+Cadastre a conta em *Financeiro → Conciliação bancária* e importe o extrato OFX (recomendado) ou CSV do internet
+banking. Para leitura automática diária, use Open Finance via Pluggy (conta no agregador) — o cron já roda a
+sincronização às 06:20.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

@@ -2,6 +2,21 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.15.0] — 2026-10-03 — Fase 14: conciliação bancária
+
+### Adicionado
+- **Contas bancárias** e **importação de extrato OFX** (SGML/XML, Windows-1252) e **CSV** (cabeçalho automático,
+  crédito/débito ou valor com sinal, formatos brasileiros), sem duplicar ao reimportar ou sobrepor períodos.
+- **Open Finance via Pluggy** (agregador): credenciais criptografadas, leitura paginada, sincronização diária
+  (`aivexa:bank:sync`) e sob demanda — a homologar com credenciais reais.
+- **Conciliação**: sugestões por valor, data (cartão com janela maior) e NSU no histórico; **automática só sem
+  ambiguidade**; manual com um ou vários lançamentos (repasse de gateway = recebimentos − tarifa) com soma conferida;
+  **lançar** tarifa/juros/rendimento direto do extrato (conta criada e baixada na data do banco, fora do caixa);
+  **ignorar** com motivo; **desfazer** mantendo o histórico. Livro financeiro inalterado.
+
+### Alterado
+- `FinanceService::pay` aceita `outside_cash` (pagamento identificado no extrato não entra no caixa do operador).
+
 ## [0.14.0] — 2026-10-03 — Fase 13: IA com áudio, imagem e OCR
 
 ### Adicionado

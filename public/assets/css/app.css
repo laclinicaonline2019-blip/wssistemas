@@ -389,3 +389,5 @@ body.portal { background: var(--bg); }
 .ai-log > summary { color: var(--primary); font-weight: 600; margin-top: .25rem; }
 .media-preview { display: block; max-width: 100%; max-height: 520px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .chat__media { display: flex; gap: .4rem; align-items: center; margin-top: .3rem; font-size: .8rem; }
+/* Fase 14 — conciliação bancária */
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }

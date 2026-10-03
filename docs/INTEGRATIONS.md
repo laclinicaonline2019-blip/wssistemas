@@ -127,6 +127,21 @@ Configuração: *Administração → Atendimento IA* (permissão `ia.configurar`
 **Homologação:** ative em modo MOCK com o WhatsApp MOCK e use "Simular mensagem recebida" na conversa;
 depois troque para Claude ou ChatGPT com a chave, "Testar conexão" e uma conversa real pelo número de teste da Meta.
 
+## Conciliação bancária (Fase 14) — implementado
+
+*Financeiro → Conciliação bancária* (permissão `financeiro.conciliar`; lançar exige `financeiro.editar`).
+
+| Fonte | Como | Situação |
+|---|---|---|
+| **OFX** | Arquivo do internet banking (OFX 1.x SGML ou 2.x XML; Windows-1252/ISO-8859-1 convertido); FITID do banco como identificador | Produção |
+| **CSV** | Cabeçalho reconhecido automaticamente: Data, Descrição/Histórico, Valor **ou** Crédito + Débito, Documento; separador `;` `,` ou tab; valores `1.234,56`, `(150,00)`, sufixo C/D; linhas de saldo ignoradas | Produção |
+| **Open Finance (Pluggy)** | Agregador regulado: a clínica conecta o banco na Pluggy (consentimento no próprio banco) e informa Client ID/Secret e ID da conta; `POST /auth` → `GET /transactions` paginado; leitura diária às 06:20 (`aivexa:bank:sync`) e sob demanda | **Requer homologação** com credenciais reais |
+
+- Reimportar ou importar períodos sobrepostos não duplica (chave por FITID/ID ou hash de data+valor+histórico+ordem).
+- Sugestões: mesmo valor, data próxima (cartão até 35 dias), bônus quando o NSU aparece no histórico do banco.
+- Automática só nos casos sem ambiguidade; o resto é conferido (um ou vários lançamentos — ex.: repasse do gateway = recebimentos − tarifa).
+- O livro financeiro continua imutável; desfazer mantém o histórico.
+
 ## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)
 
 Receita e atestado **digitais** só valem com assinatura qualificada ICP-Brasil (MP 2.200-2/2001,

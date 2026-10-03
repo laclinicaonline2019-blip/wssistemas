@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\UtilityController;
 use App\Modules\Ai\Http\Controllers\AiConfigWebController;
 use App\Modules\Ai\Http\Controllers\AiMediaWebController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
+use App\Modules\Banking\Http\Controllers\BankingWebController;
 use App\Modules\Clinical\Http\Controllers\Platform\ClinicalCatalogController;
 use App\Modules\Clinical\Http\Controllers\Web\ClinicalSupportController;
 use App\Modules\Clinical\Http\Controllers\Web\DoctorWorkspaceController;
@@ -356,6 +357,22 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/simular', [InboxWebController::class, 'simulate'])->name('messaging.threads.simulate');
         Route::post('conversas/{thread}/assumir', [InboxWebController::class, 'takeOver'])->name('messaging.threads.take_over');
         Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
+    });
+
+    // Fase 14 — conciliação bancária
+    Route::middleware('permission:financeiro.conciliar')->prefix('financeiro/conciliacao')->name('bank.')->group(function () {
+        Route::get('/', [BankingWebController::class, 'index'])->name('index');
+        Route::post('contas', [BankingWebController::class, 'storeAccount'])->name('accounts.store');
+        Route::get('contas/{account}', [BankingWebController::class, 'show'])->name('accounts.show');
+        Route::put('contas/{account}', [BankingWebController::class, 'updateAccount'])->name('accounts.update');
+        Route::post('contas/{account}/importar', [BankingWebController::class, 'import'])->middleware('throttle:20,1')->name('accounts.import');
+        Route::post('contas/{account}/sincronizar', [BankingWebController::class, 'sync'])->middleware('throttle:6,1')->name('accounts.sync');
+        Route::post('contas/{account}/automatica', [BankingWebController::class, 'auto'])->name('accounts.auto');
+        Route::get('linhas/{line}', [BankingWebController::class, 'line'])->name('lines.show');
+        Route::post('linhas/{line}/conciliar', [BankingWebController::class, 'match'])->name('lines.match');
+        Route::post('linhas/{line}/ignorar', [BankingWebController::class, 'ignore'])->name('lines.ignore');
+        Route::post('linhas/{line}/desfazer', [BankingWebController::class, 'undo'])->name('lines.undo');
+        Route::post('linhas/{line}/lancar', [BankingWebController::class, 'createEntry'])->middleware('permission:financeiro.editar')->name('lines.create_entry');
     });
 
     // Fase 13 — áudio, imagem e OCR (conferência humana)

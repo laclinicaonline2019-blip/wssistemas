@@ -301,7 +301,8 @@ class FinanceService
                 throw new BusinessRuleViolation('Valor inválido: deve ser entre R$ 0,01 e o saldo ('.Format::money($p->balanceCents()).').', 'invalid_amount');
             }
 
-            $session = $this->sessionFor($actor, $data['method']);
+            // Pagamento identificado no extrato bancário (conciliação) não passa pelo caixa do operador.
+            $session = ! empty($data['outside_cash']) && $data['method'] !== 'cash' ? null : $this->sessionFor($actor, $data['method']);
             if ($session && $data['method'] === 'cash') {
                 $this->ensureCashAvailable($session, $amount);
             }

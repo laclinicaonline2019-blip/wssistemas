@@ -21,3 +21,5 @@ Schedule::command('auth:clear-resets')->everyFifteenMinutes();
 Schedule::command('aivexa:payments:sync')->everyTenMinutes()->withoutOverlapping(15)->onOneServer();
 // WhatsApp/e-mail (Fase 11): lembretes de consulta e reenvio de mensagens pendentes.
 Schedule::command('aivexa:messaging:run')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+// Conciliação bancária (Fase 14): extratos das contas conectadas por Open Finance.
+Schedule::command('aivexa:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)->onOneServer();
