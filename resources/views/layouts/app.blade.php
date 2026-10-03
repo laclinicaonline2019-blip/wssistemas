@@ -79,7 +79,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '1.0.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '1.0.1') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

@@ -72,6 +72,7 @@ Abra http://localhost:8080 (demo: `admin@demo.aivexa.local` / `Demo@12345`). Det
 | [SECURITY.md](docs/SECURITY.md) | controles implementados e checklist de produção |
 | [API.md](docs/API.md) · [openapi.yaml](docs/openapi.yaml) | API REST v1 |
 | [HOSTGATOR.md](docs/HOSTGATOR.md) | **instalação em produção na HostGator (cPanel)** |
+| [VPS.md](docs/VPS.md) | **instalação em VPS (Ubuntu 24.04)**: Nginx, PHP-FPM, Redis, fila com Supervisor, SSL, ClamAV, atualização e volta com um comando |
 | [HOMOLOGACAO.md](docs/HOMOLOGACAO.md) · [PRODUCAO.md](docs/PRODUCAO.md) | roteiro de aceite e runbook de produção (backup, deploy, rollback) |
 | [INSTALL.md](docs/INSTALL.md) · [DEPLOY.md](docs/DEPLOY.md) | instalação de desenvolvimento, ambientes, backup |
 | [TESTING.md](docs/TESTING.md) | estratégia e cobertura de testes |

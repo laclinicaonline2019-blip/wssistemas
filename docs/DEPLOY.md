@@ -1,7 +1,8 @@
 # Deploy e ambientes
 
 > **Produção atual: HostGator Plano Turbo (cPanel).** Passo a passo completo em
-> [HOSTGATOR.md](HOSTGATOR.md). As seções de VPS abaixo valem para a evolução futura.
+> [HOSTGATOR.md](HOSTGATOR.md). Em VPS (servidor próprio), siga [VPS.md](VPS.md); as seções abaixo
+> descrevem a topologia para escalar além de uma VPS.
 
 | Ambiente | `APP_ENV` | `APP_STAGE` | Integrações | Dados |
 |---|---|---|---|---|

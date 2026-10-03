@@ -1,0 +1,2 @@
+# /etc/cron.d/aivexa — agendador (lembretes, cobranças, conciliação, backup, retenção, sinal de vida).
+* * * * * aivexa cd /var/www/aivexa/current && /usr/bin/php artisan schedule:run >> /dev/null 2>&1

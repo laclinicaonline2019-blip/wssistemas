@@ -40,9 +40,9 @@ class ReadinessChecker
         $this->add('Ambiente', 'HSTS / forçar HTTPS', config('aivexa.security.hsts') && config('aivexa.security.force_https') ? 'ok' : ($prod ? 'warn' : 'ok'),
             'SECURITY_HSTS='.(config('aivexa.security.hsts') ? 'true' : 'false').' · FORCE_HTTPS='.(config('aivexa.security.force_https') ? 'true' : 'false'), 'SECURITY_HSTS=true e FORCE_HTTPS=true em produção');
         $this->add('Ambiente', 'Token do instalador', config('aivexa.install_token') ? ($live ? 'error' : 'warn') : 'ok', config('aivexa.install_token') ? 'INSTALL_TOKEN ainda definido' : 'removido', 'Apague INSTALL_TOKEN do .env após instalar');
-        $this->add('Ambiente', 'PHP', version_compare(PHP_VERSION, '8.3.0', '>=') ? 'ok' : 'error', PHP_VERSION, 'Selecione PHP 8.3+ no cPanel (MultiPHP Manager)');
+        $this->add('Ambiente', 'PHP', version_compare(PHP_VERSION, '8.3.0', '>=') ? 'ok' : 'error', PHP_VERSION, 'PHP 8.3+ (HostGator: cPanel → MultiPHP Manager; VPS: docs/VPS.md)');
         $missing = array_values(array_filter(['mbstring', 'intl', 'gd', 'zip', 'sodium', 'openssl', 'fileinfo', 'dom', 'curl', 'pdo_'.(DB::getDriverName() === 'pgsql' ? 'pgsql' : 'mysql')], fn ($e) => ! extension_loaded($e)));
-        $this->add('Ambiente', 'Extensões PHP', $missing ? 'error' : 'ok', $missing ? 'faltando: '.implode(', ', $missing) : 'todas presentes', 'Ative as extensões no cPanel → Select PHP Version');
+        $this->add('Ambiente', 'Extensões PHP', $missing ? 'error' : 'ok', $missing ? 'faltando: '.implode(', ', $missing) : 'todas presentes', 'Ative as extensões (HostGator: cPanel → Select PHP Version; VPS: apt install php8.3-…)');
         $this->add('Ambiente', '.env fora da pasta pública', file_exists(public_path('.env')) ? 'error' : 'ok', file_exists(public_path('.env')) ? 'public/.env existe!' : 'ok', 'Remova public/.env; o .env fica fora da raiz pública');
 
         // ---------------- Banco, rotinas, armazenamento
@@ -53,11 +53,11 @@ class ReadinessChecker
         $beat = Cache::get(self::HEARTBEAT_KEY);
         $fresh = $beat && now()->diffInMinutes(CarbonImmutable::parse($beat)) <= 5;
         $this->add('Infraestrutura', 'Cron (agendador)', $fresh ? 'ok' : ($live ? 'error' : 'warn'), $beat ? 'último sinal: '.CarbonImmutable::parse($beat)->timezone('America/Sao_Paulo')->format('d/m H:i') : 'nunca rodou',
-            'cPanel → Cron Jobs: * * * * * php /home/CONTA/aivexa/artisan schedule:run');
+            'Cron a cada minuto com artisan schedule:run (HostGator: cPanel → Cron Jobs; VPS: /etc/cron.d/aivexa)');
         $free = @disk_free_space(storage_path());
         $this->add('Infraestrutura', 'Espaço em disco', $free === false || $free > 1073741824 ? 'ok' : 'warn', $free === false ? 'não informado pela hospedagem' : round($free / 1073741824, 1).' GB livres', 'Libere espaço ou amplie o plano');
         $mail = (string) config('mail.default');
-        $this->add('Infraestrutura', 'E-mail', in_array($mail, ['log', 'array'], true) ? ($live ? 'error' : 'warn') : 'ok', "MAIL_MAILER={$mail}", 'Configure o SMTP (conta de e-mail do cPanel) no .env');
+        $this->add('Infraestrutura', 'E-mail', in_array($mail, ['log', 'array'], true) ? ($live ? 'error' : 'warn') : 'ok', "MAIL_MAILER={$mail}", 'Configure o SMTP no .env (conta de e-mail do domínio)');
 
         // ---------------- Integrações
         $this->integrations($prod);
@@ -75,7 +75,7 @@ class ReadinessChecker
         // ---------------- Backups
         $last = collect(glob(storage_path('app/backups/*.sql.gz*')) ?: [])->map(fn ($f) => filemtime($f))->max();
         $this->add('Backup', 'Backup recente', $last && $last > time() - 26 * 3600 ? 'ok' : ($live ? 'error' : 'warn'),
-            $last ? 'último: '.date('d/m/Y H:i', $last) : 'nenhum backup do sistema', 'php artisan aivexa:backup (o cron faz diariamente) + backup do cPanel');
+            $last ? 'último: '.date('d/m/Y H:i', $last) : 'nenhum backup do sistema', 'php artisan aivexa:backup (o cron faz diariamente) + cópia fora do servidor');
 
         return $this->items;
     }

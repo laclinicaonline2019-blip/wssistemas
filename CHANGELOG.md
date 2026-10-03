@@ -2,6 +2,17 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [1.0.1] — 2026-10-03
+
+### Adicionado
+- **Instalação em VPS** (`docs/VPS.md`, `deploy/vps/`): Ubuntu 24.04 com Nginx, PHP-FPM 8.3, MariaDB ou
+  PostgreSQL, Redis, fila permanente com Supervisor, SSL (certbot), ClamAV, backup externo (rclone) e migração
+  da HostGator. Script `atualizar.sh`: instala/atualiza a partir do pacote com backup antes, sem tirar o site do
+  ar, e `--voltar` para a versão anterior.
+
+### Corrigido
+- CI: teste com sintaxe exclusiva do PHP 8.4 (o alvo é 8.3); remove workflows herdados do esqueleto do Laravel.
+
 ## [1.0.0] — 2026-10-03 — Fases 19 e 20: homologação e produção
 
 ### Adicionado
