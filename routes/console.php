@@ -23,3 +23,5 @@ Schedule::command('aivexa:payments:sync')->everyTenMinutes()->withoutOverlapping
 Schedule::command('aivexa:messaging:run')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 // Conciliação bancária (Fase 14): extratos das contas conectadas por Open Finance.
 Schedule::command('aivexa:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)->onOneServer();
+// Assinaturas das clínicas (Fase 16): renovação, conferência de pagamento e régua de cobrança.
+Schedule::command('aivexa:billing:run')->hourlyAt(17)->withoutOverlapping(30)->onOneServer();

@@ -249,6 +249,12 @@ Cadastre a conta em *Financeiro → Conciliação bancária* e importe o extrato
 banking. Para leitura automática diária, use Open Finance via Pluggy (conta no agregador) — o cron já roda a
 sincronização às 06:20.
 
+## Assinatura das clínicas (dono da plataforma)
+
+No `.env`: `PLATFORM_BILLING_PROVIDER=asaas`, chave da conta ASAAS da plataforma e um token de webhook; no painel do
+ASAAS cadastre o webhook `https://SEU-DOMINIO/webhooks/assinaturas/asaas` com esse token. O cron (item 7) já roda a
+rotina de cobrança a cada hora. Sem isso, fica em MOCK (nada é cobrado).
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

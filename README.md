@@ -12,7 +12,7 @@ com segurança, auditoria e LGPD como prioridade.
 **Produção: HostGator Plano Turbo (cPanel)** — pacote `.zip` + instalador web, sem necessidade de
 SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 
-## Estado atual — v0.16.0 (Fases 1 a 15 concluídas, pronto para HostGator)
+## Estado atual — v0.17.0 (Fases 1 a 16 concluídas, pronto para HostGator)
 
 - ✅ Arquitetura modular, banco com integridade multi-tenant, migrations
 - ✅ Login web e API (tokens com expiração), **2FA**, rate limit, bloqueio de conta, Argon2id
@@ -35,11 +35,12 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Áudio, fotos e PDFs no WhatsApp**: áudio transcrito (OpenAI), receitas, pedidos de exame e comprovantes lidos pela IA (Claude ou ChatGPT) com campos estruturados **não verificados** até a **conferência da equipe**; anexar à ficha; "Ler com IA" em arquivos do paciente; comprovante nunca dá baixa
 - ✅ **Conciliação bancária**: extrato OFX/CSV (formatos dos bancos brasileiros) e Open Finance via Pluggy, sugestões por valor/data/NSU, conciliação automática só sem ambiguidade, repasses de gateway (vários lançamentos), lançar tarifas e rendimentos, ignorar e desfazer com histórico
 - ✅ **Relatórios** operacionais, financeiros, de convênios e clínico (agregado) com exportação **PDF, Excel e CSV**, e **fechamento mensal médico × clínica** (demonstrativo imutável com hash, repasse, confirmação ou contestação pelo médico, PDF)
+- ✅ **SaaS comercial**: assinatura por clínica (teste grátis, mensal/anual), faturas pela conta ASAAS da plataforma (PIX/boleto/cartão), upgrade com cobrança proporcional, downgrade na renovação, cancelamento no fim do período, régua de atraso e **bloqueio por inadimplência** (administrador entra só para pagar), painel de MRR e baixa manual
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
-- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 205 testes
+- ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 209 testes
 
-Próxima fase: **Fase 16** — SaaS comercial (assinatura recorrente).
+Próxima fase: **Fase 17** — segurança avançada.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
 ## Início rápido

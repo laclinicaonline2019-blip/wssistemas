@@ -3,6 +3,7 @@
 namespace App\Core\Security;
 
 use App\Core\Audit\AuditLogger;
+use App\Core\Tenancy\TenantContext;
 use App\Modules\Identity\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
@@ -59,7 +60,9 @@ class LoginService
             return LoginResult::fail(LoginResult::BLOCKED);
         }
 
-        if (! $user->is_super_admin && ! $user->company?->isOperational()) {
+        $billingOnly = ! $user->is_super_admin && $user->company && ! $user->company->isOperational() && $user->company->billingLocked()
+            && app(TenantContext::class)->runFor($user->company_id, fn () => $user->hasPermission('assinatura.gerenciar'));
+        if (! $user->is_super_admin && ! $user->company?->isOperational() && ! $billingOnly) {
             $this->audit->record('auth.login.failed', $user, result: 'denied', metadata: ['reason' => 'company_inactive'], userId: $user->id);
 
             return LoginResult::fail(LoginResult::COMPANY_INACTIVE);

@@ -35,6 +35,7 @@ return [
             'permissions' => [
                 'empresa.visualizar' => 'Visualizar dados da empresa',
                 'empresa.editar' => 'Editar dados e configurações da empresa',
+                'assinatura.gerenciar' => 'Gerenciar assinatura, plano e faturas da plataforma',
             ],
         ],
 

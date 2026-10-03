@@ -5,6 +5,7 @@ namespace App\Modules\Platform\Services;
 use App\Core\Access\PermissionRegistry;
 use App\Core\Audit\AuditLogger;
 use App\Core\Tenancy\TenantContext;
+use App\Modules\Billing\Services\SubscriptionService;
 use App\Modules\Doctors\Services\SpecialtyService;
 use App\Modules\Finance\Services\FinanceService;
 use App\Modules\Identity\Models\Permission;
@@ -52,6 +53,7 @@ class CompanyProvisioningService
                     : null,
             ]);
             $model->save();
+            app(SubscriptionService::class)->for($model); // Fase 16: assinatura (teste grátis)
 
             return $this->context->runFor($model->id, function () use ($model, $headquarters, $admin) {
                 $branch = Branch::create([

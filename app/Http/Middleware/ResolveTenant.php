@@ -48,7 +48,21 @@ class ResolveTenant
         $company = $user->company;
 
         if (! $company || ! $company->isOperational()) {
-            abort(403, 'O acesso da sua clínica está suspenso. Contate o suporte.');
+            // Bloqueio por cobrança: o administrador da assinatura acessa apenas a área de pagamento.
+            $billingOnly = $company && $company->billingLocked()
+                && $this->context->runFor($company->id, fn () => $user->hasPermission('assinatura.gerenciar'));
+            if (! $billingOnly) {
+                abort(403, $company?->billingLocked()
+                    ? 'O acesso da clínica está bloqueado por pendência na assinatura. Peça ao administrador para regularizar.'
+                    : 'O acesso da sua clínica está suspenso. Contate o suporte.');
+            }
+            if (! $request->routeIs('billing.*', 'logout', 'profile.*', 'two-factor.*')) {
+                if ($request->expectsJson()) {
+                    abort(402, 'Assinatura com pendência: regularize em Assinatura.');
+                }
+
+                return redirect()->route('billing.index')->with('warning', 'Regularize a assinatura para liberar o acesso da clínica.');
+            }
         }
 
         $allowed = $user->allowedBranchIds();

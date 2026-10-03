@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Empresa cliente da plataforma (tenant). Não possui escopo global:
@@ -73,6 +74,20 @@ class Company extends Model
             self::STATUS_TRIAL => $this->trial_ends_at === null || $this->trial_ends_at->isFuture(),
             default => false,
         };
+    }
+
+    /**
+     * Acesso "só cobrança": bloqueada por falta de pagamento ou teste grátis encerrado. O
+     * administrador (assinatura.gerenciar) entra apenas para escolher o plano e pagar.
+     */
+    public function billingLocked(): bool
+    {
+        if ($this->isOperational()) {
+            return false;
+        }
+        $sub = DB::table('subscriptions')->where('company_id', $this->id)->value('status');
+
+        return ($this->status === self::STATUS_SUSPENDED && $sub === 'suspended') || ($this->status === self::STATUS_TRIAL && $sub === 'trialing');
     }
 
     public function setting(string $key, mixed $default = null): mixed

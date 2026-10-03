@@ -191,6 +191,14 @@ no mesmo início. Testado com processos paralelos reais (`ConcurrentBookingTest`
 
 Relatórios não criam tabelas: são consultas sobre os dados existentes (com escopo da clínica e das unidades do usuário).
 
+### Fase 16 — SaaS comercial (assinaturas)
+
+| Tabela | Descrição | Integridade |
+|---|---|---|
+| `subscriptions` | Uma por clínica: plano, ciclo (mensal/anual), situação (teste, ativa, em atraso, bloqueada, cancelada), fim do teste, período pago `[início, fim)`, troca agendada, cancelamento no fim do período, cliente no gateway | `UNIQUE(company_id)`; CHECK ciclo/situação |
+| `subscription_invoices` | Faturas da plataforma (renovação, upgrade proporcional, avulsa): período, valor, vencimento, situação, cobrança no gateway (link), pagamento (gateway ou manual) | **`UNIQUE(renewal_key)`** (uma renovação por período — cron idempotente); `UNIQUE(provider_charge_id)`; CHECK valor > 0 |
+| `platform_webhook_events` | Webhooks do gateway da plataforma | **`UNIQUE(provider, event_id)`** (sem processar duas vezes) |
+
 ## Modelo alvo (fases seguintes)
 
 Convenção: toda tabela de clínica tem `company_id` + (quando aplicável) `branch_id`, FKs compostas

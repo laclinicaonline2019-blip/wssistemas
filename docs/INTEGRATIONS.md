@@ -142,6 +142,19 @@ depois troque para Claude ou ChatGPT com a chave, "Testar conexão" e uma conver
 - Automática só nos casos sem ambiguidade; o resto é conferido (um ou vários lançamentos — ex.: repasse do gateway = recebimentos − tarifa).
 - O livro financeiro continua imutável; desfazer mantém o histórico.
 
+## Assinatura das clínicas (Fase 16) — implementado
+
+Conta **da plataforma** (separada dos gateways das clínicas): `PLATFORM_BILLING_PROVIDER=mock|asaas`,
+`PLATFORM_ASAAS_API_KEY`, `PLATFORM_ASAAS_SANDBOX`, `PLATFORM_ASAAS_WEBHOOK_TOKEN`.
+
+| Item | Como |
+|---|---|
+| Cliente | `GET/POST /customers` pelo CNPJ da clínica |
+| Cobrança | `POST /payments` com `billingType=UNDEFINED` (PIX, boleto ou cartão na página do ASAAS) e `externalReference` = fatura |
+| Webhook | `POST /webhooks/assinaturas/asaas` com `asaas-access-token`; eventos únicos; **pagamento só é aceito após `GET /payments/{id}`** com valor ≥ fatura |
+| Rotina | `aivexa:billing:run` (de hora em hora): emite renovações N dias antes, recria cobranças com falha, confere pagamentos (cobre webhook perdido), régua de atraso/bloqueio, encerra cancelamentos |
+| MOCK | Página de pagamento simulado (só fora de produção) — nada é cobrado |
+
 ## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)
 
 Receita e atestado **digitais** só valem com assinatura qualificada ICP-Brasil (MP 2.200-2/2001,

@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div><h1>{{ $company->trade_name }}</h1><p>{{ $company->legal_name }} · CNPJ {{ $company->document }} · @include('platform._status', ['status' => $company->status])</p></div>
-    <a class="btn" href="{{ route('platform.companies.index') }}">Voltar</a>
+    <div class="row"><a class="btn" href="{{ route('platform.billing.company', $company) }}">Assinatura e faturas</a><a class="btn" href="{{ route('platform.companies.index') }}">Voltar</a></div>
 </div>
 
 <div class="grid grid-3">

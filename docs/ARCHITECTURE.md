@@ -251,8 +251,8 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 13 | IA com áudio (transcrição), imagem e PDF (OCR estruturado), conferência humana | **Concluída** |
 | 14 | Conciliação bancária: OFX, CSV e Open Finance (Pluggy), sugestões, automática sem ambiguidade, múltiplos lançamentos | **Concluída** |
 | 15 | Relatórios (tela, PDF, Excel, CSV) e fechamento mensal médico × clínica com confirmação do médico | **Concluída** |
-| 16 ▶ | SaaS comercial: assinatura recorrente, upgrade/downgrade, bloqueio por inadimplência | Próxima |
-| 17 | Segurança avançada (WAF/Cloudflare, antivírus, pentest; RLS se migrar para PostgreSQL) | |
+| 16 | SaaS comercial: assinatura recorrente (ASAAS da plataforma/MOCK), upgrade proporcional, downgrade agendado, régua de atraso e bloqueio | **Concluída** |
+| 17 ▶ | Segurança avançada (WAF/Cloudflare, antivírus, pentest; RLS se migrar para PostgreSQL) | Próxima |
 | 18–20 | Testes completos, homologação, produção | |
 
 ### Definição de pronto (por funcionalidade)

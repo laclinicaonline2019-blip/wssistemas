@@ -6,6 +6,8 @@ use App\Modules\Ai\Http\Controllers\AiConfigWebController;
 use App\Modules\Ai\Http\Controllers\AiMediaWebController;
 use App\Modules\Audit\Http\Controllers\Web\AuditWebController;
 use App\Modules\Banking\Http\Controllers\BankingWebController;
+use App\Modules\Billing\Http\Controllers\BillingWebController;
+use App\Modules\Billing\Http\Controllers\PlatformBillingController;
 use App\Modules\Clinical\Http\Controllers\Platform\ClinicalCatalogController;
 use App\Modules\Clinical\Http\Controllers\Web\ClinicalSupportController;
 use App\Modules\Clinical\Http\Controllers\Web\DoctorWorkspaceController;
@@ -361,6 +363,17 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
     });
 
+    // Fase 16 — assinatura da clínica (também acessível com a clínica bloqueada por cobrança)
+    Route::middleware('permission:assinatura.gerenciar')->prefix('assinatura')->name('billing.')->group(function () {
+        Route::get('/', [BillingWebController::class, 'index'])->name('index');
+        Route::post('plano', [BillingWebController::class, 'changePlan'])->name('plan');
+        Route::post('cancelar', [BillingWebController::class, 'cancel'])->name('cancel');
+        Route::post('retomar', [BillingWebController::class, 'resume'])->name('resume');
+        Route::get('faturas/{invoice}/pagar', [BillingWebController::class, 'pay'])->name('pay');
+        Route::post('faturas/{invoice}/conferir', [BillingWebController::class, 'check'])->middleware('throttle:10,1')->name('check');
+        Route::get('mock/{charge}', [BillingWebController::class, 'mockPay'])->name('mock_pay');
+    });
+
     // Fase 15 — relatórios e fechamento médico × clínica
     Route::get('relatorios', [ReportWebController::class, 'index'])->middleware('permission:relatorio.operacional|relatorio.financeiro|relatorio.clinico|financeiro.fechamento')->name('reports.index');
     Route::get('relatorios/{key}', [ReportWebController::class, 'show'])->middleware(['permission:relatorio.operacional|relatorio.financeiro|relatorio.clinico', 'throttle:60,1'])
@@ -428,6 +441,12 @@ Route::middleware(['auth', 'platform', '2fa.enrolled'])->prefix('plataforma')->n
     Route::get('planos', [PlatformWebController::class, 'plans'])->name('plans.index');
     Route::post('planos', [PlatformWebController::class, 'storePlan'])->name('plans.store');
     Route::put('planos/{plan}', [PlatformWebController::class, 'updatePlan'])->name('plans.update');
+    Route::get('assinaturas', [PlatformBillingController::class, 'index'])->name('billing.index');
+    Route::get('assinaturas/{company}', [PlatformBillingController::class, 'show'])->name('billing.company');
+    Route::post('assinaturas/{company}/plano', [PlatformBillingController::class, 'changePlan'])->name('billing.plan');
+    Route::post('assinaturas/{company}/prorrogar-teste', [PlatformBillingController::class, 'extendTrial'])->name('billing.trial');
+    Route::post('faturas/{invoice}/pagamento-manual', [PlatformBillingController::class, 'manualPayment'])->name('billing.manual');
+    Route::post('faturas/{invoice}/cancelar', [PlatformBillingController::class, 'void'])->name('billing.void');
     Route::get('bases-clinicas', [ClinicalCatalogController::class, 'index'])->name('catalog.index');
     Route::post('bases-clinicas/cid', [ClinicalCatalogController::class, 'importCid'])->name('catalog.cid');
     Route::post('bases-clinicas/medicamentos', [ClinicalCatalogController::class, 'importMedications'])->name('catalog.medications');

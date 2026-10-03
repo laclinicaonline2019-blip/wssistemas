@@ -29,6 +29,7 @@
                 {!! $nav('platform.dashboard', 'platform.dashboard', 'chart', 'Visão geral') !!}
                 {!! $nav('platform.companies.index', 'platform.companies.*', 'building', 'Empresas') !!}
                 {!! $nav('platform.plans.index', 'platform.plans.*', 'layers', 'Planos SaaS') !!}
+                {!! $nav('platform.billing.index', 'platform.billing.*', 'cash', 'Assinaturas e faturas') !!}
                 {!! $nav('platform.catalog.index', 'platform.catalog.*', 'file', 'Bases clínicas') !!}
             </ul>
         @else
@@ -64,7 +65,8 @@
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
                     $nav('gateways.index', 'gateways.*', 'cash', 'Pagamentos online', $can('integracao.gerenciar')),
                     $nav('messaging.settings', 'messaging.settings', 'chat', 'WhatsApp e mensagens', $can('integracao.gerenciar')),
-                    $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar'))
+                    $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar')),
+                    $nav('billing.index', 'billing.*', 'cash', 'Assinatura', $can('assinatura.gerenciar'))
                 ]);
             @endphp
             @if ($adminNav !== '')
@@ -74,7 +76,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.16.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.17.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>
@@ -139,6 +141,7 @@
 
         <main class="content" id="conteudo">
             @include('partials.flash')
+            @include('partials.billing-banner')
             @yield('content')
         </main>
     </div>

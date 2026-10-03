@@ -2,6 +2,19 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.17.0] — 2026-10-03 — Fase 16: SaaS comercial (assinaturas)
+
+### Adicionado
+- **Assinatura por clínica**: teste grátis, ciclo mensal/anual, faturas de renovação emitidas antes do vencimento,
+  cobrança pela **conta ASAAS da plataforma** (PIX, boleto ou cartão; cliente pelo CNPJ) ou **MOCK** de homologação;
+  confirmação por webhook autenticado **e** consulta à API; rotina horária `aivexa:billing:run`.
+- **Upgrade** imediato com cobrança proporcional aos dias restantes; **downgrade** e troca de ciclo na próxima
+  renovação (recusado se o uso não couber no plano); **cancelamento no fim do período** (desfazível; dados preservados).
+- **Régua de cobrança**: em atraso (acesso normal + aviso) → **bloqueio** após o prazo: só o administrador
+  (`assinatura.gerenciar`) entra, apenas na área de assinatura; pagou → libera na hora. E-mails a cada etapa.
+- Tela **Assinatura** para a clínica e **Assinaturas e faturas** para a plataforma (MRR, vencidas, troca de plano,
+  prorrogação de teste, baixa manual, cancelamento de fatura).
+
 ## [0.16.0] — 2026-10-03 — Fase 15: relatórios e fechamento médico × clínica
 
 ### Adicionado
