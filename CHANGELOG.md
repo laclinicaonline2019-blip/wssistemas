@@ -2,6 +2,17 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.13.1] — 2026-10-03 — WhatsApp oficial ou não oficial (escolha da clínica)
+
+### Adicionado
+- **WhatsApp não oficial** como alternativa à API oficial da Meta: **Z-API** (nuvem, funciona na HostGator) e
+  **Evolution API v2** (servidor próprio, só HTTPS). A clínica escolhe na tela de WhatsApp; exige **aceite do
+  risco** (bloqueio do número, termos do WhatsApp, LGPD), registrado com usuário/data e na auditoria; selo
+  **NÃO OFICIAL** no canal, nas conversas e nas configurações.
+- Mensagens como texto (sem modelos da Meta), lembretes com resposta 1/2/3, sem janela de 24 h; webhooks com
+  token secreto na URL; grupos e mensagens do próprio número ignorados; status enviada/entregue/lida;
+  **Verificar conexão** (QR Code lido / celular online). Lembretes, conversas e a IA funcionam igual.
+
 ## [0.13.0] — 2026-10-02 — Fase 12: recepcionista virtual (IA)
 
 ### Adicionado

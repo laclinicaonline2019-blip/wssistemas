@@ -11,10 +11,12 @@ use App\Modules\Messaging\Mail\PatientMessageMail;
 use App\Modules\Messaging\Models\Message;
 use App\Modules\Messaging\Models\MessageThread;
 use App\Modules\Messaging\Models\MessagingChannel;
+use App\Modules\Messaging\Providers\EvolutionApiProvider;
 use App\Modules\Messaging\Providers\MessagingException;
 use App\Modules\Messaging\Providers\MetaCloudProvider;
 use App\Modules\Messaging\Providers\MockWhatsAppProvider;
 use App\Modules\Messaging\Providers\WhatsAppProvider;
+use App\Modules\Messaging\Providers\ZApiProvider;
 use App\Modules\Patients\Models\Patient;
 use App\Modules\Platform\Models\Company;
 use App\Modules\Scheduling\Models\Appointment;
@@ -48,7 +50,12 @@ class MessageService
 
     public function provider(MessagingChannel $channel): WhatsAppProvider
     {
-        return $channel->isMock() ? app(MockWhatsAppProvider::class) : app(MetaCloudProvider::class);
+        return match (true) {
+            $channel->isMock() => app(MockWhatsAppProvider::class),
+            $channel->provider === 'zapi' => app(ZApiProvider::class),
+            $channel->provider === 'evolution' => app(EvolutionApiProvider::class),
+            default => app(MetaCloudProvider::class),
+        };
     }
 
     /** Monta o texto da finalidade a partir dos parâmetros (mesma ordem do modelo da Meta). */
@@ -220,7 +227,8 @@ class MessageService
         }
         $provider = $this->provider($channel);
 
-        if ($message->template) {
+        // Provedor não oficial: sem modelos da Meta — vai o texto (com "responda 1/2/3" no lembrete).
+        if ($message->template && $provider->usesTemplates()) {
             $spec = config("messaging.purposes.{$message->purpose}");
             $params = array_map(fn ($k) => (string) ($message->params[$k] ?? ''), $spec['params'] ?? []);
             $buttons = array_map(fn ($code) => $code.':'.$message->appointment_id, array_keys($spec['buttons'] ?? []));

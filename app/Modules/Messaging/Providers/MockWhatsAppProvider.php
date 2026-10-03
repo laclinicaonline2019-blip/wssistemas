@@ -12,6 +12,11 @@ use Illuminate\Support\Str;
  */
 class MockWhatsAppProvider implements WhatsAppProvider
 {
+    public function usesTemplates(): bool
+    {
+        return true; // simula a API oficial
+    }
+
     public function sendTemplate(MessagingChannel $channel, string $to, string $name, string $language, array $bodyParams, array $buttonPayloads = []): string
     {
         return 'mock.'.Str::lower((string) Str::ulid());

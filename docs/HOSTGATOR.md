@@ -227,6 +227,12 @@ ajuste `upload_max_filesize` e `post_max_size` para pelo menos esse valor. Os ar
 4. O cron (item 7) envia os lembretes e reenvia mensagens pendentes a cada 5 minutos.
 5. Registre o consentimento de WhatsApp na ficha do paciente (ou desmarque "exigir consentimento").
 
+### WhatsApp não oficial (opcional)
+
+Escolha **Z-API** (funciona com a HostGator — o serviço roda na nuvem deles) ou **Evolution API** (exige um
+servidor próprio com HTTPS). Preencha os dados da instância, marque o aceite do risco, salve, copie a **URL do
+webhook** (já contém o token) para o painel do serviço e clique em **Verificar conexão**.
+
 ## Atendimento por IA (recepcionista virtual)
 
 1. Configure o WhatsApp (seção anterior).

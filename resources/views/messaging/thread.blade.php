@@ -3,7 +3,7 @@
 @section('content')
 <div class="page-head">
     <div><h1>{{ $thread->patient?->displayName() ?? $thread->contact_name ?? 'Contato não identificado' }}</h1>
-        <p class="mono">+{{ $thread->phone }} @if ($thread->channel?->isMock())<span class="badge badge-warning">MOCK — nada é enviado de verdade</span>@endif</p></div>
+        <p class="mono">+{{ $thread->phone }} @if ($thread->channel?->isMock())<span class="badge badge-warning">MOCK — nada é enviado de verdade</span>@elseif ($thread->channel?->isUnofficial())<span class="badge badge-danger">WhatsApp NÃO OFICIAL</span>@endif</p></div>
     <div class="row">
         @if ($thread->patient)<a class="btn" href="{{ route('patients.show', $thread->patient) }}">Ficha do paciente</a>@endif
         <form method="post" action="{{ route('messaging.threads.close', $thread) }}">@csrf<button class="btn" type="submit">{{ $thread->status === 'open' ? 'Encerrar conversa' : 'Reabrir' }}</button></form>
@@ -61,7 +61,7 @@
 
 <div class="grid grid-2">
     <section class="card">
-        <div class="card__head"><h2>Responder</h2>@if ($thread->windowOpen())<span class="badge badge-success">janela de 24 h aberta</span>@else<span class="badge">janela fechada</span>@endif</div>
+        <div class="card__head"><h2>Responder</h2>@if ($thread->channel?->isUnofficial())<span class="badge">não oficial: sem janela de 24 h</span>@elseif ($thread->windowOpen())<span class="badge badge-success">janela de 24 h aberta</span>@else<span class="badge">janela fechada</span>@endif</div>
         @if ($thread->windowOpen())
             <form method="post" action="{{ route('messaging.threads.reply', $thread) }}" class="card__body stack">@csrf
                 <label class="sr-only" for="rp">Mensagem</label><textarea id="rp" name="text" class="input" rows="3" maxlength="4000" required></textarea>

@@ -392,8 +392,9 @@
   var syncToggles = function () {
     $$('[data-toggle-show]').forEach(function (el) {
       var parts = el.getAttribute('data-toggle-show').split(':');
-      var checked = $('[data-toggle-group="' + parts[0] + '"]:checked');
-      var on = checked && checked.value === parts[1];
+      var group = $('[data-toggle-group="' + parts[0] + '"]');
+      var checked = group && group.tagName === 'SELECT' ? group : $('[data-toggle-group="' + parts[0] + '"]:checked');
+      var on = !!checked && parts[1].split('|').indexOf(checked.value) !== -1;
       el.classList.toggle('hidden', !on);
       $$('input, select, textarea', el).forEach(function (i) { i.disabled = !on; });
     });

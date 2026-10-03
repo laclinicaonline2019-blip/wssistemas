@@ -344,6 +344,7 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::get('configuracoes/whatsapp', [ChannelWebController::class, 'index'])->name('messaging.settings');
         Route::put('configuracoes/whatsapp/canal', [ChannelWebController::class, 'saveChannel'])->name('messaging.channel.save');
         Route::post('configuracoes/whatsapp/novo-token', [ChannelWebController::class, 'rotate'])->name('messaging.channel.rotate');
+        Route::post('configuracoes/whatsapp/verificar', [ChannelWebController::class, 'check'])->middleware('throttle:10,1')->name('messaging.channel.check');
         Route::put('configuracoes/whatsapp/automacoes', [ChannelWebController::class, 'saveAutomation'])->name('messaging.automation.save');
     });
     Route::middleware('permission:ia.conversas')->group(function () {

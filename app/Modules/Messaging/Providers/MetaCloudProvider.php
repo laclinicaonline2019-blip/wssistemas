@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Http;
  */
 class MetaCloudProvider implements WhatsAppProvider
 {
+    public function usesTemplates(): bool
+    {
+        return true;
+    }
+
     public function sendTemplate(MessagingChannel $channel, string $to, string $name, string $language, array $bodyParams, array $buttonPayloads = []): string
     {
         $components = [];

@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 
 interface WhatsAppProvider
 {
+    /** true = API oficial: mensagem iniciada pela clínica só por modelo aprovado e janela de 24 h. */
+    public function usesTemplates(): bool;
+
     /** Mensagem iniciada pela clínica: só com modelo aprovado. Retorna o ID da mensagem no provedor. */
     public function sendTemplate(MessagingChannel $channel, string $to, string $name, string $language, array $bodyParams, array $buttonPayloads = []): string;
 

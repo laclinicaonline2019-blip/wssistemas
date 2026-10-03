@@ -48,6 +48,10 @@ class MessageThread extends Model
     /** WhatsApp: texto livre só até 24 h após a última mensagem do paciente; depois, só modelo aprovado. */
     public function windowOpen(): bool
     {
+        if ($this->channel?->isUnofficial()) {
+            return true; // sem regra de janela fora da API oficial
+        }
+
         return $this->last_inbound_at !== null && $this->last_inbound_at->gt(now()->subHours(24));
     }
 }

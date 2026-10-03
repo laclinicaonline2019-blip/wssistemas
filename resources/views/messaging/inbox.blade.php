@@ -13,7 +13,7 @@
             <tr>
                 <td><a href="{{ route('messaging.threads.show', $t) }}"><strong>{{ $t->patient?->displayName() ?? $t->contact_name ?? 'Não identificado' }}</strong></a>
                     @if ($t->patient)<span class="small muted">#{{ $t->patient->record_number }}</span>@endif
-                    @if ($t->channel?->isMock())<span class="badge badge-warning">MOCK</span>@endif</td>
+                    @if ($t->channel?->modeBadge())<span class="badge {{ $t->channel->isUnofficial() ? 'badge-danger' : 'badge-warning' }}">{{ $t->channel->modeBadge() }}</span>@endif</td>
                 <td class="mono small">+{{ $t->phone }}</td>
                 <td class="small">{{ $t->last_message_at?->timezone('America/Sao_Paulo')->format('d/m H:i') ?? '—' }}</td>
                 <td>@if ($t->unread_count)<span class="badge badge-danger">{{ $t->unread_count }} nova(s)</span>@endif

@@ -87,6 +87,24 @@ Configuração: *Administração → WhatsApp e mensagens* (permissão `integrac
 **Homologação:** use o número de teste da Meta (modo "Teste"), cadastre os modelos e aguarde a aprovação,
 configure o webhook e valide: agendamento → mensagem; lembrete → botão Confirmar → agenda confirmada.
 
+### WhatsApp NÃO OFICIAL (opcional, escolha da clínica)
+
+Na mesma tela, a clínica pode escolher um provedor **não oficial** (WhatsApp comum conectado por QR Code).
+Exige marcar o **aceite do risco** (registrado com usuário, data e auditoria); a interface mostra o selo
+**NÃO OFICIAL** no canal, nas conversas e nas configurações. Recomendação do sistema: API oficial.
+
+| Provedor | Envio | Webhook | Onde roda |
+|---|---|---|---|
+| **Z-API** | `POST https://api.z-api.io/instances/{instância}/token/{token}/send-text` `{phone, message}` + cabeçalho `Client-Token` | Painel → "Ao receber" e "Status da mensagem" = URL do canal com `?token=` | Nuvem da Z-API (funciona com a HostGator) |
+| **Evolution API v2** | `POST {URL}/message/sendText/{instância}` `{number, text}` + cabeçalho `apikey` | Webhook da instância (`MESSAGES_UPSERT`, `MESSAGES_UPDATE`) = URL do canal com `?token=` | Servidor próprio (VPS/Docker), só HTTPS |
+
+- Sem modelos da Meta e sem janela de 24 h: tudo vai como texto; o lembrete pede resposta **1/2/3**.
+- Esses serviços não assinam os eventos: o webhook é autenticado pelo token secreto na URL (tempo constante).
+- Grupos, canais, status e mensagens enviadas pelo próprio número são ignorados.
+- "Verificar conexão" consulta se o WhatsApp está conectado (QR Code lido, celular online).
+- **Riscos:** viola os termos do WhatsApp (o número pode ser bloqueado sem aviso); dados dos pacientes
+  passam pelo serviço contratado (exija contrato de tratamento — LGPD); instabilidade quando o celular desconecta.
+
 ## IA — recepcionista virtual (Fase 12) — implementado
 
 Configuração: *Administração → Atendimento IA* (permissão `ia.configurar`). Detalhes em [AI.md](AI.md).
