@@ -43,6 +43,30 @@ segurança é um processo contínuo (revisões, pentests, atualizações).
 | Pagamentos | Webhook autenticado por token (tempo constante) + **confirmação por consulta à API** antes de qualquer baixa; eventos idempotentes; cobrança com chave de idempotência; valor divergente/duplicidade/chargeback em revisão; nenhum dado de cartão trafega pelo sistema (Cielo split: Silent Order Post — os campos do cartão não têm `name` e vão do navegador direto à Cielo; o servidor recebe só o PaymentToken; a CSP libera `transaction(sandbox).pagador.com.br` **somente** na página `/pagar/{token}`); credenciais criptografadas (APP_KEY), ocultas na interface e na auditoria; MOCK bloqueado em produção | `PaymentService`, providers |
 | PDF | dompdf com recursos remotos e PHP desabilitados (`isRemoteEnabled=false`, `chroot` em `public/`) | `DocumentPdf` |
 
+| Varredura de arquivos (Fase 17) | Todo upload (anexos do paciente, mídia do WhatsApp, extratos) passa por verificações próprias — PDF com JavaScript/`/Launch`/arquivo embutido/mídia ativa (inclusive nomes escapados), imagem poliglota com código, EICAR — e, se configurado, pelo **ClamAV** (clamd, INSTREAM); `fail_closed` opcional; bloqueios auditados (`security.file_blocked`); resultado gravado (`scan_status`) | `FileScanner` |
+| Proxies/WAF | `TRUSTED_PROXIES=cloudflare` usa as faixas oficiais da Cloudflare (IP real do visitante no rate limit, bloqueio e auditoria); ou lista própria | `bootstrap/app.php`, `config/proxies.php` |
+| Central de segurança | Logins com falha, bloqueios, arquivos barrados, exportações, admins sem 2FA, tokens ativos, eventos recentes | `SecurityCenterController` |
+| Retenção (LGPD) | Rotina diária só sobre dados operacionais (avisos, logs técnicos da IA, texto do WhatsApp se a clínica quiser, conteúdo bruto de webhooks, links vencidos do portal); nunca prontuário, documentos, financeiro ou auditoria | `RetentionService` |
+
+## Cloudflare (WAF) — recomendado na frente do site
+
+1. Aponte o DNS do domínio para a Cloudflare (proxy laranja ligado) e use SSL **Full (strict)**.
+2. No `.env`: `TRUSTED_PROXIES=cloudflare` (as faixas ficam em `config/proxies.php` — confira em cloudflare.com/ips).
+3. Regras sugeridas (WAF → Custom rules):
+   - *Managed Challenge* para `/login`, `/portal/*/entrar` e `/esqueci-a-senha` quando o país não for BR (ajuste ao seu público);
+   - *Rate limiting*: `/login` 20 req/min por IP; `/api/v1/auth/*` 30 req/min;
+   - *Block* para caminhos que nunca devem ser acessados: `/.env`, `/vendor/*`, `/storage/*`, `/.git/*`, `*.sql`;
+   - **Não** desafie as rotas de webhook (`/webhooks/*`) — os gateways e a Meta não resolvem desafios.
+4. Ative *Bot Fight Mode* com exceção para `/webhooks/*`.
+
+## RLS (Row Level Security) no PostgreSQL
+
+O isolamento hoje é garantido em duas camadas na aplicação (escopo global que falha fechado + FKs compostas
+`(company_id, id)` no banco, cobertas por testes). RLS no PostgreSQL seria uma terceira camada, aplicável só em
+VPS com PostgreSQL e usuário de banco sem `BYPASSRLS`: política `company_id = current_setting('app.company_id')`
+por tabela, com a variável definida a cada requisição pelo `TenantContext`. Não está ativada nesta versão —
+fica planejada para a migração a VPS (MySQL/MariaDB da HostGator não tem RLS).
+
 ## Checklist de produção (depende de configuração)
 
 - [ ] `APP_ENV=production`, `APP_DEBUG=false`, `APP_STAGE=production`
@@ -58,8 +82,9 @@ segurança é um processo contínuo (revisões, pentests, atualizações).
 - [ ] Banco e Redis em rede privada; backups criptografados e testados (ver DEPLOY.md)
 - [ ] `PASSWORD_BREACH_CHECK=true`, 2FA obrigatório para administradores
 - [ ] WAF/rate limit na borda, monitoramento de erros e alertas
-- [ ] Antivírus (ClamAV) para uploads (fase de documentos)
-- [ ] Pentest antes do go-live e após mudanças relevantes
+- [ ] Antivírus: na VPS, `FILE_SCANNER=clamav` (na HostGator ficam as verificações próprias)
+- [ ] Cloudflare/WAF com `TRUSTED_PROXIES=cloudflare` (ver acima)
+- [ ] Pentest antes do go-live e após mudanças relevantes — roteiro em [PENTEST.md](PENTEST.md)
 - [ ] `composer audit` no CI (já configurado) e atualização regular de dependências
 
 ## Resposta a incidentes

@@ -49,7 +49,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectUsersTo(fn () => route('home'));
 
         // Proxies reversos confiáveis (nginx/load balancer) — ajuste TRUSTED_PROXIES.
-        $middleware->trustProxies(at: env('TRUSTED_PROXIES') ? explode(',', env('TRUSTED_PROXIES')) : null);
+        // Fase 17: "cloudflare" = faixas oficiais da Cloudflare (config/proxies.php); ou lista de IPs/CIDRs.
+        $proxies = (string) env('TRUSTED_PROXIES', '');
+        $middleware->trustProxies(at: match (true) {
+            $proxies === '' => null,
+            strtolower($proxies) === 'cloudflare' => (require __DIR__.'/../config/proxies.php')['cloudflare'],
+            default => array_map('trim', explode(',', $proxies)),
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

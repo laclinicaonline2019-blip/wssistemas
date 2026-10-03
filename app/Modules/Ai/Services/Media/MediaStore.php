@@ -2,6 +2,7 @@
 
 namespace App\Modules\Ai\Services\Media;
 
+use App\Core\Security\FileScanner;
 use App\Core\Support\BusinessRuleViolation;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,7 +24,7 @@ class MediaStore
         'audio/webm' => ['audio', 'webm', 16], 'video/webm' => ['audio', 'webm', 16], 'audio/amr' => ['audio', 'amr', 16],
     ];
 
-    /** @return array{kind: string, mime: string, ext: string, path: string, size: int, sha256: string} */
+    /** @return array{kind: string, mime: string, ext: string, path: string, size: int, sha256: string, scan: string} */
     public function put(string $companyId, string $bytes): array
     {
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes) ?: '';
@@ -32,10 +33,11 @@ class MediaStore
             throw new BusinessRuleViolation("Arquivo maior que {$maxMb} MB.", 'media_size');
         }
 
+        $scan = app(FileScanner::class)->assertSafe($bytes, $mime, 'whatsapp_media');
         $path = "companies/{$companyId}/messaging-media/".now()->format('Y/m').'/'.Str::ulid().'.'.$ext;
         Storage::disk(self::DISK)->put($path, $bytes);
 
-        return ['kind' => $kind, 'mime' => $mime, 'ext' => $ext, 'path' => $path, 'size' => strlen($bytes), 'sha256' => hash('sha256', $bytes)];
+        return ['kind' => $kind, 'mime' => $mime, 'ext' => $ext, 'path' => $path, 'size' => strlen($bytes), 'sha256' => hash('sha256', $bytes), 'scan' => $scan];
     }
 
     public function get(string $path): string

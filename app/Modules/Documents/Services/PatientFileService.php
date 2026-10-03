@@ -3,6 +3,7 @@
 namespace App\Modules\Documents\Services;
 
 use App\Core\Audit\AuditLogger;
+use App\Core\Security\FileScanner;
 use App\Core\Support\BusinessRuleViolation;
 use App\Core\Tenancy\TenantContext;
 use App\Modules\Clinical\Models\Encounter;
@@ -35,6 +36,9 @@ class PatientFileService
             throw new BusinessRuleViolation('Formato não permitido. Envie PDF, JPG, PNG ou WEBP.', 'invalid_file_type');
         }
 
+        // Fase 17: antivírus (se houver) + verificações próprias (PDF com script, imagem com código, EICAR).
+        $scan = app(FileScanner::class)->assertSafe((string) file_get_contents($file->getRealPath()), $mime, 'patient_file');
+
         if (! empty($data['encounter_id']) && ! Encounter::query()->whereKey($data['encounter_id'])->where('patient_id', $patient->id)->exists()) {
             throw new BusinessRuleViolation('Atendimento inválido para este paciente.', 'invalid_encounter');
         }
@@ -42,7 +46,7 @@ class PatientFileService
         $companyId = $this->context->companyId();
         $path = "companies/{$companyId}/patients/{$patient->id}/".Str::ulid().'.'.PatientFile::MIMES[$mime];
 
-        return DB::transaction(function () use ($actor, $patient, $file, $data, $mime, $companyId, $path) {
+        return DB::transaction(function () use ($actor, $patient, $file, $data, $mime, $companyId, $path, $scan) {
             $this->ensureStorage($companyId, $file->getSize());
 
             Storage::disk(self::DISK)->putFileAs(dirname($path), $file, basename($path));
@@ -52,7 +56,7 @@ class PatientFileService
                     'patient_id' => $patient->id, 'encounter_id' => $data['encounter_id'] ?? null,
                     'category' => $data['category'], 'title' => trim($data['title'] ?? '') ?: mb_substr($file->getClientOriginalName(), 0, 150),
                     'original_name' => mb_substr($file->getClientOriginalName(), 0, 191), 'mime' => $mime, 'size_bytes' => $file->getSize(),
-                    'disk' => self::DISK, 'path' => $path, 'sha256' => hash_file('sha256', $file->getRealPath()), 'uploaded_by' => $actor->id,
+                    'disk' => self::DISK, 'path' => $path, 'sha256' => hash_file('sha256', $file->getRealPath()), 'scan_status' => $scan, 'uploaded_by' => $actor->id,
                 ]);
             } catch (\Throwable $e) {
                 Storage::disk(self::DISK)->delete($path); // não deixa arquivo órfão se o registro falhar

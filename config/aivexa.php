@@ -37,6 +37,16 @@ return [
         'api_token_ttl_minutes' => (int) env('API_TOKEN_TTL_MINUTES', 720),
         'hsts' => (bool) env('SECURITY_HSTS', false),
         'force_https' => (bool) env('FORCE_HTTPS', false),
+
+        // Varredura de arquivos enviados (Fase 17): "none" = só verificações próprias; "clamav" = também o
+        // antivírus ClamAV (clamd) por socket Unix ou TCP. fail_closed: sem antivírus disponível, recusa o arquivo.
+        'scanner' => [
+            'driver' => env('FILE_SCANNER', 'none'),
+            'clamav_socket' => env('CLAMAV_SOCKET', '/var/run/clamav/clamd.ctl'),
+            'clamav_host' => env('CLAMAV_HOST'),
+            'clamav_port' => (int) env('CLAMAV_PORT', 3310),
+            'fail_closed' => (bool) env('FILE_SCANNER_FAIL_CLOSED', false),
+        ],
     ],
 
     /*

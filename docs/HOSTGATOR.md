@@ -255,6 +255,13 @@ No `.env`: `PLATFORM_BILLING_PROVIDER=asaas`, chave da conta ASAAS da plataforma
 ASAAS cadastre o webhook `https://SEU-DOMINIO/webhooks/assinaturas/asaas` com esse token. O cron (item 7) já roda a
 rotina de cobrança a cada hora. Sem isso, fica em MOCK (nada é cobrado).
 
+## Segurança na HostGator
+
+- Coloque o domínio atrás da **Cloudflare** (plano gratuito já tem WAF básico) e use `TRUSTED_PROXIES=cloudflare`.
+- A HostGator compartilhada não oferece ClamAV para a aplicação: os uploads passam pelas verificações próprias
+  do sistema (PDF com script, imagem com código). Em VPS, instale o ClamAV e use `FILE_SCANNER=clamav`.
+- Revise a política de retenção em *Administração → Segurança*.
+
 ## Atualizações
 
 1. Gere o novo pacote (ou baixe o artefato do CI).

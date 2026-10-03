@@ -2,6 +2,19 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.18.0] — 2026-10-03 — Fase 17: segurança avançada
+
+### Adicionado
+- **Varredura de arquivos** em todos os uploads (anexos do paciente, mídia do WhatsApp, extratos): bloqueia PDF com
+  JavaScript, `/Launch`, arquivo embutido ou mídia ativa (inclusive nomes escapados), imagem poliglota com código e o
+  arquivo de teste EICAR; **ClamAV** opcional (clamd por socket/TCP) com *fail closed* configurável; resultado gravado
+  e bloqueios auditados.
+- **Cloudflare/WAF**: `TRUSTED_PROXIES=cloudflare` com as faixas oficiais; guia de regras em SECURITY.md.
+- **Central de segurança** da clínica: logins com falha, contas bloqueadas, arquivos barrados, exportações,
+  administradores sem 2FA, tokens ativos e eventos recentes.
+- **Retenção de dados (LGPD)** configurável por clínica e rotina diária `aivexa:retention:run` — só dados operacionais.
+- Varredura automática de **isolamento entre clínicas** nas rotas dos módulos novos; roteiro de pentest (`docs/PENTEST.md`).
+
 ## [0.17.0] — 2026-10-03 — Fase 16: SaaS comercial (assinaturas)
 
 ### Adicionado

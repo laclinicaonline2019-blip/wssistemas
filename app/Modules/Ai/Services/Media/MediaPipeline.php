@@ -92,7 +92,7 @@ class MediaPipeline
         $bytes = (string) Storage::disk($file->disk)->get($file->path);
         $media = AiMedia::create([
             'source' => 'upload', 'patient_id' => $file->patient_id, 'patient_file_id' => $file->id, 'kind' => $file->mime === 'application/pdf' ? 'document' : 'image',
-            'mime' => $file->mime, 'size_bytes' => $file->size_bytes, 'disk' => $file->disk, 'path' => $file->path, 'sha256' => $file->sha256, 'original_name' => $file->original_name,
+            'mime' => $file->mime, 'size_bytes' => $file->size_bytes, 'disk' => $file->disk, 'path' => $file->path, 'sha256' => $file->sha256, 'scan_status' => $file->scan_status, 'original_name' => $file->original_name,
         ]);
         $this->extract($config, $media, $bytes);
         $this->audit->record('ai.document_read', $media, metadata: ['patient_file_id' => $file->id, 'status' => $media->status]);
@@ -140,7 +140,7 @@ class MediaPipeline
     private function saveFile(AiMedia $media, string $bytes, string $companyId): void
     {
         $f = $this->store->put($companyId, $bytes);
-        $media->forceFill(['kind' => $f['kind'], 'mime' => $f['mime'], 'size_bytes' => $f['size'], 'path' => $f['path'], 'sha256' => $f['sha256']])->save();
+        $media->forceFill(['kind' => $f['kind'], 'mime' => $f['mime'], 'size_bytes' => $f['size'], 'path' => $f['path'], 'sha256' => $f['sha256'], 'scan_status' => $f['scan']])->save();
     }
 
     private function analyse(AiMedia $media, string $bytes, ?string $sessionId): void

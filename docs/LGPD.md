@@ -42,7 +42,7 @@
 | Anexos do paciente | ✅ área privada fora da pasta pública, por clínica; download somente autenticado, com permissão e auditado; nunca excluídos (arquivamento) | 6 |
 | CID em atestado | ✅ somente com autorização expressa do paciente (registrada no documento) | 6 |
 | Minimização | painel de chamadas mostra só senha/nome parcial; IA recebe o mínimo necessário | 4/12 |
-| Retenção | políticas configuráveis por tipo de dado, com rotinas agendadas | 17 |
+| Retenção | ✅ política por clínica (*Administração → Segurança*), rotina diária `aivexa:retention:run`: avisos internos, logs técnicos da IA, texto do WhatsApp (opcional), conteúdo bruto de webhooks e links vencidos do portal. **Nunca** prontuário, documentos, anexos, financeiro ou auditoria (guarda legal) | 17 |
 | Incidentes | procedimento em SECURITY.md | — |
 
 ## Ponto de atenção: auditoria × anonimização

@@ -3,6 +3,7 @@
 namespace App\Modules\Banking\Services;
 
 use App\Core\Audit\AuditLogger;
+use App\Core\Security\FileScanner;
 use App\Core\Support\BusinessRuleViolation;
 use App\Modules\Banking\Models\BankAccount;
 use App\Modules\Banking\Models\BankStatement;
@@ -28,6 +29,7 @@ class StatementImporter
         if (strlen($content) > 5 * 1048576) {
             throw new BusinessRuleViolation('Arquivo maior que 5 MB.', 'statement_size');
         }
+        app(FileScanner::class)->assertSafe($content, 'text/plain', 'bank_statement');
         $isOfx = (bool) preg_match('/<OFX>|OFXHEADER/i', substr($content, 0, 4000));
         $parsed = $isOfx ? $this->ofx->parse($content) : $this->csv->parse($content);
 

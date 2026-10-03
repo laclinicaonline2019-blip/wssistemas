@@ -25,3 +25,5 @@ Schedule::command('aivexa:messaging:run')->everyFiveMinutes()->withoutOverlappin
 Schedule::command('aivexa:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)->onOneServer();
 // Assinaturas das clínicas (Fase 16): renovação, conferência de pagamento e régua de cobrança.
 Schedule::command('aivexa:billing:run')->hourlyAt(17)->withoutOverlapping(30)->onOneServer();
+// Retenção de dados operacionais (Fase 17 — LGPD).
+Schedule::command('aivexa:retention:run')->dailyAt('04:10')->withoutOverlapping(60)->onOneServer();

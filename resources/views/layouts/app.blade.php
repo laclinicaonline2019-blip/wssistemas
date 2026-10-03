@@ -63,6 +63,7 @@
                     $nav('users.index', 'users.*', 'users', 'Usuários', $can('usuario.visualizar')),
                     $nav('roles.index', 'roles.*', 'shield', 'Perfis de acesso', $can('perfil.visualizar')),
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
+                    $nav('security.index', 'security.*', 'lock', 'Segurança', $can('auditoria.visualizar')),
                     $nav('gateways.index', 'gateways.*', 'cash', 'Pagamentos online', $can('integracao.gerenciar')),
                     $nav('messaging.settings', 'messaging.settings', 'chat', 'WhatsApp e mensagens', $can('integracao.gerenciar')),
                     $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar')),
@@ -76,7 +77,7 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.17.0') }}<br>
+            {{ config('aivexa.brand.name') }} · v{{ config('app.version', '0.18.0') }}<br>
             Ambiente: {{ config('aivexa.stage') }}
         </div>
     </aside>

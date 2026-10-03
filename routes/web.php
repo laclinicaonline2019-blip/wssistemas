@@ -49,6 +49,7 @@ use App\Modules\Reports\Http\Controllers\ClosingWebController;
 use App\Modules\Reports\Http\Controllers\ReportWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\AgendaWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\ScheduleConfigWebController;
+use App\Modules\Security\Http\Controllers\SecurityCenterController;
 use Illuminate\Support\Facades\Route;
 
 // ---------------------------------------------------------------- Portal do paciente (Fase 10)
@@ -362,6 +363,10 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
         Route::post('conversas/{thread}/assumir', [InboxWebController::class, 'takeOver'])->name('messaging.threads.take_over');
         Route::post('conversas/{thread}/devolver-ia', [InboxWebController::class, 'release'])->name('messaging.threads.release');
     });
+
+    // Fase 17 — central de segurança e retenção
+    Route::get('seguranca', [SecurityCenterController::class, 'index'])->middleware('permission:auditoria.visualizar')->name('security.index');
+    Route::put('seguranca/retencao', [SecurityCenterController::class, 'saveRetention'])->middleware('permission:empresa.editar')->name('security.retention');
 
     // Fase 16 — assinatura da clínica (também acessível com a clínica bloqueada por cobrança)
     Route::middleware('permission:assinatura.gerenciar')->prefix('assinatura')->name('billing.')->group(function () {

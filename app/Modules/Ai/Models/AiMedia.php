@@ -30,7 +30,7 @@ class AiMedia extends Model
     public const REVIEW = ['pending' => 'Aguardando conferência', 'verified' => 'Conferido', 'discarded' => 'Descartado'];
 
     protected $fillable = [
-        'source', 'message_id', 'thread_id', 'patient_id', 'patient_file_id', 'kind', 'mime', 'size_bytes', 'disk', 'path', 'sha256',
+        'source', 'message_id', 'thread_id', 'patient_id', 'patient_file_id', 'kind', 'mime', 'size_bytes', 'disk', 'path', 'sha256', 'scan_status',
         'original_name', 'caption', 'status', 'transcript', 'doc_type', 'extraction', 'provider', 'model', 'error',
     ];
 

@@ -27,7 +27,7 @@ class PatientFile extends Model
 
     protected array $auditExclude = ['path', 'disk', 'sha256'];
 
-    protected $fillable = ['patient_id', 'encounter_id', 'category', 'title', 'original_name', 'mime', 'size_bytes', 'disk', 'path', 'sha256', 'status', 'uploaded_by'];
+    protected $fillable = ['patient_id', 'encounter_id', 'category', 'title', 'original_name', 'mime', 'size_bytes', 'disk', 'path', 'sha256', 'scan_status', 'status', 'uploaded_by'];
 
     protected $attributes = ['status' => 'active'];
 
