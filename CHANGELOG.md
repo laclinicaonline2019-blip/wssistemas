@@ -2,6 +2,19 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [0.19.0] — 2026-10-03 — Fase 18: testes completos
+
+### Adicionado
+- **Testes ponta a ponta no navegador** (`tests/e2e`): recepção, médico, financeiro, WhatsApp + IA, portal do paciente
+  e gestão/plataforma, só pela interface; falham também por erro de JavaScript ou HTTP 5xx; gravam vídeo (`RECORD`).
+- **Teste de desempenho** que impede consultas proporcionais ao volume (N+1) nas telas principais.
+- **Teste de carga** (`tests/load/load.mjs`) com p50/p95/máx, req/s e erros.
+- CI: cenários ponta a ponta e carga a cada push; pacote da HostGator só sai com tudo verde.
+- Demonstração: plantão de fim de semana da Dra. Carla e uma conversa de WhatsApp de exemplo.
+
+### Corrigido
+- Relatório de agendamentos fazia uma consulta por linha (121 → 13 consultas com 28 registros).
+
 ## [0.18.0] — 2026-10-03 — Fase 17: segurança avançada
 
 ### Adicionado

@@ -253,8 +253,9 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 15 | Relatórios (tela, PDF, Excel, CSV) e fechamento mensal médico × clínica com confirmação do médico | **Concluída** |
 | 16 | SaaS comercial: assinatura recorrente (ASAAS da plataforma/MOCK), upgrade proporcional, downgrade agendado, régua de atraso e bloqueio | **Concluída** |
 | 17 | Segurança avançada: varredura de uploads (+ClamAV), Cloudflare/WAF, central de segurança, retenção LGPD, isolamento das rotas novas, roteiro de pentest (RLS planejado para VPS/PostgreSQL) | **Concluída** |
-| 18 ▶ | Testes completos (regressão, carga, ponta a ponta) | Próxima |
-| 19–20 | Homologação e produção | |
+| 18 | Testes completos: 6 cenários ponta a ponta no navegador, desempenho (N+1), carga, CI | **Concluída** |
+| 19 ▶ | Homologação | Próxima |
+| 20 | Produção | |
 
 ### Definição de pronto (por funcionalidade)
 

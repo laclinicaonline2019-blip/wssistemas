@@ -55,9 +55,62 @@ jobs:
           DB_PASSWORD: ${{ matrix.password }}
         run: php artisan test
 
+  e2e:
+    name: Ponta a ponta no navegador + carga (MariaDB)
+    needs: tests
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_DATABASE: aivexa
+          MARIADB_USER: aivexa
+          MARIADB_PASSWORD: aivexa
+          MARIADB_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: aivexa
+      DB_USERNAME: aivexa
+      DB_PASSWORD: aivexa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.3", extensions: "pdo_mysql, intl, gd, zip, sodium, mbstring", coverage: none }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: composer install --no-interaction --prefer-dist
+      - name: Ambiente de demonstração (dados fictícios)
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+          php artisan db:seed --class=DemoSeeder --force
+          php artisan config:cache && php artisan route:cache && php artisan view:cache
+      - name: Servidor
+        run: PHP_CLI_SERVER_WORKERS=8 nohup php artisan serve --port=8080 > serve.log 2>&1 &
+      - name: Navegador
+        run: npm i --no-save playwright@1 && npx playwright install --with-deps chromium
+      - name: Cenários ponta a ponta (recepção, médico, financeiro, WhatsApp+IA, portal, gestão)
+        run: RECORD=e2e-videos node tests/e2e/run.mjs
+      - name: Carga (referência)
+        run: N=40 C=8 node tests/load/load.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-videos-e-logs
+          path: |
+            e2e-videos
+            serve.log
+            storage/logs
+          retention-days: 7
+
   release:
     name: Pacote para HostGator (cPanel)
-    needs: tests
+    needs: [tests, e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

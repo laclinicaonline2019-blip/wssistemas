@@ -62,7 +62,7 @@ class ReportService
         $total = (clone $q)->count();
         $rows = [];
         $status = [];
-        foreach ($q->limit(self::MAX_ROWS)->cursor() as $a) {
+        foreach ($q->limit(self::MAX_ROWS)->get() as $a) {
             $status[$a->status] = ($status[$a->status] ?? 0) + 1;
             $rows[] = [
                 'date' => $a->starts_at->timezone(self::TZ)->format('d/m/Y'), 'time' => $a->starts_at->timezone(self::TZ)->format('H:i'),
@@ -187,7 +187,7 @@ class ReportService
         $rows = [];
         $q = $this->branchScope(Receivable::query(), $f)->with('patient:id,name,social_name,record_number')->whereIn('status', ['open', 'partial'])
             ->when($f['doctor_id'] ?? null, fn ($q, $d) => $q->where('doctor_id', $d))->orderBy('due_date');
-        foreach ($q->limit(self::MAX_ROWS)->cursor() as $r) {
+        foreach ($q->limit(self::MAX_ROWS)->get() as $r) {
             $balance = $r->amount_cents - $r->discount_cents - $r->paid_cents;
             $days = (int) CarbonImmutable::parse($r->due_date->toDateString(), self::TZ)->diffInDays($today, false);
             $bucket = match (true) {

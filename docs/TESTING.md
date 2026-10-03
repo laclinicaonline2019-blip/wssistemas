@@ -13,7 +13,7 @@ Os testes rodam contra **bancos reais** (o CI roda a suíte inteira em MariaDB 1
 com PHP 8.3): FKs compostas, colunas geradas únicas, cadeia de auditoria e locks fazem parte do
 comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 
-## Cobertura atual (213 testes; 1–3 ignorados conforme o banco)
+## Cobertura atual (214 testes; 1–3 ignorados conforme o banco)
 
 | Suíte | O que garante |
 |---|---|
@@ -42,6 +42,7 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Insurance/InsuranceTest` | **guia criada na chegada** com valor da tabela; conferência e lote; **XML TISS validado no XSD oficial da ANS** (consulta e SP/SADT) e hash do epílogo recalculado; **XML inválido (CBO fora da tabela TISS) não fecha o lote**; conta a receber do convênio com prazo; lote/guia faturados imutáveis; retorno com **glosa** (motivo obrigatório, valor ≤ guia), pagamento fora do caixa, **repasse por convênio**, recurso e recuperação, aceite da glosa sem movimentar dinheiro; estorno manual bloqueado; validade da carteirinha na data, credenciamento e convênio inativo na agenda; autorização prévia (senha) obrigatória; coparticipação como cobrança particular; tabela sobreposta, procedimento sem preço, guia de consulta com item único, lote com convênio misturado; cancelamento de lote; carteirinha usada mantida/mascarada (LGPD); permissões por perfil, isolamento entre clínicas, telas, importação CSV ISO-8859-1 e API |
 | `Portal/PortalTest` | convite com **token só em hash** e e-mail, ativação (senha forte, aceite), link de uso único, login por CPF/e-mail com mensagem neutra, sessão recarregada em processo novo, **bloqueio por tentativas**, bloqueio pela clínica derruba a sessão, portal desativado (404), anonimização bloqueia; **paciente só vê os próprios dados** (documento/consulta/arquivo de outro → 404), registro de notificação e arquivo não liberado ocultos, PDF e downloads auditados com ator paciente, pagamentos e recibo, CPF mascarado; **agendamento online** (antecedência, horário ocupado, clique duplo, nunca encaixe), confirmação, **cancelamento só até o prazo**, cancelamento auditado como paciente; isolamento entre clínicas, sessão da equipe no mesmo navegador, "esqueci a senha" neutro, configurações |
 | `Messaging/MessagingTest` | modelo do WhatsApp com parâmetros na ordem e token; **consentimento** (e-mail como alternativa; sem consentimento = não enviada; revogação); **lembretes** 24 h/2 h sem duplicar, não manda 24 h a quem marcou em cima da hora, botões com payload; webhook: verificação GET, **assinatura obrigatória**, status fora de ordem, "1" confirma e responde, evento repetido ignorado; botão de outro paciente ignorado, cancelamento no prazo (sem modelo duplicado) e fora do prazo (aviso), texto livre → conversa + notificação, **janela de 24 h**; falha temporária com nova tentativa e falha definitiva com aviso; credenciais criptografadas e ocultas, MOCK sem envio real, link do portal pelo WhatsApp, permissões e isolamento |
+| `Performance/QueryScalingTest` | telas principais (painel, agenda, pacientes, contas a receber, conversas, relatório, fila) com consultas fixas ao crescer de 3 para 28 registros, e menos de 80 consultas por tela |
 | `Security/AdvancedSecurityTest` | varredura: PDF limpo aceito (`basic`), PDF com JavaScript (inclusive nome escapado), `/Launch`, imagem poliglota e EICAR recusados e auditados, extrato com EICAR recusado, ClamAV indisponível com *fail closed*/*fail open*; **retenção** só sobre dados operacionais (prontuário intacto), WhatsApp mantido por padrão e removido quando a clínica define prazo, validação dos prazos; central de segurança (admin sem 2FA, login com falha) e permissão; faixas da Cloudflare; **isolamento entre clínicas** em conciliação, mídia da IA, fechamentos e faturas (consulta e ação) |
 | `Billing/SubscriptionTest` | teste grátis → fatura 7 dias antes (uma só, e-mail) → **em atraso** com aviso → **bloqueada** após 10 dias: equipe não entra, administrador entra só na assinatura (API 402) → "já paguei" sem pagamento → pagamento MOCK **reativa na hora** e renova o período; **upgrade proporcional** (R$ 50,00 por 15 de 30 dias), **downgrade agendado** aplicado na renovação, downgrade acima dos limites recusado, permissão; **cancelamento no fim do período** (anula fatura, desfazer, encerra sem apagar dados, login bloqueado); **ASAAS**: cliente pelo CNPJ, cobrança, webhook com token errado, "webhook diz pago mas API não", valor menor não baixa, evento duplicado, confirmação; plataforma: MRR, prorrogação de teste, acesso negado à clínica |
 | `Reports/ReportsTest` | permissões por relatório (médico: clínico sim, operacional não); agendamentos com taxa de faltas; **CSV** (BOM, `;`, proteção contra fórmula), **Excel** (OOXML válido, dinheiro numérico, sem fórmulas) e **PDF**; exportações auditadas; receitas por categoria, por forma, aging, produção por médico; **CID agregado** só da versão vigente e sem nome de paciente; limite de período; **fechamento**: mês aberto recusado, prévia, fechamento com repasse em contas a pagar, splits liquidados, hash íntegro, não fecha duas vezes, médico vê só os seus, PDF, contestação com motivo → v2 e v1 substituída sem repasse em dobro, confirmação auditada, **adulteração detectada** |
@@ -50,6 +51,61 @@ comportamento verificado. Cada teste roda em transação (RefreshDatabase).
 | `Messaging/UnofficialWhatsAppTest` | **Z-API**: aceite do risco obrigatório e auditado, credenciais criptografadas e ocultas, lembrete enviado como texto com `Client-Token`, webhook sem token recusado, grupo/próprio número ignorados, "1" confirma, evento repetido, status lida, resposta da equipe sem janela de 24 h, conexão desconectada, volta à API oficial limpa o aceite; **Evolution API**: só HTTPS, envio com `apikey`, `messages.upsert` e `messages.update`, conexão aberta |
 | `Ai/AiReceptionistTest` | **agendamento em duas etapas** pelo webhook (horários reais, valor, confirmação na mesma resposta recusada, consulta canal "IA"), identificação na primeira resposta, só médicos da própria clínica, evento repetido ignorado, registro de chamadas e ações; **emergência** (SAMU, sem chamar o modelo), conversa com a equipe sem IA, devolver/assumir, "atendente", resposta manual pausa a IA, consentimento revogado; identificação com CPF mascarado no registro e limite de 3 tentativas, vínculo da conversa, cadastro novo e CPF existente; erro e recusa do provedor → equipe; IA desligada; **Claude pelo SDK oficial** (requisição real simulada: cache no prefixo, ferramentas, esforço, fallback, `tool_result`); **ChatGPT** (*function calling*, chave e modelo da clínica); configuração com chave criptografada e oculta, permissão, MOCK ponta a ponta |
 | `Unit/*` | CNPJ, mascaramento da auditoria |
+
+## Fase 18 — testes completos
+
+### Ponta a ponta no navegador (`tests/e2e`)
+
+Seis cenários usando **só a interface**, como um usuário real, sobre a base de demonstração (dados fictícios):
+
+| Cenário | O que faz |
+|---|---|
+| `recepcao` | cadastra paciente, agenda no primeiro horário livre da Dra. Carla, registra a chegada (senha) e abre a fila |
+| `medico` | inicia o atendimento, preenche prontuário com CID, finaliza e emite pedido de exames (impressão) |
+| `financeiro` | abre o caixa, recebe a consulta (PIX), exporta relatório em Excel, importa extrato OFX e concilia a tarifa |
+| `whatsapp` | conversa MOCK: pedido de agendamento (IA responde), foto de pedido de exame (lida, não verificada), conferência, "atendente" pausa a IA |
+| `portal` | recepção gera o link, paciente cria a senha, vê documentos e agenda online |
+| `gestao` | painel, relatório, central de segurança, IA, assinatura; super admin barrado sem 2FA |
+
+```bash
+php artisan migrate:fresh --seed && php artisan db:seed --class=DemoSeeder
+PHP_CLI_SERVER_WORKERS=8 php artisan serve --port=8080 &
+node tests/e2e/run.mjs                       # todos (ou: node tests/e2e/run.mjs medico portal)
+RECORD=videos SLOW=350 node tests/e2e/run.mjs  # grava um vídeo por cenário
+```
+
+Falhas também quebram por erro de JavaScript na página ou resposta HTTP 5xx; a captura de tela da falha é salva.
+
+### Desempenho (`Performance/QueryScalingTest`)
+
+Mede o número de consultas ao banco das telas principais com 3 e com 28 pacientes/agendamentos/contas/conversas
+e exige crescimento praticamente zero (sem "N+1"). Encontrou e corrigiu o relatório de agendamentos
+(121 → 13 consultas). Resultado atual: painel 26, agenda 19, pacientes 7, contas a receber 10, conversas 10,
+relatório 13, fila 10 — fixos, independentemente do volume.
+
+### Carga (`tests/load/load.mjs`)
+
+`N` requisições por tela com `C` simultâneas, usuário logado; mostra p50/p95/máx, req/s e erros
+(`P95_LIMIT_MS` faz falhar acima de um limite). Referência no servidor embutido do PHP com 8 processos e caches
+de configuração/rotas/telas (bem mais lento que LiteSpeed/PHP-FPM da hospedagem), 60 req/tela, 8 simultâneas:
+
+| Tela | p50 | p95 | req/s | erros |
+|---|---|---|---|---|
+| Painel | 391 ms | 419 ms | 20 | 0 |
+| Agenda | 447 ms | 528 ms | 17 | 0 |
+| Pacientes | 316 ms | 338 ms | 25 | 0 |
+| Contas a receber | 239 ms | 292 ms | 32 | 0 |
+| Conversas | 254 ms | 290 ms | 31 | 0 |
+| Relatório de agendamentos | 340 ms | 364 ms | 24 | 0 |
+| Fila | 304 ms | 332 ms | 26 | 0 |
+
+Repita na **homologação** (mesmo plano da produção) para obter números reais.
+
+### CI
+
+O GitHub Actions roda: estilo (Pint), `composer audit`, PHPUnit em MariaDB **e** PostgreSQL, e depois os seis
+cenários ponta a ponta + a carga de referência (vídeos e logs ficam como artefato por 7 dias). O pacote para a
+HostGator só é gerado se tudo passar.
 
 ## Próximos testes obrigatórios (por fase)
 

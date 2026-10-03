@@ -14,6 +14,8 @@ use App\Modules\Insurance\Models\Insurer;
 use App\Modules\Insurance\Models\PriceItem;
 use App\Modules\Insurance\Models\PriceTable;
 use App\Modules\Insurance\Models\Procedure;
+use App\Modules\Messaging\Models\Message;
+use App\Modules\Messaging\Models\MessageThread;
 use App\Modules\Messaging\Models\MessagingChannel;
 use App\Modules\Organization\Models\Branch;
 use App\Modules\Patients\Models\Patient;
@@ -170,6 +172,10 @@ class DemoSeeder extends Seeder
         }
 
         $config->saveTemplate($carla, ['branch_id' => $filial->id, 'room_id' => $r3->id, 'weekday' => 1, 'start_time' => '14:00', 'end_time' => '17:00', 'slot_minutes' => 30]);
+        // Plantão de fim de semana (demonstração/testes ponta a ponta funcionam em qualquer dia).
+        foreach ([0, 6] as $weekday) {
+            $config->saveTemplate($carla, ['branch_id' => $matriz->id, 'room_id' => $r1->id, 'weekday' => $weekday, 'start_time' => '07:00', 'end_time' => '22:00', 'slot_minutes' => 30, 'max_overbooks' => 2]);
+        }
 
         // Convênios (Fase 9): operadora FICTÍCIA, tabela de valores e procedimento TUSS de consulta.
         $consulta = Procedure::create(['table_code' => '22', 'code' => '10101012', 'name' => 'Consulta em consultório (no horário normal ou preestabelecido)', 'kind' => 'consultation', 'is_sample' => true]);
@@ -195,8 +201,13 @@ class DemoSeeder extends Seeder
         PaymentGateway::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'MOCK (demonstração)',
             'webhook_token' => Str::random(40), 'credentials' => [], 'is_default' => true]);
         // WhatsApp (Fase 11): canal MOCK — nada é enviado; respostas simuladas na tela da conversa.
-        MessagingChannel::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'WhatsApp (MOCK — demonstração)', 'display_phone' => '11900000000',
+        $channel = MessagingChannel::create(['provider' => 'mock', 'mode' => 'mock', 'name' => 'WhatsApp (MOCK — demonstração)', 'display_phone' => '11900000000',
             'verify_token' => Str::random(40), 'credentials' => []]);
+        // Conversa de exemplo (contato fictício, sem cadastro) para demonstrar a recepcionista virtual.
+        $thread = MessageThread::create(['channel_id' => $channel->id, 'phone' => '5511955550000', 'contact_name' => 'Joana (contato demonstração)',
+            'last_inbound_at' => now(), 'last_message_at' => now(), 'unread_count' => 1]);
+        Message::create(['channel' => 'whatsapp', 'channel_id' => $channel->id, 'thread_id' => $thread->id, 'direction' => 'in', 'purpose' => 'inbound',
+            'recipient' => '5511955550000', 'body' => 'Olá! Vocês atendem cardiologia?', 'status' => 'received', 'provider_message_id' => 'mock.demo.1']);
         AiConfig::create(['provider' => 'mock', 'assistant_name' => 'Aivi', 'is_active' => true,
             'instructions' => 'Funcionamos de segunda a sexta, das 8h às 18h. Chegue 15 minutos antes da consulta com documento com foto.',
             'settings' => ['whatsapp_enabled' => true, 'allow_booking' => true, 'allow_cancel' => true, 'prepayment' => false, 'effort' => 'low', 'media_enabled' => true, 'audio_enabled' => true]]);
