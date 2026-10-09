@@ -270,7 +270,7 @@
                             <button class="btn" type="submit">Anexar</button>
                         </div>
                         @error('file')<div class="field-error">{{ $message }}</div>@enderror
-                        <p class="help">PDF, JPG, PNG ou WEBP até {{ (int) (config('aivexa.uploads.max_kb', 10240) / 1024) }} MB. Arquivos ficam em área privada e cada acesso é registrado.</p>
+                        <p class="help">PDF, JPG, PNG ou WEBP até {{ (int) (config('wsclinic.uploads.max_kb', 10240) / 1024) }} MB. Arquivos ficam em área privada e cada acesso é registrado.</p>
                     </form>
                 @endif
             </div>

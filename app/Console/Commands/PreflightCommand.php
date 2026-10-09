@@ -8,7 +8,10 @@ use Illuminate\Console\Command;
 /** Verificação de prontidão para homologação/produção (falha com erro; --strict também com avisos). */
 class PreflightCommand extends Command
 {
-    protected $signature = 'aivexa:preflight {--strict : falha também com avisos} {--json : saída em JSON}';
+    protected $signature = 'wsclinic:preflight {--strict : falha também com avisos} {--json : saída em JSON}';
+
+    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
+    protected $aliases = ['aivexa:preflight'];
 
     protected $description = 'Verifica se o ambiente está pronto para homologação/produção';
 

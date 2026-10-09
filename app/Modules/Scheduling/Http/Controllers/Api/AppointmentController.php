@@ -95,7 +95,7 @@ class AppointmentController extends Controller
     public function arrive(Request $request, Appointment $appointment): TicketResource
     {
         $this->ensureAccessible($appointment);
-        $data = $request->validate(['ticket_type' => ['nullable', Rule::in(array_keys(config('aivexa.queue_types')))]]);
+        $data = $request->validate(['ticket_type' => ['nullable', Rule::in(array_keys(config('wsclinic.queue_types')))]]);
 
         return new TicketResource($this->appointments->arrive($request->user(), $appointment, $data['ticket_type'] ?? null));
     }

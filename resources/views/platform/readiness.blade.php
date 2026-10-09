@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="page-head">
-    <div><h1>Prontidão para homologação e produção</h1><p>Mesma verificação do comando <span class="mono">php artisan aivexa:preflight</span>: configuração, cron, fila, integrações, segurança e backup.</p></div>
+    <div><h1>Prontidão para homologação e produção</h1><p>Mesma verificação do comando <span class="mono">php artisan wsclinic:preflight</span>: configuração, cron, fila, integrações, segurança e backup.</p></div>
     <div class="row"><span class="badge badge-success">{{ $summary['ok'] }} ok</span><span class="badge badge-warning">{{ $summary['warn'] }} aviso(s)</span><span class="badge badge-danger">{{ $summary['error'] }} erro(s)</span></div>
 </div>
 @if ($summary['error'])<div class="alert alert-error">Há itens com <strong>erro</strong>: não coloque em produção antes de corrigir.</div>@endif

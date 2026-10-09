@@ -30,10 +30,10 @@ class FileScanner
     public function assertSafe(string $bytes, string $mime, string $context = 'upload'): string
     {
         $threat = $this->heuristics($bytes, $mime);
-        if ($threat === null && config('aivexa.security.scanner.driver') === 'clamav') {
+        if ($threat === null && config('wsclinic.security.scanner.driver') === 'clamav') {
             $result = $this->clamav($bytes);
             if ($result === null) {
-                if (config('aivexa.security.scanner.fail_closed')) {
+                if (config('wsclinic.security.scanner.fail_closed')) {
                     $this->reject('antivírus indisponível', $context, $mime, 'Antivírus indisponível no momento. Tente novamente em alguns minutos.');
                 }
                 Log::warning('Antivírus indisponível: arquivo aceito só com verificações básicas', ['context' => $context]);
@@ -77,7 +77,7 @@ class FileScanner
     /** "OK", nome da ameaça, ou null se o clamd não respondeu. */
     private function clamav(string $bytes): ?string
     {
-        $cfg = config('aivexa.security.scanner');
+        $cfg = config('wsclinic.security.scanner');
         $target = $cfg['clamav_host'] ? 'tcp://'.$cfg['clamav_host'].':'.$cfg['clamav_port'] : 'unix://'.$cfg['clamav_socket'];
         $sock = @stream_socket_client($target, $errno, $err, 5);
         if (! $sock) {

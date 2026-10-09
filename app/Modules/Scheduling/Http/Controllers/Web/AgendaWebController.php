@@ -177,7 +177,7 @@ class AgendaWebController extends Controller
 
     private function arrive(Request $request, Appointment $appointment): string
     {
-        $data = $request->validate(['ticket_type' => ['nullable', Rule::in(array_keys(config('aivexa.queue_types')))]]);
+        $data = $request->validate(['ticket_type' => ['nullable', Rule::in(array_keys(config('wsclinic.queue_types')))]]);
         $ticket = $this->appointments->arrive($request->user(), $appointment, $data['ticket_type'] ?? null);
         session()->flash('print_ticket', $ticket->id);
 

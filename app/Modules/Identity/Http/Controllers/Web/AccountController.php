@@ -89,7 +89,7 @@ class AccountController extends Controller
         ]);
         $user = $request->user();
 
-        if ($user->is_super_admin && config('aivexa.security.super_admin_requires_2fa')) {
+        if ($user->is_super_admin && config('wsclinic.security.super_admin_requires_2fa')) {
             return back()->with('error', '2FA é obrigatório para administradores da plataforma.');
         }
 

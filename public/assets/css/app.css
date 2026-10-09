@@ -1,12 +1,13 @@
 /* ==========================================================================
-   AivexaClínica — design system
+   WSCLINIC — design system
    Tokens → base → layout → componentes → utilitários. Sem dependências.
    ========================================================================== */
 
 :root {
-  --brand-blue: #1a6fe6;
-  --brand-cyan: #27d9cf;
-  --brand-grad: linear-gradient(135deg, #1a5fe0 0%, #1d8fe8 45%, #27d9cf 100%);
+  --brand-navy: #0a1f5c;
+  --brand-blue: #1257c8;
+  --brand-cyan: #19c3b4;
+  --brand-grad: linear-gradient(135deg, #0b3a9e 0%, #1259c9 45%, #0b8a96 100%);
 
   --bg: #f4f7fb;
   --surface: #ffffff;
@@ -15,9 +16,9 @@
   --text: #0f1b2d;
   --text-2: #4b5b73;
   --text-3: #7a889d;
-  --primary: #1a6fe6;
+  --primary: #1257c8;
   --primary-ink: #ffffff;
-  --primary-soft: #e8f1fe;
+  --primary-soft: #e7effc;
   --success: #0e9f6e;
   --success-soft: #e3f8ef;
   --warning: #b7791f;
@@ -27,7 +28,7 @@
   --info: #0e8fa8;
   --info-soft: #e2f7fa;
 
-  --sidebar-bg: #070d18;
+  --sidebar-bg: #06122b;
   --sidebar-text: #aab6c8;
   --sidebar-active: #ffffff;
   --sidebar-hover: rgba(255, 255, 255, .06);
@@ -79,8 +80,8 @@ code, .mono { font-family: var(--mono); font-size: .85em; }
   display: flex; flex-direction: column; overflow-y: auto; z-index: 40;
 }
 .sidebar__brand { display: flex; align-items: center; gap: .6rem; padding: 1.1rem 1.1rem .9rem; }
-.sidebar__brand img.icon { width: 34px; height: 34px; border-radius: 8px; }
-.sidebar__brand img.wordmark { height: 17px; width: auto; }
+.sidebar__brand img.icon { width: 36px; height: 36px; border-radius: 9px; background: #fff; flex: none; }
+.sidebar__brand img.wordmark { height: 20px; width: auto; }
 .sidebar__section { padding: .9rem 1.1rem .3rem; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: #5f6d84; }
 .nav { list-style: none; margin: 0; padding: 0 .6rem; }
 .nav a {
@@ -88,7 +89,7 @@ code, .mono { font-family: var(--mono); font-size: .85em; }
   color: var(--sidebar-text); font-weight: 500;
 }
 .nav a:hover { background: var(--sidebar-hover); color: #fff; text-decoration: none; }
-.nav a.is-active { background: linear-gradient(90deg, rgba(26,111,230,.35), rgba(39,217,207,.12)); color: var(--sidebar-active); box-shadow: inset 3px 0 0 var(--brand-cyan); }
+.nav a.is-active { background: linear-gradient(90deg, rgba(18,87,200,.38), rgba(25,195,180,.12)); color: var(--sidebar-active); box-shadow: inset 3px 0 0 var(--brand-cyan); }
 .nav svg { width: 18px; height: 18px; flex: none; opacity: .9; }
 .nav .soon { margin-left: auto; font-size: .62rem; padding: .05rem .4rem; border-radius: 99px; background: rgba(255,255,255,.07); color: #7e8ba0; }
 .nav a.is-disabled { opacity: .55; pointer-events: none; }
@@ -228,8 +229,8 @@ details.diff pre { white-space: pre-wrap; word-break: break-word; background: va
 
 /* ---------------------------------------------------------- telas de login */
 .auth { min-height: 100vh; display: grid; grid-template-columns: 1.1fr 1fr; background: var(--surface); }
-.auth__art { background-color: #000; background-image: radial-gradient(1200px 600px at 0% 0%, #0c2c5a 0%, transparent 60%), radial-gradient(900px 500px at 100% 100%, #0b4b4c 0%, transparent 55%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; color: #9fb0c6; text-align: center; }
-.auth__art img { max-width: min(420px, 90%); height: auto; }
+.auth__art { background-color: #ffffff; background-image: radial-gradient(900px 520px at 0% 0%, #e6eefc 0%, transparent 60%), radial-gradient(800px 480px at 100% 100%, #def6f2 0%, transparent 55%); border-right: 1px solid #e3e9f2; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 3rem; color: #3d4e68; text-align: center; color-scheme: light; }
+.auth__art img { width: min(440px, 88%); height: auto; }
 .auth__art p { max-width: 420px; margin-top: 1.25rem; }
 .auth__panel { display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
 .auth__box { width: 100%; max-width: 380px; }
@@ -398,3 +399,6 @@ body.portal { background: var(--bg); }
 .plan-card.is-current { border-color: var(--primary); background: var(--primary-soft); }
 .plan-card h3 { margin: 0; }
 .text-info { color: var(--info); }
+
+/* Página de erro — logo WSCLINIC */
+.error-page .error-logo { width: 200px; height: auto; background: #fff; padding: 10px 14px; border-radius: 12px; box-sizing: content-box; }

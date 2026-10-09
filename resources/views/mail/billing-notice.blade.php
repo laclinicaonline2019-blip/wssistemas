@@ -4,4 +4,4 @@ Olá, {{ $clinicName }}.
 
 Gerencie a assinatura em: {{ route('billing.index') }}
 
-— Equipe aivexaclinica
+— Equipe WSCLINIC

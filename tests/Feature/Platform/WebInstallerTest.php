@@ -14,7 +14,7 @@ class WebInstallerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['aivexa.install_token' => self::TOKEN]);
+        config(['wsclinic.install_token' => self::TOKEN]);
         File::delete(app(Installer::class)->lockPath());
     }
 
@@ -26,7 +26,7 @@ class WebInstallerTest extends TestCase
 
     public function test_installer_is_hidden_without_token_configuration(): void
     {
-        config(['aivexa.install_token' => null]);
+        config(['wsclinic.install_token' => null]);
 
         $this->get('/instalar')->assertNotFound();
     }

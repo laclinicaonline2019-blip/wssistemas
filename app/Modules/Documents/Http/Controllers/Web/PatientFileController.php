@@ -21,7 +21,7 @@ class PatientFileController extends Controller
     {
         abort_if($patient->isAnonymized(), 403);
         $data = $request->validate([
-            'file' => ['required', 'file', 'max:'.(int) config('aivexa.uploads.max_kb', 10240), 'mimetypes:application/pdf,image/jpeg,image/png,image/webp'],
+            'file' => ['required', 'file', 'max:'.(int) config('wsclinic.uploads.max_kb', 10240), 'mimetypes:application/pdf,image/jpeg,image/png,image/webp'],
             'category' => ['required', Rule::in(array_keys(PatientFile::CATEGORIES))],
             'title' => ['nullable', 'string', 'max:150'],
             'encounter_id' => ['nullable', 'string', 'size:26'],

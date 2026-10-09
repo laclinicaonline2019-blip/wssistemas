@@ -30,5 +30,5 @@
     </table>
     @if (count($report->rows) > $max)<p>Mostrando {{ $max }} de {{ count($report->rows) }} linhas — use a exportação em Excel para o relatório completo.</p>@endif
     @if ($report->note)<p class="meta">{{ $report->note }}</p>@endif
-    <div class="foot">Gerado em {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }} por {{ $meta['user'] }} · aivexaclinica</div>
+    <div class="foot">Gerado em {{ now('America/Sao_Paulo')->format('d/m/Y H:i') }} por {{ $meta['user'] }} · WSCLINIC</div>
 </body></html>

@@ -246,7 +246,7 @@ class PaymentTest extends TestCase
         $providerId = $this->charge($r)->json('data.provider_charge_id');
         app(MockProvider::class)->simulate($providerId, 'paid'); // sem webhook
 
-        $this->artisan('aivexa:payments:sync')->assertSuccessful();
+        $this->artisan('wsclinic:payments:sync')->assertSuccessful();
         $this->assertSame('paid', DB::table('payment_charges')->value('status'));
         $this->assertSame('paid', $r->fresh()->status);
     }

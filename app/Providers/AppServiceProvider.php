@@ -54,7 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! $this->app->isProduction());
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
 
-        if ($this->app->isProduction() || config('aivexa.security.force_https')) {
+        if ($this->app->isProduction() || config('wsclinic.security.force_https')) {
             URL::forceScheme('https');
         }
 

@@ -37,7 +37,7 @@
                 <div class="help">Claude: modelo padrão {{ AiConfig::DEFAULT_MODELS['claude'] }}. ChatGPT: informe o modelo contratado na sua conta OpenAI.</div></div>
             <x-field name="model" label="Modelo (opcional no Claude)" col="col-6" :value="$config->model" placeholder="vazio = padrão" />
             <x-field name="api_key" label="Chave da API da clínica" type="password" col="col-12" autocomplete="off"
-                :help="$hasKey ? 'Chave própria configurada (criptografada, não é exibida) — deixe vazio para manter.' : (($platformKeys[$config->provider] ?? false) ? 'Vazio = usa a chave da plataforma (contrato da aivexaclinica).' : 'Sem chave da plataforma para este provedor: informe a chave da sua conta.')" />
+                :help="$hasKey ? 'Chave própria configurada (criptografada, não é exibida) — deixe vazio para manter.' : (($platformKeys[$config->provider] ?? false) ? 'Vazio = usa a chave da plataforma (contrato da WSCLINIC).' : 'Sem chave da plataforma para este provedor: informe a chave da sua conta.')" />
             @if ($hasKey)<label class="check col-12"><input type="checkbox" name="remove_key" value="1"><span>Remover a chave própria (voltar à chave da plataforma)</span></label>@endif
             <x-field name="assistant_name" label="Nome da assistente" col="col-6" :value="$config->assistant_name" required />
             <div class="field col-6"><label for="ai-e">Esforço de raciocínio</label>

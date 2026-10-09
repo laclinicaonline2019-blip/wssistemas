@@ -35,7 +35,7 @@ async function pause(page, ms = 900) { if (process.env.RECORD) await page.waitFo
 export const scenarios = {
   // Recepção: cadastra paciente, agenda no primeiro horário livre, registra chegada e emite senha.
   async recepcao(page, { base }) {
-    await login(page, base, 'recepcao@demo.aivexa.local');
+    await login(page, base, 'recepcao@demo.wsclinic.local');
     await expectText(page, 'Dashboard');
     await pause(page);
     await page.goto(base + '/pacientes/novo');
@@ -76,7 +76,7 @@ export const scenarios = {
 
   // Médico: atende o paciente que chegou (cenário "recepcao"), registra o prontuário, finaliza e pede exames.
   async medico(page, { base }) {
-    await login(page, base, 'medica@demo.aivexa.local');
+    await login(page, base, 'medica@demo.wsclinic.local');
     await page.goto(base + '/atendimento');
     await expectText(page, 'Paciente Teste E2E');
     await pause(page);
@@ -107,7 +107,7 @@ export const scenarios = {
 
   // Financeiro: abre o caixa, recebe a consulta (PIX), exporta relatório em Excel e concilia o extrato OFX.
   async financeiro(page, { base }) {
-    await login(page, base, 'financeiro@demo.aivexa.local');
+    await login(page, base, 'financeiro@demo.wsclinic.local');
     await page.goto(base + '/caixa');
     if (await page.locator('button:has-text("Abrir caixa")').count()) {
       await page.fill('#f-opening', '100,00');
@@ -158,7 +158,7 @@ export const scenarios = {
   // WhatsApp + IA (MOCK): paciente pede agendamento, envia foto de pedido de exame (lida pela IA, não verificada),
   // a equipe confere o documento e o paciente pede atendente (conversa passa para a equipe).
   async whatsapp(page, { base }) {
-    await login(page, base, 'admin@demo.aivexa.local');
+    await login(page, base, 'admin@demo.wsclinic.local');
     await page.goto(base + '/conversas');
     await pause(page);
     const thread = base + (new URL(await page.locator('a:has-text("Joana")').first().getAttribute('href'))).pathname;
@@ -191,11 +191,11 @@ export const scenarios = {
 
   // Portal do paciente: a recepção gera o link, o paciente cria a senha, vê o pedido de exames e agenda online.
   async portal(page, { base }) {
-    await login(page, base, 'admin@demo.aivexa.local');
+    await login(page, base, 'admin@demo.wsclinic.local');
     await page.goto(base + '/pacientes?q=Paciente+Teste+E2E');
     await nav(page, () => page.locator('a:has-text("Abrir")').first().click());
     await pause(page);
-    await page.fill('#f-email', `paciente.e2e.${Date.now()}@demo.aivexa.local`);
+    await page.fill('#f-email', `paciente.e2e.${Date.now()}@demo.wsclinic.local`);
     await nav(page, () => page.click('button:has-text("Gerar link")'));
     const link = await page.inputValue('#portal-link');
     await pause(page, 1200);
@@ -223,7 +223,7 @@ export const scenarios = {
 
   // Gestão da clínica e plataforma: painel, relatório, segurança, assinatura; super admin vê clínicas e MRR.
   async gestao(page, { base }) {
-    await login(page, base, 'admin@demo.aivexa.local');
+    await login(page, base, 'admin@demo.wsclinic.local');
     await expectText(page, 'Dashboard');
     await pause(page, 1500);
     await page.goto(base + '/relatorios/doctor_production', { waitUntil: 'networkidle' });
@@ -236,10 +236,10 @@ export const scenarios = {
     await expectText(page, 'Recepcionista virtual');
     await pause(page, 1500);
     await page.goto(base + '/assinatura', { waitUntil: 'networkidle' });
-    await expectText(page, 'Assinatura da aivexaclinica');
+    await expectText(page, 'Assinatura da WSCLINIC');
     await pause(page, 1500);
     await page.context().clearCookies();
-    await login(page, base, 'superadmin@demo.aivexa.local');
+    await login(page, base, 'superadmin@demo.wsclinic.local');
     // Segurança: o super admin só usa a plataforma depois de ativar a verificação em duas etapas.
     await page.goto(base + '/plataforma/assinaturas', { waitUntil: 'networkidle' });
     await expectText(page, 'dois fatores');

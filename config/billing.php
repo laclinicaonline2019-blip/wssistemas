@@ -1,7 +1,7 @@
 <?php
 
 /*
-| Cobrança da assinatura das clínicas (Fase 16) — conta da PLATAFORMA (aivexaclinica),
+| Cobrança da assinatura das clínicas (Fase 16) — conta da PLATAFORMA (WSCLINIC),
 | separada dos gateways que cada clínica usa para cobrar os pacientes.
 |
 | provider: mock (homologação — nada é cobrado de verdade) ou asaas (sandbox/produção).

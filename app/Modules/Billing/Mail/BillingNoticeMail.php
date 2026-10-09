@@ -16,7 +16,7 @@ class BillingNoticeMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: "aivexaclinica: {$this->subjectLine}");
+        return new Envelope(subject: "WSCLINIC: {$this->subjectLine}");
     }
 
     public function content(): Content

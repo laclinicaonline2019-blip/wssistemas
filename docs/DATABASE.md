@@ -225,7 +225,7 @@ para garantir mesma empresa, e é consultada via `BelongsToCompany`.
 ```bash
 php artisan migrate            # aplica
 php artisan migrate:status
-php artisan aivexa:permissions:sync --roles   # após alterar o catálogo
+php artisan wsclinic:permissions:sync --roles   # após alterar o catálogo
 ```
 
 Migrations nunca são editadas depois de publicadas em produção — sempre uma nova migration.

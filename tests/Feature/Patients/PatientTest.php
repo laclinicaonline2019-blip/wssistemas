@@ -186,7 +186,7 @@ class PatientTest extends TestCase
 
         $client->patchJson("/api/v1/patients/{$id}", ['name' => 'Reidentificar'])->assertUnprocessable()->assertJsonPath('code', 'patient_anonymized');
         $client->postJson("/api/v1/patients/{$id}/anonymize", ['reason' => 'Solicitação repetida 123', 'confirm' => true])->assertUnprocessable();
-        $this->artisan('aivexa:audit:verify')->assertSuccessful();
+        $this->artisan('wsclinic:audit:verify')->assertSuccessful();
     }
 
     public function test_patients_are_never_physically_deleted(): void

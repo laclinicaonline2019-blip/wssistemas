@@ -1,22 +1,24 @@
 #!/usr/bin/env bash
-# Instala ou atualiza o AivexaClínica numa VPS a partir do pacote .zip (o mesmo da HostGator, já com vendor/).
+# Instala ou atualiza o WSCLINIC numa VPS a partir do pacote .zip (o mesmo da HostGator, já com vendor/).
 #
-#   sudo -u aivexa deploy/vps/atualizar.sh /caminho/aivexa-XXXX.zip     # instala/atualiza
-#   sudo -u aivexa deploy/vps/atualizar.sh --voltar                      # volta para a versão anterior
+#   sudo -u wsclinic deploy/vps/atualizar.sh /caminho/wsclinic-XXXX.zip     # instala/atualiza
+#   sudo -u wsclinic deploy/vps/atualizar.sh --voltar                      # volta para a versão anterior
 #
 # Estrutura (docs/VPS.md):
-#   /var/www/aivexa/releases/<data>   uma pasta por versão
-#   /var/www/aivexa/shared/.env       configuração (nunca é sobrescrita)
-#   /var/www/aivexa/shared/storage    anexos, logs e backups (nunca são sobrescritos)
-#   /var/www/aivexa/current           link para a versão no ar
+#   /var/www/wsclinic/releases/<data>   uma pasta por versão
+#   /var/www/wsclinic/shared/.env       configuração (nunca é sobrescrita)
+#   /var/www/wsclinic/shared/storage    anexos, logs e backups (nunca são sobrescritos)
+#   /var/www/wsclinic/current           link para a versão no ar
 set -euo pipefail
 
-BASE=${AIVEXA_BASE:-/var/www/aivexa}
-KEEP=${AIVEXA_KEEP_RELEASES:-5}
+BASE=${WSCLINIC_BASE:-${AIVEXA_BASE:-/var/www/wsclinic}}
+# Servidor instalado antes da troca de nome (pasta /var/www/aivexa): continua usando a pasta existente.
+if [[ ! -d "$BASE" && -d /var/www/aivexa ]]; then BASE=/var/www/aivexa; fi
+KEEP=${WSCLINIC_KEEP_RELEASES:-${AIVEXA_KEEP_RELEASES:-5}}
 PHP=${PHP_BIN:-/usr/bin/php}
 
 reload_services() {
-    # O usuário aivexa precisa de permissão sudo só para estes dois comandos (ver docs/VPS.md, passo 9).
+    # O usuário wsclinic precisa de permissão sudo só para estes dois comandos (ver docs/VPS.md, passo 9).
     sudo -n /usr/bin/systemctl reload php8.3-fpm || echo "AVISO: recarregue o PHP-FPM manualmente (systemctl reload php8.3-fpm)."
     "$PHP" "$BASE/current/artisan" queue:restart || true
 }
@@ -52,13 +54,14 @@ mkdir -p "$REL/bootstrap/cache"
 # Backup antes de mexer no banco (só se já houver uma versão no ar).
 if [[ -L "$BASE/current" ]]; then
     echo "→ Backup do banco antes da atualização"
-    "$PHP" "$BASE/current/artisan" aivexa:backup
+    # A versão no ar pode ser anterior à troca de nome (comando aivexa:backup).
+    "$PHP" "$BASE/current/artisan" wsclinic:backup 2>/dev/null || "$PHP" "$BASE/current/artisan" aivexa:backup
 fi
 
 cd "$REL"
 echo "→ Migrations"
 "$PHP" artisan migrate --force
-"$PHP" artisan aivexa:permissions:sync --roles || true
+"$PHP" artisan wsclinic:permissions:sync --roles || true
 echo "→ Caches"
 "$PHP" artisan optimize:clear >/dev/null
 "$PHP" artisan config:cache
@@ -75,5 +78,5 @@ ls -1d "$BASE"/releases/* | sort | head -n -"$KEEP" | while read -r old; do
 done
 
 echo "→ Verificação de prontidão"
-"$PHP" "$BASE/current/artisan" aivexa:preflight || echo "ATENÇÃO: a verificação apontou erros — veja acima e corrija (ou use --voltar)."
+"$PHP" "$BASE/current/artisan" wsclinic:preflight || echo "ATENÇÃO: a verificação apontou erros — veja acima e corrija (ou use --voltar)."
 echo "Pronto: $(basename "$REL") no ar."

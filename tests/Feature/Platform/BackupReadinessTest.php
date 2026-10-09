@@ -22,7 +22,7 @@ class BackupReadinessTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->storage = sys_get_temp_dir().'/aivexa-backup-test-'.uniqid();
+        $this->storage = sys_get_temp_dir().'/wsclinic-backup-test-'.uniqid();
         File::ensureDirectoryExists($this->storage.'/app/companies/x');
         File::put($this->storage.'/app/companies/x/laudo.pdf', '%PDF-1.4 teste');
         $this->app->useStoragePath($this->storage);
@@ -63,7 +63,7 @@ class BackupReadinessTest extends TestCase
 
         // Restauração real com o cliente mysql em um banco vazio (o mesmo procedimento do runbook).
         $c = DB::connection()->getConfig();
-        $target = (string) env('BACKUP_RESTORE_DB', 'aivexa_restore');
+        $target = (string) env('BACKUP_RESTORE_DB', 'wsclinic_restore');
         $cli = sprintf('mysql -h %s -P %s -u %s %s', escapeshellarg((string) $c['host']), escapeshellarg((string) $c['port']), escapeshellarg((string) $c['username']), escapeshellarg($target));
         $env = ['MYSQL_PWD' => (string) $c['password'], 'PATH' => getenv('PATH')];
         $probe = proc_open($cli.' -e "SELECT 1"', [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, null, $env);
@@ -90,7 +90,7 @@ class BackupReadinessTest extends TestCase
 
     public function test_encrypted_backup_roundtrip_and_wrong_password(): void
     {
-        config(['aivexa.backup.password' => 'Senha-Do-Cofre-123']);
+        config(['wsclinic.backup.password' => 'Senha-Do-Cofre-123']);
         $service = app(BackupService::class);
         $files = $service->files();
         $this->assertStringEndsWith('.zip.enc', $files['path']);
@@ -111,14 +111,14 @@ class BackupReadinessTest extends TestCase
 
     public function test_retention_keeps_only_the_latest_backups(): void
     {
-        config(['aivexa.backup.keep_files' => 2]);
+        config(['wsclinic.backup.keep_files' => 2]);
         $service = app(BackupService::class);
         foreach (['20260101-000000', '20260102-000000', '20260103-000000'] as $i => $stamp) {
-            touch($service->dir()."/aivexa-arquivos-{$stamp}.zip", time() - 1000 + $i);
+            touch($service->dir()."/wsclinic-arquivos-{$stamp}.zip", time() - 1000 + $i);
         }
         $service->files();
-        $this->assertCount(2, glob($service->dir().'/aivexa-arquivos-*'));
-        $this->assertFileExists($service->dir().'/aivexa-arquivos-20260103-000000.zip');
+        $this->assertCount(2, glob($service->dir().'/wsclinic-arquivos-*'));
+        $this->assertFileExists($service->dir().'/wsclinic-arquivos-20260103-000000.zip');
     }
 
     public function test_backup_panel_is_platform_only_and_downloads_are_audited(): void
@@ -130,7 +130,7 @@ class BackupReadinessTest extends TestCase
         $this->actingAs($super)->get(route('platform.backups.index'))->assertOk()->assertSee($list[0]['name'])->assertSee('não estão criptografados');
         $this->actingAs($super)->get(route('platform.backups.download', $list[0]['name']))->assertOk()->assertDownload($list[0]['name']);
         $this->assertTrue(DB::table('audit_logs')->where('action', 'backup.downloaded')->exists());
-        $this->actingAs($super)->get(route('platform.backups.download', 'aivexa-db-..-x.sql.gz'))->assertNotFound();
+        $this->actingAs($super)->get(route('platform.backups.download', 'wsclinic-db-..-x.sql.gz'))->assertNotFound();
         $this->actingAs($super)->get('/plataforma/backups/..%2F..%2F.env')->assertNotFound();
 
         $this->actingAs($this->clinic['admin'])->get(route('platform.backups.index'))->assertForbidden();
@@ -139,16 +139,16 @@ class BackupReadinessTest extends TestCase
 
     public function test_preflight_reports_problems_and_readiness_page(): void
     {
-        config(['aivexa.stage' => 'production', 'app.debug' => true, 'app.url' => 'http://clinica.test']);
+        config(['wsclinic.stage' => 'production', 'app.debug' => true, 'app.url' => 'http://clinica.test']);
         Cache::forget(ReadinessChecker::HEARTBEAT_KEY);
-        $this->artisan('aivexa:preflight')->assertFailed();
+        $this->artisan('wsclinic:preflight')->assertFailed();
 
         $items = app(ReadinessChecker::class)->run();
         $errors = collect($items)->where('level', 'error')->pluck('item')->all();
         $this->assertContains('Modo debug', $errors);
         $this->assertContains('HTTPS', $errors);
 
-        $this->artisan('aivexa:heartbeat')->assertSuccessful();
+        $this->artisan('wsclinic:heartbeat')->assertSuccessful();
         $cron = collect(app(ReadinessChecker::class)->run())->firstWhere('item', 'Cron (agendador)');
         $this->assertNotNull($cron);
         $this->assertSame('ok', $cron['level']);

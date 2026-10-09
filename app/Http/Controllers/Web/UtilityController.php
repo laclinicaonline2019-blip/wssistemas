@@ -24,7 +24,7 @@ class UtilityController extends Controller
     /** Busca global: cada bloco só aparece para quem tem a permissão correspondente. */
     public function search(Request $request, TenantContext $context): View
     {
-        $q = trim((string) $request->validate(['q' => ['nullable', 'string', 'max:100']])['q'] ?? '');
+        $q = trim((string) ($request->validate(['q' => ['nullable', 'string', 'max:100']])['q'] ?? ''));
         $user = $request->user();
         $results = ['patients' => collect(), 'doctors' => collect(), 'users' => collect()];
 

@@ -49,15 +49,15 @@ class DemoSeeder extends Seeder
 
     public function run(TenantContext $context, CompanyProvisioningService $provisioning): void
     {
-        if (app()->isProduction() || config('aivexa.stage') === 'production') {
+        if (app()->isProduction() || config('wsclinic.stage') === 'production') {
             throw new RuntimeException('DemoSeeder não pode ser executado em produção.');
         }
 
         $this->call(DatabaseSeeder::class);
 
         $context->runAsSystem(function () use ($context, $provisioning) {
-            if (! User::query()->where('email', 'superadmin@demo.aivexa.local')->exists()) {
-                $super = new User(['name' => 'Super Admin Demo', 'email' => 'superadmin@demo.aivexa.local', 'password' => self::PASSWORD]);
+            if (! User::query()->where('email', 'superadmin@demo.wsclinic.local')->exists()) {
+                $super = new User(['name' => 'Super Admin Demo', 'email' => 'superadmin@demo.wsclinic.local', 'password' => self::PASSWORD]);
                 $super->is_super_admin = true;
                 $super->save();
             }
@@ -71,12 +71,12 @@ class DemoSeeder extends Seeder
                     'legal_name' => 'Clínica Demonstração Ltda (FICTÍCIA)',
                     'trade_name' => 'Clínica Demonstração',
                     'document' => '11222333000181',
-                    'email' => 'contato@demo.aivexa.local',
+                    'email' => 'contato@demo.wsclinic.local',
                     'saas_plan_id' => SaasPlan::query()->where('code', 'profissional')->value('id'),
                     'status' => Company::STATUS_ACTIVE,
                 ],
                 headquarters: ['name' => 'Matriz Centro', 'code' => 'MATRIZ', 'city' => 'São Paulo', 'state' => 'SP'],
-                admin: ['name' => 'Ana Administradora', 'email' => 'admin@demo.aivexa.local', 'password' => self::PASSWORD],
+                admin: ['name' => 'Ana Administradora', 'email' => 'admin@demo.wsclinic.local', 'password' => self::PASSWORD],
             );
 
             $context->runFor($result['company']->id, function () use ($result) {
@@ -86,11 +86,11 @@ class DemoSeeder extends Seeder
                 $roles = Role::query()->pluck('id', 'key');
 
                 $people = [
-                    ['Bruno Gestor da Filial', 'gestor.filial@demo.aivexa.local', 'admin_filial', $filial->id],
-                    ['Dra. Carla Cardiologista', 'medica@demo.aivexa.local', 'medico', null],
-                    ['Diego Recepcionista', 'recepcao@demo.aivexa.local', 'recepcao', $matriz->id],
-                    ['Elisa Financeiro', 'financeiro@demo.aivexa.local', 'financeiro', null],
-                    ['Fábio Enfermeiro', 'enfermagem@demo.aivexa.local', 'enfermagem', $filial->id],
+                    ['Bruno Gestor da Filial', 'gestor.filial@demo.wsclinic.local', 'admin_filial', $filial->id],
+                    ['Dra. Carla Cardiologista', 'medica@demo.wsclinic.local', 'medico', null],
+                    ['Diego Recepcionista', 'recepcao@demo.wsclinic.local', 'recepcao', $matriz->id],
+                    ['Elisa Financeiro', 'financeiro@demo.wsclinic.local', 'financeiro', null],
+                    ['Fábio Enfermeiro', 'enfermagem@demo.wsclinic.local', 'enfermagem', $filial->id],
                 ];
 
                 $users = [];
@@ -106,13 +106,13 @@ class DemoSeeder extends Seeder
 
         $this->command?->info('Demo pronta. Senha de todos os usuários: '.self::PASSWORD);
         $this->command?->table(['Perfil', 'E-mail'], [
-            ['Super Admin (plataforma)', 'superadmin@demo.aivexa.local'],
-            ['Admin da empresa', 'admin@demo.aivexa.local'],
-            ['Admin da filial (Zona Sul)', 'gestor.filial@demo.aivexa.local'],
-            ['Médica', 'medica@demo.aivexa.local'],
-            ['Recepção (Matriz)', 'recepcao@demo.aivexa.local'],
-            ['Financeiro', 'financeiro@demo.aivexa.local'],
-            ['Enfermagem (Zona Sul)', 'enfermagem@demo.aivexa.local'],
+            ['Super Admin (plataforma)', 'superadmin@demo.wsclinic.local'],
+            ['Admin da empresa', 'admin@demo.wsclinic.local'],
+            ['Admin da filial (Zona Sul)', 'gestor.filial@demo.wsclinic.local'],
+            ['Médica', 'medica@demo.wsclinic.local'],
+            ['Recepção (Matriz)', 'recepcao@demo.wsclinic.local'],
+            ['Financeiro', 'financeiro@demo.wsclinic.local'],
+            ['Enfermagem (Zona Sul)', 'enfermagem@demo.wsclinic.local'],
         ]);
     }
 
@@ -134,7 +134,9 @@ class DemoSeeder extends Seeder
         $this->seedSchedule($matriz, $filial, $carla, $rafael, $beatriz);
 
         $patients = app(PatientService::class);
-        $faker = Factory::create('pt_BR');
+        // Faker é dependência de desenvolvimento: no pacote de produção/homologação (sem vendor de dev)
+        // usa um gerador próprio, determinístico, para o DemoSeeder funcionar também no servidor.
+        $faker = class_exists(Factory::class) ? Factory::create('pt_BR') : $this->fallbackFaker();
         $faker->seed(2026);
 
         for ($i = 0; $i < 25; $i++) {
@@ -146,7 +148,7 @@ class DemoSeeder extends Seeder
                 'birth_date' => $birth->format('Y-m-d'),
                 'sex' => $faker->randomElement(['F', 'M']),
                 'whatsapp' => '1199'.str_pad((string) (1000000 + $i), 7, '0', STR_PAD_LEFT),
-                'email' => "paciente{$i}@demo.aivexa.local",
+                'email' => "paciente{$i}@demo.wsclinic.local",
                 'city' => 'São Paulo', 'state' => 'SP',
                 'home_branch_id' => $i % 3 === 0 ? $filial->id : $matriz->id,
                 'contacts' => $isMinor ? [['type' => 'guardian', 'name' => $faker->firstName().' '.$faker->lastName().' '.$faker->lastName(), 'relationship' => 'mãe', 'phone' => '11988887777']] : [],
@@ -155,6 +157,47 @@ class DemoSeeder extends Seeder
         }
 
         $this->seedAppointments($admin, $matriz, $carla, $beatriz);
+    }
+
+    /** Gerador mínimo de nomes/datas fictícios quando o Faker não está instalado (pacote sem dependências de dev). */
+    private function fallbackFaker(): object
+    {
+        return new class
+        {
+            private const FIRST = ['Ana', 'Bruno', 'Carla', 'Daniel', 'Eduarda', 'Felipe', 'Gabriela', 'Henrique', 'Isabela', 'João',
+                'Larissa', 'Marcos', 'Natália', 'Otávio', 'Patrícia', 'Rafael', 'Sabrina', 'Thiago', 'Vanessa', 'Vinícius'];
+
+            private const LAST = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes',
+                'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Almeida', 'Lopes', 'Araújo', 'Barbosa', 'Rocha', 'Dias'];
+
+            public function seed(int $seed): void
+            {
+                mt_srand($seed);
+            }
+
+            public function firstName(): string
+            {
+                return self::FIRST[mt_rand(0, count(self::FIRST) - 1)];
+            }
+
+            public function lastName(): string
+            {
+                return self::LAST[mt_rand(0, count(self::LAST) - 1)];
+            }
+
+            public function randomElement(array $items): mixed
+            {
+                return $items[array_rand($items)];
+            }
+
+            public function dateTimeBetween(string $start, string $end): \DateTime
+            {
+                $a = strtotime($start);
+                $b = strtotime($end);
+
+                return (new \DateTime)->setTimestamp(mt_rand(min($a, $b), max($a, $b)));
+            }
+        };
     }
 
     /** Salas, grade semanal (seg–sex), tipos de atendimento e painel da TV. */

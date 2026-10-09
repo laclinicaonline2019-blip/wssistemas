@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: AivexaClínica API
+  title: WSCLINIC API
   version: 1.0.0
   description: API REST multiempresa. Autorização validada no backend; 404 para recursos de outra empresa.
 servers:

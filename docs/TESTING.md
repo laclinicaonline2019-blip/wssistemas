@@ -110,16 +110,16 @@ HostGator só é gerado se tudo passar.
 ### Fases 19–20 — prontidão e backup (`Platform/BackupReadinessTest`)
 
 - Backup do banco gerado pelo próprio PHP e **restaurado de verdade** com o cliente `mysql` em um banco vazio
-  (`aivexa_restore`, criado no CI): mesmas contagens nas tabelas principais e linha de paciente idêntica.
+  (`wsclinic_restore`, criado no CI): mesmas contagens nas tabelas principais e linha de paciente idêntica.
   No PostgreSQL, `pg_dump` é exercitado.
 - Criptografia AES-256-GCM: arquivo começa com o cabeçalho próprio, conteúdo não aparece em claro, decifra com a
   senha certa e falha com a errada.
 - Retenção mantém só os N backups mais recentes; painel exclusivo do Super Admin; download auditado; nomes fora
   do padrão (inclusive `../`) → 404.
-- `aivexa:preflight` falha com debug ligado e sem HTTPS em produção; o sinal de vida do cron vira "ok".
+- `wsclinic:preflight` falha com debug ligado e sem HTTPS em produção; o sinal de vida do cron vira "ok".
 
 ## Antes de cada versão
 
 1. `php artisan test` em MariaDB e PostgreSQL (o CI faz).
 2. `node tests/e2e/run.mjs` contra um banco de demonstração recém-semeado (o CI faz).
-3. Na homologação: `php artisan aivexa:preflight`, o roteiro de [HOMOLOGACAO.md](HOMOLOGACAO.md) e a carga de referência.
+3. Na homologação: `php artisan wsclinic:preflight`, o roteiro de [HOMOLOGACAO.md](HOMOLOGACAO.md) e a carga de referência.

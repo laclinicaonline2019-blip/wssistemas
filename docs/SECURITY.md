@@ -81,7 +81,7 @@ fica planejada para a migração a VPS (MySQL/MariaDB da HostGator não tem RLS)
 - [ ] (VPS) Usuário do banco da aplicação **sem** permissão de DDL/`DISABLE TRIGGER`
 - [ ] Banco e Redis em rede privada; `BACKUP_PASSWORD` definida (backups AES-256-GCM), cópias fora do servidor e
       ensaio de restauração (ver [PRODUCAO.md](PRODUCAO.md))
-- [ ] `php artisan aivexa:preflight --strict` sem erros nem avisos (verifica a maior parte desta lista)
+- [ ] `php artisan wsclinic:preflight --strict` sem erros nem avisos (verifica a maior parte desta lista)
 - [ ] `PASSWORD_BREACH_CHECK=true`, 2FA obrigatório para administradores
 - [ ] WAF/rate limit na borda, monitoramento de erros e alertas
 - [ ] Antivírus: na VPS, `FILE_SCANNER=clamav` (na HostGator ficam as verificações próprias)

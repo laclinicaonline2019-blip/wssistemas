@@ -109,7 +109,7 @@ class PortalTest extends TestCase
 
     public function test_lockout_block_anonymization_and_disabled_portal(): void
     {
-        config(['aivexa.security.lockout_threshold' => 3, 'aivexa.security.login_rate_per_minute' => 50]);
+        config(['wsclinic.security.lockout_threshold' => 3, 'wsclinic.security.login_rate_per_minute' => 50]);
         $this->activate();
         $this->post($this->url('portal.logout'));
 

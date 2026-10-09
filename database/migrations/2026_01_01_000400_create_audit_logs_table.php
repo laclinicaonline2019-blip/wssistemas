@@ -29,7 +29,7 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->dateTime('created_at')->useCurrent();
             // Encadeamento criptográfico (HMAC-SHA256) por empresa: qualquer alteração ou
-            // exclusão de registro quebra a cadeia e é detectada por `aivexa:audit:verify`.
+            // exclusão de registro quebra a cadeia e é detectada por `wsclinic:audit:verify`.
             $table->char('prev_hash', 64)->nullable();
             $table->char('hash', 64)->nullable();
 
