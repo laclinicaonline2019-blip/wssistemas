@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schedule;
 
 /*
 | Tarefas agendadas. No cPanel (HostGator) configure UM cron a cada minuto:
-|   * * * * * /usr/local/bin/php /home/CONTA/wsclinic/artisan schedule:run >> /dev/null 2>&1
+|   * * * * * /usr/local/bin/php /home/CONTA/wsfacilitsaude/artisan schedule:run >> /dev/null 2>&1
 | Os módulos futuros registram aqui lembretes, cobranças, conciliação e backup.
 */
 
@@ -12,23 +12,23 @@ use Illuminate\Support\Facades\Schedule;
 // a cada minuto até esvaziar a fila (limite de 50 s para não sobrepor execuções).
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3 --backoff=30')
     ->everyMinute()->withoutOverlapping(5)->when(fn () => config('queue.default') === 'database');
-Schedule::command('wsclinic:audit:verify')->dailyAt('03:10')->onOneServer();
+Schedule::command('wsfacilitsaude:audit:verify')->dailyAt('03:10')->onOneServer();
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily()->onOneServer();
 Schedule::command('queue:prune-failed --hours=720')->daily()->onOneServer();
 Schedule::command('auth:clear-resets')->everyFifteenMinutes();
 // Pagamentos online: consulta periódica cobre webhooks perdidos (gateway fora do ar, erro de rede).
-Schedule::command('wsclinic:payments:sync')->everyTenMinutes()->withoutOverlapping(15)->onOneServer();
+Schedule::command('wsfacilitsaude:payments:sync')->everyTenMinutes()->withoutOverlapping(15)->onOneServer();
 // WhatsApp/e-mail (Fase 11): lembretes de consulta e reenvio de mensagens pendentes.
-Schedule::command('wsclinic:messaging:run')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
+Schedule::command('wsfacilitsaude:messaging:run')->everyFiveMinutes()->withoutOverlapping(10)->onOneServer();
 // Conciliação bancária (Fase 14): extratos das contas conectadas por Open Finance.
-Schedule::command('wsclinic:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)->onOneServer();
+Schedule::command('wsfacilitsaude:bank:sync')->dailyAt('06:20')->withoutOverlapping(60)->onOneServer();
 // Assinaturas das clínicas (Fase 16): renovação, conferência de pagamento e régua de cobrança.
-Schedule::command('wsclinic:billing:run')->hourlyAt(17)->withoutOverlapping(30)->onOneServer();
+Schedule::command('wsfacilitsaude:billing:run')->hourlyAt(17)->withoutOverlapping(30)->onOneServer();
 // Retenção de dados operacionais (Fase 17 — LGPD).
-Schedule::command('wsclinic:retention:run')->dailyAt('04:10')->withoutOverlapping(60)->onOneServer();
-// Sinal de vida do cron (Fases 19–20: wsclinic:preflight e tela de prontidão alertam se parar).
-Schedule::command('wsclinic:heartbeat')->everyMinute();
+Schedule::command('wsfacilitsaude:retention:run')->dailyAt('04:10')->withoutOverlapping(60)->onOneServer();
+// Sinal de vida do cron (Fases 19–20: wsfacilitsaude:preflight e tela de prontidão alertam se parar).
+Schedule::command('wsfacilitsaude:heartbeat')->everyMinute();
 // Backup (Fase 20): banco todo dia; anexos aos domingos. Baixe cópias para fora do servidor.
-Schedule::command('wsclinic:backup')->dailyAt('02:30')->withoutOverlapping(120)->onOneServer();
-Schedule::command('wsclinic:backup --files')->weeklyOn(0, '03:15')->withoutOverlapping(180)->onOneServer();
+Schedule::command('wsfacilitsaude:backup')->dailyAt('02:30')->withoutOverlapping(120)->onOneServer();
+Schedule::command('wsfacilitsaude:backup --files')->weeklyOn(0, '03:15')->withoutOverlapping(180)->onOneServer();

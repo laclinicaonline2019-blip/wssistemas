@@ -109,10 +109,10 @@ class MessagingTest extends TestCase
         $this->book($this->pat, '08:00');
 
         $msg = $this->tenant(fn () => Message::query()->where('purpose', 'booking_confirmation')->sole());
-        $this->assertSame(['whatsapp', 'sent', '5511999990000', 'wsclinic_agendamento', 'wamid.OUT1'], [$msg->channel, $msg->status, $msg->recipient, $msg->template, $msg->provider_message_id]);
+        $this->assertSame(['whatsapp', 'sent', '5511999990000', 'wsfacilitsaude_agendamento', 'wamid.OUT1'], [$msg->channel, $msg->status, $msg->recipient, $msg->template, $msg->provider_message_id]);
         Http::assertSent(fn (HttpRequest $r) => $r->url() === 'https://graph.facebook.com/v21.0/1098765432/messages'
             && $r->hasHeader('Authorization', 'Bearer EAAG-token')
-            && $r['template']['name'] === 'wsclinic_agendamento' && $r['template']['language']['code'] === 'pt_BR'
+            && $r['template']['name'] === 'wsfacilitsaude_agendamento' && $r['template']['language']['code'] === 'pt_BR'
             && array_column($r['template']['components'][0]['parameters'], 'text') === ['Maria', '05/10/2026', '08:00', 'Dra. Agenda', $this->branch()->name, $msg->params['protocolo']]);
 
         // Sem consentimento de WhatsApp, com consentimento de e-mail → e-mail.
@@ -141,13 +141,13 @@ class MessagingTest extends TestCase
         // Agendamento para a próxima segunda, criado com antecedência.
         $id = $this->book($this->pat, '09:00', '2026-10-12');
         $this->travelTo(CarbonImmutable::parse('2026-10-11 09:30', 'America/Sao_Paulo')); // 23h30 antes
-        $this->artisan('wsclinic:messaging:run')->assertSuccessful();
-        $this->artisan('wsclinic:messaging:run')->assertSuccessful(); // não duplica
+        $this->artisan('wsfacilitsaude:messaging:run')->assertSuccessful();
+        $this->artisan('wsfacilitsaude:messaging:run')->assertSuccessful(); // não duplica
 
         $reminders = $this->tenant(fn () => Message::query()->where('purpose', 'reminder')->get());
         $this->assertCount(1, $reminders);
         $this->assertStringStartsWith('reminder:24:', $reminders[0]->dedupe_key);
-        Http::assertSent(fn (HttpRequest $r) => ($r['template']['name'] ?? null) === 'wsclinic_lembrete'
+        Http::assertSent(fn (HttpRequest $r) => ($r['template']['name'] ?? null) === 'wsfacilitsaude_lembrete'
             && $r['template']['components'][1] == ['type' => 'button', 'sub_type' => 'quick_reply', 'index' => '0', 'parameters' => [['type' => 'payload', 'payload' => 'CONFIRM:'.$id]]]
             && $r['template']['components'][2]['parameters'][0]['payload'] === 'CANCEL:'.$id);
 
@@ -157,14 +157,14 @@ class MessagingTest extends TestCase
         $this->consent($late, 'whatsapp_comunicacoes');
         $lateId = $this->book($late, '08:00', '2026-10-12');
         $this->travelTo(CarbonImmutable::parse('2026-10-12 06:30', 'America/Sao_Paulo'));
-        $this->artisan('wsclinic:messaging:run');
+        $this->artisan('wsfacilitsaude:messaging:run');
         $this->assertSame(['reminder:2:'.$lateId], $this->tenant(fn () => Message::query()->where('purpose', 'reminder')->where('appointment_id', $lateId)->pluck('dedupe_key')->map(fn ($k) => substr($k, 0, strlen('reminder:2:'.$lateId)))->all()));
 
         // Lembretes desativados pela clínica.
         $this->tenant(fn () => Company::query()->whereKey($this->company()->id)->update(['settings' => json_encode(['messaging' => ['reminders_enabled' => false]])]));
         $before = $this->tenant(fn () => Message::query()->count());
         $this->travelTo(CarbonImmutable::parse('2026-10-12 07:30', 'America/Sao_Paulo'));
-        $this->artisan('wsclinic:messaging:run');
+        $this->artisan('wsfacilitsaude:messaging:run');
         $this->assertSame($before, $this->tenant(fn () => Message::query()->count()));
     }
 
@@ -172,7 +172,7 @@ class MessagingTest extends TestCase
     {
         $id = $this->book($this->pat, '09:00', '2026-10-12');
         $this->travelTo(CarbonImmutable::parse('2026-10-11 10:00', 'America/Sao_Paulo'));
-        $this->artisan('wsclinic:messaging:run');
+        $this->artisan('wsfacilitsaude:messaging:run');
         $reminder = $this->tenant(fn () => Message::query()->where('purpose', 'reminder')->sole());
 
         // Verificação GET (hub.*) e assinatura obrigatória no POST.
@@ -249,7 +249,7 @@ class MessagingTest extends TestCase
         $this->assertNotNull($msg->next_attempt_at);
 
         $this->travel(5)->minutes();
-        $this->artisan('wsclinic:messaging:run');
+        $this->artisan('wsfacilitsaude:messaging:run');
         $this->assertSame(['sent', 'wamid.RETRY', 2], [$msg->fresh()->status, $msg->fresh()->provider_message_id, $msg->fresh()->attempts]);
 
         $this->book($this->patient('Outra', ['whatsapp' => '11944443333']), '08:30');

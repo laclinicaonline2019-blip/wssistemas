@@ -11,7 +11,7 @@
 <body data-state-url="{{ route('panel.state', $token) }}">
 <main class="panel">
     <header class="panel__top">
-        <img src="{{ asset('assets/img/wordmark-light.webp') }}" alt="WSCLINIC" height="28">
+        <img src="{{ asset('assets/img/wordmark-light.webp') }}" alt="WS Facilit Saúde" height="28">
         <span class="panel__branch">{{ $branch->name }}</span>
         <span class="panel__clock" id="clock">--:--</span>
     </header>

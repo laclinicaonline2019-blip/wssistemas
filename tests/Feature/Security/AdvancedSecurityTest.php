@@ -65,9 +65,9 @@ class AdvancedSecurityTest extends TestCase
             ->assertSessionHas('error');
 
         // ClamAV indisponível: "fail closed" recusa; "fail open" aceita só com verificações básicas.
-        config(['wsclinic.security.scanner.driver' => 'clamav', 'wsclinic.security.scanner.clamav_socket' => '/tmp/nao-existe-clamd.sock', 'wsclinic.security.scanner.fail_closed' => true]);
+        config(['wsfacilitsaude.security.scanner.driver' => 'clamav', 'wsfacilitsaude.security.scanner.clamav_socket' => '/tmp/nao-existe-clamd.sock', 'wsfacilitsaude.security.scanner.fail_closed' => true]);
         $this->upload('b.pdf', "%PDF-1.4\n%%EOF")->assertSessionHas('error', fn ($m) => str_contains($m, 'Antivírus indisponível'));
-        config(['wsclinic.security.scanner.fail_closed' => false]);
+        config(['wsfacilitsaude.security.scanner.fail_closed' => false]);
         $this->assertSame(FileScanner::BASIC, app(FileScanner::class)->assertSafe("%PDF-1.4\n%%EOF", 'application/pdf'));
     }
 
@@ -85,7 +85,7 @@ class AdvancedSecurityTest extends TestCase
         // Padrão: WhatsApp mantido.
         $this->tenant(fn () => DB::table('messages')->insert(['id' => (string) Str::ulid(), 'company_id' => $cid, 'patient_id' => $pat->id, 'channel' => 'whatsapp', 'direction' => 'in',
             'purpose' => 'inbound', 'recipient' => '5511999990000', 'body' => 'texto antigo', 'status' => 'received', 'attempts' => 0, 'created_at' => $old, 'updated_at' => $old]));
-        $this->artisan('wsclinic:retention:run')->assertSuccessful();
+        $this->artisan('wsfacilitsaude:retention:run')->assertSuccessful();
         $this->assertSame(['Novo'], DB::table('staff_notifications')->where('company_id', $cid)->pluck('title')->all());
         $this->assertSame(0, DB::table('ai_requests')->where('company_id', $cid)->count());
         $this->assertNull(DB::table('payment_webhook_events')->where('provider_event_id', 'e1')->value('payload'));
@@ -97,7 +97,7 @@ class AdvancedSecurityTest extends TestCase
         $admin = $this->clinic['admin'];
         $this->actingAs($admin)->put(route('security.retention'), ['notifications' => 10, 'ai_logs' => 365, 'whatsapp_text' => 365, 'webhook_payloads' => 180])->assertSessionHasErrors('notifications');
         $this->actingAs($admin)->put(route('security.retention'), ['notifications' => 180, 'ai_logs' => 365, 'whatsapp_text' => 365, 'webhook_payloads' => 180])->assertSessionHas('success');
-        $this->artisan('wsclinic:retention:run')->assertSuccessful();
+        $this->artisan('wsfacilitsaude:retention:run')->assertSuccessful();
         $this->assertSame('[texto removido pela política de retenção]', DB::table('messages')->where('company_id', $cid)->value('body'));
     }
 

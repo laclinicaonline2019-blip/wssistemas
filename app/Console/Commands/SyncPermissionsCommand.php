@@ -11,10 +11,10 @@ use Illuminate\Console\Command;
 
 class SyncPermissionsCommand extends Command
 {
-    protected $signature = 'wsclinic:permissions:sync {--roles : Também cria perfis e especialidades padrão ausentes e atualiza perfis protegidos em todas as empresas}';
+    protected $signature = 'wsfacilitsaude:permissions:sync {--roles : Também cria perfis e especialidades padrão ausentes e atualiza perfis protegidos em todas as empresas}';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:permissions:sync'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:permissions:sync', 'aivexa:permissions:sync'];
 
     protected $description = 'Sincroniza o catálogo de permissões (config/permissions.php) com o banco';
 

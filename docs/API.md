@@ -163,7 +163,7 @@ Agendamento por convênio (`payer_type: insurance`) passa a retornar `insurance_
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/token \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@demo.wsclinic.local","password":"Demo@12345","device_name":"cli"}' | jq -r .access_token)
+  -d '{"email":"admin@demo.wsfacilitsaude.local","password":"Demo@12345","device_name":"cli"}' | jq -r .access_token)
 
 curl -s http://localhost:8080/api/v1/branches -H "Authorization: Bearer $TOKEN" -H 'Accept: application/json'
 ```
@@ -172,4 +172,4 @@ curl -s http://localhost:8080/api/v1/branches -H "Authorization: Bearer $TOKEN" 
 
 Mudanças incompatíveis → `/api/v2`. Webhooks de saída (Fase 8): eventos `appointment.*`,
 `payment.*`, `patient.created`, `consultation.finished`, `document.created`, assinados com
-HMAC-SHA256 (`X-WSClinic-Signature`), `X-WSClinic-Event-Id` para idempotência e retry exponencial.
+HMAC-SHA256 (`X-WSFacilitSaude-Signature`), `X-WSFacilitSaude-Event-Id` para idempotência e retry exponencial.

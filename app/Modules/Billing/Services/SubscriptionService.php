@@ -79,7 +79,7 @@ class SubscriptionService
             $invoice = DB::transaction(fn () => SubscriptionInvoice::create([
                 'company_id' => $s->company_id, 'subscription_id' => $s->id, 'saas_plan_id' => $plan->id, 'number' => $this->number(), 'kind' => 'renewal',
                 'cycle' => $cycle, 'period_start' => $start->toDateString(), 'period_end' => $end->toDateString(), 'renewal_key' => $key,
-                'description' => "Assinatura WSCLINIC — plano {$plan->name} (".mb_strtolower(Subscription::CYCLES[$cycle]).') de '.$start->format('d/m/Y').' a '.$end->subDay()->format('d/m/Y'),
+                'description' => "Assinatura WS Facilit Saúde — plano {$plan->name} (".mb_strtolower(Subscription::CYCLES[$cycle]).') de '.$start->format('d/m/Y').' a '.$end->subDay()->format('d/m/Y'),
                 'amount_cents' => $amount, 'due_date' => max($start, $this->today())->toDateString(),
             ]));
         } catch (QueryException) {

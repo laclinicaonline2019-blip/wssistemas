@@ -7,7 +7,7 @@
         <p><a class="btn" href="{{ route('portal.login') }}">Ir para o login</a></p>
     @else
         <h1>{{ $record->purpose === 'activation' ? 'Ative seu acesso' : 'Nova senha' }}</h1>
-        <p class="muted">Crie uma senha com pelo menos {{ config('wsclinic.security.password_min_length') }} caracteres, misturando letras, números e símbolos.</p>
+        <p class="muted">Crie uma senha com pelo menos {{ config('wsfacilitsaude.security.password_min_length') }} caracteres, misturando letras, números e símbolos.</p>
         @include('partials.flash')
         <form method="post" action="{{ route('portal.activate.store', $token) }}" class="stack" novalidate>
             @csrf

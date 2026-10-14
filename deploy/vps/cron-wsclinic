@@ -1,2 +1,0 @@
-# /etc/cron.d/wsclinic — agendador (lembretes, cobranças, conciliação, backup, retenção, sinal de vida).
-* * * * * wsclinic cd /var/www/wsclinic/current && /usr/bin/php artisan schedule:run >> /dev/null 2>&1

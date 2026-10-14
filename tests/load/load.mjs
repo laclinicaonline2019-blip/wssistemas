@@ -4,7 +4,7 @@
 // embutido do PHP (php artisan serve) é só referência e é bem mais lento que LiteSpeed/PHP-FPM.
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:8080';
 const N = Number(process.env.N || 60), C = Number(process.env.C || 8);
-const EMAIL = process.env.EMAIL || 'admin@demo.wsclinic.local', PASS = process.env.PASS || 'Demo@12345';
+const EMAIL = process.env.EMAIL || 'admin@demo.wsfacilitsaude.local', PASS = process.env.PASS || 'Demo@12345';
 const PAGES = (process.env.PAGES || '/,/agenda,/pacientes,/contas-a-receber,/conversas,/relatorios/appointments,/fila').split(',');
 
 let cookies = {};

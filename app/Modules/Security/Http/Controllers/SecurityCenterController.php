@@ -37,7 +37,7 @@ class SecurityCenterController extends Controller
                 ->get(['action', 'result', 'user_id', 'ip_address', 'metadata', 'created_at']),
             'names' => $users->pluck('name', 'id'),
             'policy' => $retention->policy(Company::query()->findOrFail($cid)), 'labels' => RetentionService::LABELS,
-            'scanner' => config('wsclinic.security.scanner.driver'),
+            'scanner' => config('wsfacilitsaude.security.scanner.driver'),
         ]);
     }
 

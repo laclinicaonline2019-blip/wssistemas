@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\DB;
 /** Aplica a política de retenção de cada clínica e limpa dados técnicos da plataforma. */
 class RetentionRunCommand extends Command
 {
-    protected $signature = 'wsclinic:retention:run';
+    protected $signature = 'wsfacilitsaude:retention:run';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:retention:run'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:retention:run', 'aivexa:retention:run'];
 
     protected $description = 'Retenção de dados operacionais (LGPD) — nunca toca dados clínicos, financeiros ou a auditoria';
 

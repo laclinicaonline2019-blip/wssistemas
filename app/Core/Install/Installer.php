@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Instalação/configuração inicial, compartilhada pelo comando `wsclinic:install`
+ * Instalação/configuração inicial, compartilhada pelo comando `wsfacilitsaude:install`
  * (SSH/VPS) e pelo instalador web `/instalar` (cPanel sem SSH).
  */
 class Installer

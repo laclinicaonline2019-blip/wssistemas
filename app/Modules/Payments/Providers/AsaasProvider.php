@@ -148,7 +148,7 @@ class AsaasProvider implements PaymentProvider
         $key = $gateway->credential('api_key') ?? throw new GatewayException('Chave de API do ASAAS não configurada.', 'not_configured');
 
         return Http::baseUrl($gateway->mode === 'production' ? 'https://api.asaas.com/v3/' : 'https://api-sandbox.asaas.com/v3/')
-            ->withHeaders(['access_token' => $key, 'User-Agent' => 'WSCLINIC'])
+            ->withHeaders(['access_token' => $key, 'User-Agent' => 'WSFacilitSaude'])
             ->acceptJson()->asJson()->timeout(20)->connectTimeout(8);
     }
 

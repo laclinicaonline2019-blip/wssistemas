@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-# WSCLINIC — imagem de desenvolvimento/VPS (PHP-FPM 8.3, mesma versão-alvo da HostGator).
+# WS Facilit Saúde — imagem de desenvolvimento/VPS (PHP-FPM 8.3, mesma versão-alvo da HostGator).
 
 FROM composer:2 AS vendor
 WORKDIR /app
@@ -16,7 +16,7 @@ RUN apk add --no-cache icu-libs libzip libpng libjpeg-turbo freetype postgresql-
     && pecl install redis && docker-php-ext-enable redis \
     && apk del .build
 
-COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-wsclinic.ini
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-wsfacilitsaude.ini
 WORKDIR /var/www/html
 COPY --from=vendor --chown=www-data:www-data /app /var/www/html
 RUN rm -f .env && mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \

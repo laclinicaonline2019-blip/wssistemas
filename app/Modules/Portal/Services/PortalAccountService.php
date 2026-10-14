@@ -89,7 +89,7 @@ class PortalAccountService
         $patient = $account->patient;
         Mail::to($account->email)->send(new PortalAccessMail(
             $company->trade_name, Str::before($patient->displayName(), ' '), $url, $purpose,
-            $purpose === 'activation' ? config('wsclinic.portal.activation_ttl_hours').' horas' : config('wsclinic.portal.reset_ttl_minutes').' minutos',
+            $purpose === 'activation' ? config('wsfacilitsaude.portal.activation_ttl_hours').' horas' : config('wsfacilitsaude.portal.reset_ttl_minutes').' minutos',
         ));
         $this->audit->record('portal.link_emailed', $account, metadata: ['purpose' => $purpose]);
     }
@@ -114,7 +114,7 @@ class PortalAccountService
         $login = mb_strtolower(trim($login));
         $key = 'portal-login:'.$company->id.':'.sha1($login.'|'.$ip);
 
-        if (RateLimiter::tooManyAttempts($key, config('wsclinic.security.login_rate_per_minute'))) {
+        if (RateLimiter::tooManyAttempts($key, config('wsfacilitsaude.security.login_rate_per_minute'))) {
             $this->audit->record('portal.login.throttled', result: 'denied', companyId: $company->id, actorType: 'anonymous');
 
             return ['account' => null, 'error' => 'Muitas tentativas. Aguarde '.RateLimiter::availableIn($key).' segundos.'];
@@ -224,8 +224,8 @@ class PortalAccountService
         $attempts = $account->failed_login_attempts + 1;
         $data = ['failed_login_attempts' => $attempts];
 
-        if ($attempts >= config('wsclinic.security.lockout_threshold')) {
-            $data = ['failed_login_attempts' => 0, 'locked_until' => now()->addMinutes(config('wsclinic.security.lockout_minutes'))];
+        if ($attempts >= config('wsfacilitsaude.security.lockout_threshold')) {
+            $data = ['failed_login_attempts' => 0, 'locked_until' => now()->addMinutes(config('wsfacilitsaude.security.lockout_minutes'))];
         }
 
         $account->forceFill($data)->save();
@@ -239,8 +239,8 @@ class PortalAccountService
 
         $token = Str::random(48);
         $expires = $purpose === 'activation'
-            ? CarbonImmutable::now()->addHours(config('wsclinic.portal.activation_ttl_hours'))
-            : CarbonImmutable::now()->addMinutes(config('wsclinic.portal.reset_ttl_minutes'));
+            ? CarbonImmutable::now()->addHours(config('wsfacilitsaude.portal.activation_ttl_hours'))
+            : CarbonImmutable::now()->addMinutes(config('wsfacilitsaude.portal.reset_ttl_minutes'));
 
         PatientAccountToken::create(['account_id' => $account->id, 'purpose' => $purpose, 'token_hash' => hash('sha256', $token), 'expires_at' => $expires, 'created_by' => $createdBy]);
         $this->audit->record('portal.link_issued', $account, metadata: ['purpose' => $purpose, 'expires_at' => $expires->toIso8601String()], userId: $createdBy);

@@ -9,10 +9,10 @@ use Illuminate\Console\Command;
 /** Lembretes de consulta (24 h, 2 h ou personalizados) e reenvio de mensagens pendentes. */
 class MessagingRunCommand extends Command
 {
-    protected $signature = 'wsclinic:messaging:run';
+    protected $signature = 'wsfacilitsaude:messaging:run';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:messaging:run'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:messaging:run', 'aivexa:messaging:run'];
 
     protected $description = 'Gera os lembretes de consulta e reenvia mensagens pendentes (WhatsApp/e-mail)';
 

@@ -135,7 +135,7 @@ depois troque para Claude ou ChatGPT com a chave, "Testar conexão" e uma conver
 |---|---|---|
 | **OFX** | Arquivo do internet banking (OFX 1.x SGML ou 2.x XML; Windows-1252/ISO-8859-1 convertido); FITID do banco como identificador | Produção |
 | **CSV** | Cabeçalho reconhecido automaticamente: Data, Descrição/Histórico, Valor **ou** Crédito + Débito, Documento; separador `;` `,` ou tab; valores `1.234,56`, `(150,00)`, sufixo C/D; linhas de saldo ignoradas | Produção |
-| **Open Finance (Pluggy)** | Agregador regulado: a clínica conecta o banco na Pluggy (consentimento no próprio banco) e informa Client ID/Secret e ID da conta; `POST /auth` → `GET /transactions` paginado; leitura diária às 06:20 (`wsclinic:bank:sync`) e sob demanda | **Requer homologação** com credenciais reais |
+| **Open Finance (Pluggy)** | Agregador regulado: a clínica conecta o banco na Pluggy (consentimento no próprio banco) e informa Client ID/Secret e ID da conta; `POST /auth` → `GET /transactions` paginado; leitura diária às 06:20 (`wsfacilitsaude:bank:sync`) e sob demanda | **Requer homologação** com credenciais reais |
 
 - Reimportar ou importar períodos sobrepostos não duplica (chave por FITID/ID ou hash de data+valor+histórico+ordem).
 - Sugestões: mesmo valor, data próxima (cartão até 35 dias), bônus quando o NSU aparece no histórico do banco.
@@ -152,7 +152,7 @@ Conta **da plataforma** (separada dos gateways das clínicas): `PLATFORM_BILLING
 | Cliente | `GET/POST /customers` pelo CNPJ da clínica |
 | Cobrança | `POST /payments` com `billingType=UNDEFINED` (PIX, boleto ou cartão na página do ASAAS) e `externalReference` = fatura |
 | Webhook | `POST /webhooks/assinaturas/asaas` com `asaas-access-token`; eventos únicos; **pagamento só é aceito após `GET /payments/{id}`** com valor ≥ fatura |
-| Rotina | `wsclinic:billing:run` (de hora em hora): emite renovações N dias antes, recria cobranças com falha, confere pagamentos (cobre webhook perdido), régua de atraso/bloqueio, encerra cancelamentos |
+| Rotina | `wsfacilitsaude:billing:run` (de hora em hora): emite renovações N dias antes, recria cobranças com falha, confere pagamentos (cobre webhook perdido), régua de atraso/bloqueio, encerra cancelamentos |
 | MOCK | Página de pagamento simulado (só fora de produção) — nada é cobrado |
 
 ## Assinatura digital ICP-Brasil (arquitetura pronta — Fase 6)

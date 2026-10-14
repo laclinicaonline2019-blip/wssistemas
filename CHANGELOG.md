@@ -2,6 +2,18 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [1.2.0] — 2026-10-14
+
+### Alterado
+- **Novo nome: WS Facilit Saúde** (marca registrada própria; antes WSCLINIC) e nova logo em todas as telas,
+  ícones, favicon e ícone do app. Identificador técnico `wsfacilitsaude`. Guia de atualização em
+  `docs/WSFACILITSAUDE.md`.
+- Configuração `config/wsclinic.php` → `config/wsfacilitsaude.php`; comandos `wsclinic:*` → `wsfacilitsaude:*`
+  (nomes `wsclinic:*` e `aivexa:*` mantidos como apelidos); modelos padrão de WhatsApp `wsfacilitsaude_*`;
+  backups `wsfacilitsaude-*` (os `wsclinic-*` e `aivexa-*` continuam listados).
+- Prontidão avisa se o `.env` ainda tiver um nome antigo (`APP_NAME`/`APP_BRAND_NAME`).
+- `atualizar.sh` (VPS) continua funcionando em servidores instalados em `/var/www/wsclinic` ou `/var/www/aivexa`.
+
 ## [1.1.0] — 2026-10-09
 
 ### Alterado

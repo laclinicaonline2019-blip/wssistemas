@@ -56,7 +56,7 @@ class AuthController extends Controller
             }
         }
 
-        $ttl = config('wsclinic.security.api_token_ttl_minutes');
+        $ttl = config('wsfacilitsaude.security.api_token_ttl_minutes');
         $token = $user->createToken($data['device_name'], ['*'], now()->addMinutes($ttl));
         $this->login->completed($user, (string) $request->ip(), 'api');
 

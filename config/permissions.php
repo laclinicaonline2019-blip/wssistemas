@@ -6,7 +6,7 @@
 |--------------------------------------------------------------------------
 |
 | Fonte única da verdade para as permissões granulares do sistema.
-| O comando `php artisan wsclinic:permissions:sync` sincroniza este catálogo
+| O comando `php artisan wsfacilitsaude:permissions:sync` sincroniza este catálogo
 | com a tabela `permissions`. Nunca crie permissões diretamente no banco.
 |
 | scope = tenant   → concedidas via perfis (roles) da clínica

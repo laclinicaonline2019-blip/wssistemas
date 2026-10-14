@@ -12,7 +12,7 @@
     <div class="t-center t-bold">{{ $company->trade_name }}</div>
     <div class="t-center t-small">{{ $branch?->name }}</div>
     <div class="t-rule"></div>
-    <div class="t-center t-small">{{ config('wsclinic.queue_types.'.$ticket->type.'.label', 'SENHA') }}</div>
+    <div class="t-center t-small">{{ config('wsfacilitsaude.queue_types.'.$ticket->type.'.label', 'SENHA') }}</div>
     <div class="t-center t-huge">{{ $ticket->code }}</div>
     @if ($ticket->is_priority)<div class="t-center t-bold t-small">ATENDIMENTO PRIORITÁRIO</div>@endif
     <div class="t-rule"></div>

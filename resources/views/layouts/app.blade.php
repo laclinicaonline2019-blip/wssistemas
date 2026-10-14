@@ -20,7 +20,7 @@
     <aside class="sidebar" aria-label="Navegação principal">
         <div class="sidebar__brand">
             <img class="icon" src="{{ asset('assets/img/icon-64.png') }}" alt="" width="36" height="36">
-            <img class="wordmark" src="{{ asset('assets/img/wordmark-light.webp') }}" alt="{{ config('wsclinic.brand.name') }}" width="150" height="20">
+            <img class="wordmark" src="{{ asset('assets/img/wordmark-light.webp') }}" alt="{{ config('wsfacilitsaude.brand.name') }}" width="159" height="18">
         </div>
 
         @if ($isPlatform)
@@ -79,8 +79,8 @@
         @endif
 
         <div class="sidebar__footer">
-            {{ config('wsclinic.brand.name') }} · v{{ config('app.version', '1.1.0') }}<br>
-            Ambiente: {{ config('wsclinic.stage') }}
+            {{ config('wsfacilitsaude.brand.name') }} · v{{ config('app.version', '1.2.0') }}<br>
+            Ambiente: {{ config('wsfacilitsaude.stage') }}
         </div>
     </aside>
 
@@ -122,8 +122,8 @@
                 <a class="btn btn-ghost btn-sm bell" href="{{ route('notifications.index') }}" aria-label="Notificações{{ $unread ? ': '.$unread.' novas' : '' }}"><svg><use href="#i-activity"/></svg>@if ($unread)<span class="count">{{ $unread > 99 ? '99+' : $unread }}</span>@endif</a>
             @endif
 
-            @if (config('wsclinic.stage') !== 'production')
-                <span class="stage-ribbon hide-sm" title="Dados e integrações deste ambiente não são de produção">{{ config('wsclinic.stage') }}</span>
+            @if (config('wsfacilitsaude.stage') !== 'production')
+                <span class="stage-ribbon hide-sm" title="Dados e integrações deste ambiente não são de produção">{{ config('wsfacilitsaude.stage') }}</span>
             @endif
 
             <div class="dropdown">

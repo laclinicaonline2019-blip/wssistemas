@@ -1,7 +1,7 @@
 {
-  "name": "WSCLINIC",
-  "short_name": "WSCLINIC",
-  "description": "WSCLINIC — gestão de clínicas médicas",
+  "name": "WS Facilit Saúde",
+  "short_name": "WS Facilit",
+  "description": "WS Facilit Saúde — gestão de clínicas médicas",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

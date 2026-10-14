@@ -23,7 +23,7 @@
                 <div class="field">
                     <label for="password">Nova senha</label>
                     <input id="password" name="password" type="password" class="input @error('password') is-invalid @enderror" autocomplete="new-password" required>
-                    <div class="help">Mínimo {{ config('wsclinic.security.password_min_length') }} caracteres, com maiúsculas, minúsculas, números e símbolos.</div>
+                    <div class="help">Mínimo {{ config('wsfacilitsaude.security.password_min_length') }} caracteres, com maiúsculas, minúsculas, números e símbolos.</div>
                     @error('password')<div class="field-error">{{ $message }}</div>@enderror
                 </div>
                 <div class="field">
@@ -53,7 +53,7 @@
 
             @if ($user->hasTwoFactorEnabled())
                 <p class="text-2">Seu login exige um código do aplicativo autenticador (Google Authenticator, Microsoft Authenticator, Authy, 1Password…).</p>
-                @unless ($user->is_super_admin && config('wsclinic.security.super_admin_requires_2fa'))
+                @unless ($user->is_super_admin && config('wsfacilitsaude.security.super_admin_requires_2fa'))
                     <form method="post" action="{{ route('account.2fa.disable') }}" class="stack" data-confirm="Desativar a autenticação em dois fatores reduz a segurança da sua conta. Continuar?">
                         @csrf
                         <div class="grid grid-2">

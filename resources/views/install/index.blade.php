@@ -4,12 +4,12 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Instalação · {{ config('wsclinic.brand.name') }}</title>
+<title>Instalação · {{ config('wsfacilitsaude.brand.name') }}</title>
 <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}">
 </head>
 <body>
 <main class="content install">
-    <div class="row mb-2"><img src="{{ asset('assets/img/icon-64.png') }}" alt="" width="40" height="40"><h1 class="mb-0">Instalação do {{ config('wsclinic.brand.name') }}</h1></div>
+    <div class="row mb-2"><img src="{{ asset('assets/img/icon-64.png') }}" alt="" width="40" height="40"><h1 class="mb-0">Instalação do {{ config('wsfacilitsaude.brand.name') }}</h1></div>
 
     @if ($errors->has('install'))<div class="alert alert-error">{{ $errors->first('install') }}</div>@endif
 
@@ -61,7 +61,7 @@
                     <div class="field col-6"><label class="label">E-mail</label><input name="super_email" type="email" class="input" value="{{ $o('super_email') }}" required></div>
                     <div class="field col-6"><label class="label">Senha</label><input name="super_password" type="password" class="input" autocomplete="new-password" required></div>
                     <div class="field col-6"><label class="label">Confirmar senha</label><input name="super_password_confirmation" type="password" class="input" autocomplete="new-password" required></div>
-                    <p class="col-12 help">Senhas: mínimo {{ config('wsclinic.security.password_min_length') }} caracteres com maiúsculas, minúsculas, números e símbolos.</p>
+                    <p class="col-12 help">Senhas: mínimo {{ config('wsfacilitsaude.security.password_min_length') }} caracteres com maiúsculas, minúsculas, números e símbolos.</p>
                     <div class="col-12 form-actions"><button class="btn btn-brand" type="submit">Instalar</button></div>
                 </div>
             </form>

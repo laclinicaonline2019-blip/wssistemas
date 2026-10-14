@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="page-head">
-    <div><h1>Assinatura da WSCLINIC</h1><p>Plano, faturas e forma de pagamento da sua clínica.@if ($mock) <span class="badge badge-warning">MOCK — homologação, nada é cobrado</span>@endif</p></div>
+    <div><h1>Assinatura da WS Facilit Saúde</h1><p>Plano, faturas e forma de pagamento da sua clínica.@if ($mock) <span class="badge badge-warning">MOCK — homologação, nada é cobrado</span>@endif</p></div>
 </div>
 @if ($locked)<div class="alert alert-error">O acesso da equipe está bloqueado. Pague a fatura em aberto (ou escolha um plano) para liberar na hora.</div>@endif
 

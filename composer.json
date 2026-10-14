@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "wsclinic/clinica",
+    "name": "wsfacilitsaude/clinica",
     "type": "project",
-    "description": "WSCLINIC — plataforma SaaS de gestão de clínicas médicas",
+    "description": "WS Facilit Saúde — plataforma SaaS de gestão de clínicas médicas",
     "keywords": ["laravel", "framework"],
     "license": "proprietary",
     "require": {

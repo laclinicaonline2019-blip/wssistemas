@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class VerifyAuditCommand extends Command
 {
-    protected $signature = 'wsclinic:audit:verify {--scope= : company_id ou "platform" (padrão: todos)}';
+    protected $signature = 'wsfacilitsaude:audit:verify {--scope= : company_id ou "platform" (padrão: todos)}';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:audit:verify'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:audit:verify', 'aivexa:audit:verify'];
 
     protected $description = 'Verifica a integridade (cadeia HMAC) da trilha de auditoria';
 

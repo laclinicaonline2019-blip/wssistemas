@@ -1,6 +1,6 @@
 # Instalação na HostGator — Plano Turbo (hospedagem compartilhada / cPanel)
 
-Este é o ambiente de **produção-alvo** do WSCLINIC. O sistema foi adaptado para as
+Este é o ambiente de **produção-alvo** do WS Facilit Saúde. O sistema foi adaptado para as
 restrições de hospedagem compartilhada:
 
 | Restrição da hospedagem compartilhada | Como o sistema lida |
@@ -32,21 +32,21 @@ cPanel → **Selecionar versão do PHP** (ou *MultiPHP Manager*):
 
 cPanel → **Bancos de dados MySQL**:
 
-1. Crie o banco (ex.: `conta_wsclinic`) e um usuário (ex.: `conta_wsclinic`) com senha forte.
+1. Crie o banco (ex.: `conta_wsfacilitsaude`) e um usuário (ex.: `conta_wsfacilitsaude`) com senha forte.
 2. Adicione o usuário ao banco com **TODOS OS PRIVILÉGIOS**.
 3. Anote os nomes completos (o cPanel acrescenta o prefixo da conta).
 
 ## 3. Gerar e enviar o pacote
 
-No seu computador (ou baixe o artefato **wsclinic-hostgator** gerado pelo GitHub Actions):
+No seu computador (ou baixe o artefato **wsfacilitsaude-hostgator** gerado pelo GitHub Actions):
 
 ```bash
-deploy/hostgator/build-release.sh      # gera dist/wsclinic-<versão>.zip (~20 MB, já com vendor/)
+deploy/hostgator/build-release.sh      # gera dist/wsfacilitsaude-<versão>.zip (~20 MB, já com vendor/)
 ```
 
 cPanel → **Gerenciador de Arquivos**:
 
-1. Crie a pasta `/home/SUA_CONTA/wsclinic` (**fora** de `public_html`).
+1. Crie a pasta `/home/SUA_CONTA/wsfacilitsaude` (**fora** de `public_html`).
 2. Envie o `.zip` para ela e use **Extrair**.
 3. Copie `.env.example` para `.env` e edite:
 
@@ -59,8 +59,8 @@ APP_KEY=                      # deixe vazio: o instalador gera
 
 DB_CONNECTION=mysql
 DB_HOST=localhost
-DB_DATABASE=conta_wsclinic
-DB_USERNAME=conta_wsclinic
+DB_DATABASE=conta_wsfacilitsaude
+DB_USERNAME=conta_wsfacilitsaude
 DB_PASSWORD=********
 
 SESSION_SECURE_COOKIE=true
@@ -84,15 +84,15 @@ INSTALL_TOKEN=uma-frase-longa-e-aleatoria-com-32-caracteres-ou-mais
 
 Escolha **uma** opção (em ordem de preferência):
 
-**A) Subdomínio/domínio apontando para `wsclinic/public`** (recomendado)
+**A) Subdomínio/domínio apontando para `wsfacilitsaude/public`** (recomendado)
 cPanel → **Domínios** → criar `clinica.seudominio.com.br` com *Raiz do documento* =
-`wsclinic/public`. Nada do código fica exposto.
+`wsfacilitsaude/public`. Nada do código fica exposto.
 
 **B) Link simbólico (se houver SSH)** — para usar o domínio principal:
 
 ```bash
 mv ~/public_html ~/public_html.bak
-ln -s ~/wsclinic/public ~/public_html
+ln -s ~/wsfacilitsaude/public ~/public_html
 ```
 
 **C) Último recurso: tudo dentro de `public_html`**
@@ -117,14 +117,14 @@ Acesse `https://clinica.seudominio.com.br/instalar`:
 4. Ao terminar, o instalador se desativa sozinho (`storage/app/installed.lock`, rota passa a 404).
    **Apague o valor de `INSTALL_TOKEN` no `.env`.**
 
-Com SSH, alternativa: `php artisan wsclinic:install`.
+Com SSH, alternativa: `php artisan wsfacilitsaude:install`.
 
 ## 7. Cron (obrigatório)
 
 cPanel → **Trabalhos Cron** → *Configuração comum*: **Uma vez por minuto** (`* * * * *`):
 
 ```bash
-/usr/local/bin/php /home/SUA_CONTA/wsclinic/artisan schedule:run >> /dev/null 2>&1
+/usr/local/bin/php /home/SUA_CONTA/wsfacilitsaude/artisan schedule:run >> /dev/null 2>&1
 ```
 
 > O caminho do PHP pode variar conforme a versão escolhida (ex.: `/opt/cpanel/ea-php83/root/usr/bin/php`).
@@ -267,8 +267,8 @@ rotina de cobrança a cada hora. Sem isso, fica em MOCK (nada é cobrado).
 
 1. Gere o novo pacote (ou baixe o artefato do CI).
 2. Faça **backup** (seção abaixo).
-3. Envie e extraia por cima da pasta `wsclinic/` (preserve `.env` e `storage/`).
-4. Rode as migrations: via SSH `php artisan migrate --force && php artisan wsclinic:permissions:sync --roles`,
+3. Envie e extraia por cima da pasta `wsfacilitsaude/` (preserve `.env` e `storage/`).
+4. Rode as migrations: via SSH `php artisan migrate --force && php artisan wsfacilitsaude:permissions:sync --roles`,
    ou crie temporariamente um cron único com esse comando.
 5. Limpe os caches: `php artisan optimize:clear` (ou apague `bootstrap/cache/*.php`).
 

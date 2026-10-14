@@ -26,7 +26,7 @@ O estágio aparece na interface sempre que não for produção.
 ```bash
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force          # usuário de banco com permissão de DDL, separado do da aplicação
-php artisan wsclinic:permissions:sync --roles
+php artisan wsfacilitsaude:permissions:sync --roles
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 php artisan queue:restart
 ```
@@ -37,7 +37,7 @@ php artisan queue:restart
   de outra conta/região; retenção configurável (ex.: 35 dias diários, 12 mensais).
 - **Arquivos:** versionamento do bucket + replicação entre regiões.
 - **Teste de restauração mensal** em ambiente isolado, registrando data, duração e resultado.
-- HostGator/cPanel: `php artisan wsclinic:backup` (agendado) gera dump criptografado do banco e dos anexos; painel
+- HostGator/cPanel: `php artisan wsfacilitsaude:backup` (agendado) gera dump criptografado do banco e dos anexos; painel
   Super Admin → Backups; restauração em [PRODUCAO.md](PRODUCAO.md#6-backup-e-restauração).
 - Prontuários: retenção mínima legal de 20 anos (Lei 13.787/2018) — ver LGPD.md.
 

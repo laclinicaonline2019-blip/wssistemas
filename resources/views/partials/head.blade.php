@@ -3,7 +3,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#06122b">
 <meta name="app-url" content="{{ url('/') }}">
-<title>{{ isset($title) ? $title.' · ' : '' }}{{ config('wsclinic.brand.name') }}</title>
+<title>{{ isset($title) ? $title.' · ' : '' }}{{ config('wsfacilitsaude.brand.name') }}</title>
 <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/img/icon-32.png') }}">
 <link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">

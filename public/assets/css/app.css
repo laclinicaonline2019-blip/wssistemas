@@ -1,5 +1,5 @@
 /* ==========================================================================
-   WSCLINIC — design system
+   WS Facilit Saúde — design system
    Tokens → base → layout → componentes → utilitários. Sem dependências.
    ========================================================================== */
 
@@ -81,7 +81,7 @@ code, .mono { font-family: var(--mono); font-size: .85em; }
 }
 .sidebar__brand { display: flex; align-items: center; gap: .6rem; padding: 1.1rem 1.1rem .9rem; }
 .sidebar__brand img.icon { width: 36px; height: 36px; border-radius: 9px; background: #fff; flex: none; }
-.sidebar__brand img.wordmark { height: 20px; width: auto; }
+.sidebar__brand img.wordmark { height: 18px; width: auto; max-width: 100%; }
 .sidebar__section { padding: .9rem 1.1rem .3rem; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: #5f6d84; }
 .nav { list-style: none; margin: 0; padding: 0 .6rem; }
 .nav a {
@@ -400,5 +400,5 @@ body.portal { background: var(--bg); }
 .plan-card h3 { margin: 0; }
 .text-info { color: var(--info); }
 
-/* Página de erro — logo WSCLINIC */
+/* Página de erro — logo WS Facilit Saúde */
 .error-page .error-logo { width: 200px; height: auto; background: #fff; padding: 10px 14px; border-radius: 12px; box-sizing: content-box; }

@@ -8,17 +8,17 @@ use Illuminate\Console\Command;
 /** Backup do banco (e, com --files, dos anexos). Agendado diariamente; anexos aos domingos. */
 class BackupCommand extends Command
 {
-    protected $signature = 'wsclinic:backup {--files : também os anexos/arquivos privados} {--decrypt= : descriptografa um backup .enc} {--to= : destino da descriptografia}';
+    protected $signature = 'wsfacilitsaude:backup {--files : também os anexos/arquivos privados} {--decrypt= : descriptografa um backup .enc} {--to= : destino da descriptografia}';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:backup'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:backup', 'aivexa:backup'];
 
     protected $description = 'Gera backup do banco (e anexos) em storage/app/backups, com criptografia opcional';
 
     public function handle(BackupService $backup): int
     {
         if ($src = $this->option('decrypt')) {
-            $password = (string) (config('wsclinic.backup.password') ?: $this->secret('Senha do backup'));
+            $password = (string) (config('wsfacilitsaude.backup.password') ?: $this->secret('Senha do backup'));
             $to = $this->option('to') ?: preg_replace('/\.enc$/', '', $src);
             $backup->decrypt($src, $to, $password);
             $this->info("Descriptografado em {$to}");
@@ -31,7 +31,7 @@ class BackupCommand extends Command
             $f = $backup->files();
             $this->info('Arquivos: '.basename($f['path']).' ('.round($f['size'] / 1048576, 2).' MB, '.$f['files'].' arquivos)');
         }
-        if (! config('wsclinic.backup.password')) {
+        if (! config('wsfacilitsaude.backup.password')) {
             $this->warn('Sem BACKUP_PASSWORD: o backup NÃO está criptografado.');
         }
 

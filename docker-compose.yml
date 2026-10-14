@@ -2,8 +2,8 @@
 # (hospedagem compartilhada): MariaDB, cache/sessão/filas no banco, fila via scheduler.
 # Uso: cp .env.example .env && docker compose up -d --build
 #      docker compose exec app php artisan key:generate
-#      docker compose exec app php artisan wsclinic:install
-name: wsclinic
+#      docker compose exec app php artisan wsfacilitsaude:install
+name: wsfacilitsaude
 
 x-app: &app
   build: .
@@ -12,9 +12,9 @@ x-app: &app
     DB_CONNECTION: mysql
     DB_HOST: db
     DB_PORT: 3306
-    DB_DATABASE: wsclinic
-    DB_USERNAME: wsclinic
-    DB_PASSWORD: ${DB_PASSWORD:-wsclinic_dev}
+    DB_DATABASE: wsfacilitsaude
+    DB_USERNAME: wsfacilitsaude
+    DB_PASSWORD: ${DB_PASSWORD:-wsfacilitsaude_dev}
     CACHE_STORE: database
     QUEUE_CONNECTION: database
     SESSION_DRIVER: database
@@ -46,9 +46,9 @@ services:
   db:
     image: mariadb:10.6
     environment:
-      MARIADB_DATABASE: wsclinic
-      MARIADB_USER: wsclinic
-      MARIADB_PASSWORD: ${DB_PASSWORD:-wsclinic_dev}
+      MARIADB_DATABASE: wsfacilitsaude
+      MARIADB_USER: wsfacilitsaude
+      MARIADB_PASSWORD: ${DB_PASSWORD:-wsfacilitsaude_dev}
       MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_dev}
     # binlog ligado + usuário sem SUPER: mesmas restrições da hospedagem compartilhada
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --log-bin=mysql-bin --server-id=1

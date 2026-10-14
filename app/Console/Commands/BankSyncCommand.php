@@ -11,10 +11,10 @@ use Throwable;
 /** Lê os extratos das contas conectadas por Open Finance (todas as clínicas). */
 class BankSyncCommand extends Command
 {
-    protected $signature = 'wsclinic:bank:sync';
+    protected $signature = 'wsfacilitsaude:bank:sync';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:bank:sync'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:bank:sync', 'aivexa:bank:sync'];
 
     protected $description = 'Sincroniza extratos bancários via Open Finance (agregador)';
 

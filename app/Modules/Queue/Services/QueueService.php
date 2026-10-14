@@ -31,7 +31,7 @@ class QueueService
     /** @return array<string, array{prefix: string, label: string, priority: bool}> */
     public function types(): array
     {
-        return config('wsclinic.queue_types');
+        return config('wsfacilitsaude.queue_types');
     }
 
     /**

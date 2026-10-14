@@ -1,6 +1,6 @@
-<p align="center"><img src="public/assets/img/logo-full.webp" width="360" alt="WSCLINIC"></p>
+<p align="center"><img src="public/assets/img/logo-full.webp" width="360" alt="WS Facilit Saúde"></p>
 
-# WSCLINIC
+# WS Facilit Saúde
 
 Plataforma **SaaS multiempresa de gestão de clínicas médicas**: matriz e filiais, equipe com
 perfis granulares, agenda inteligente, prontuário, receitas e atestados com impressão,
@@ -37,7 +37,7 @@ SSH, Docker ou Redis. Guia: [docs/HOSTGATOR.md](docs/HOSTGATOR.md).
 - ✅ **Relatórios** operacionais, financeiros, de convênios e clínico (agregado) com exportação **PDF, Excel e CSV**, e **fechamento mensal médico × clínica** (demonstrativo imutável com hash, repasse, confirmação ou contestação pelo médico, PDF)
 - ✅ **SaaS comercial**: assinatura por clínica (teste grátis, mensal/anual), faturas pela conta ASAAS da plataforma (PIX/boleto/cartão), upgrade com cobrança proporcional, downgrade na renovação, cancelamento no fim do período, régua de atraso e **bloqueio por inadimplência** (administrador entra só para pagar), painel de MRR e baixa manual
 - ✅ **Segurança avançada**: varredura de todos os uploads (PDF com script, imagem com código, EICAR; ClamAV opcional), Cloudflare/WAF como proxy confiável, **central de segurança**, **retenção LGPD** configurável e roteiro de pentest ([docs/PENTEST.md](docs/PENTEST.md))
-- ✅ **Homologação e produção**: verificação de prontidão (`php artisan wsclinic:preflight` e tela do Super Admin), alerta de cron parado, roteiro de aceite ([docs/HOMOLOGACAO.md](docs/HOMOLOGACAO.md)), **backup criptografado** diário do banco e semanal dos anexos com painel de download e restauração testada, runbook de entrada no ar ([docs/PRODUCAO.md](docs/PRODUCAO.md))
+- ✅ **Homologação e produção**: verificação de prontidão (`php artisan wsfacilitsaude:preflight` e tela do Super Admin), alerta de cron parado, roteiro de aceite ([docs/HOMOLOGACAO.md](docs/HOMOLOGACAO.md)), **backup criptografado** diário do banco e semanal dos anexos com painel de download e restauração testada, runbook de entrada no ar ([docs/PRODUCAO.md](docs/PRODUCAO.md))
 - ✅ Layouts de impressão A4 e térmica (58/80 mm) com página de teste
 - ✅ Compatível com hospedagem compartilhada: MySQL/MariaDB, filas via cron, instalador web `/instalar`, auditoria com cadeia HMAC
 - ✅ Instalador (web e CLI), dados demo fictícios, Docker (dev), CI em MariaDB + PostgreSQL, 219 testes automatizados + 6 cenários ponta a ponta no navegador e teste de carga
@@ -57,11 +57,11 @@ cp .env.example .env
 docker compose up -d --build
 docker compose exec app composer install
 docker compose exec app php artisan key:generate
-docker compose exec app php artisan wsclinic:install
+docker compose exec app php artisan wsfacilitsaude:install
 docker compose exec app php artisan db:seed --class=DemoSeeder   # opcional, dados fictícios
 ```
 
-Abra http://localhost:8080 (demo: `admin@demo.wsclinic.local` / `Demo@12345`). Detalhes em [docs/INSTALL.md](docs/INSTALL.md).
+Abra http://localhost:8080 (demo: `admin@demo.wsfacilitsaude.local` / `Demo@12345`). Detalhes em [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Documentação
 
@@ -78,7 +78,7 @@ Abra http://localhost:8080 (demo: `admin@demo.wsclinic.local` / `Demo@12345`). D
 | [TESTING.md](docs/TESTING.md) | estratégia e cobertura de testes |
 | [INTEGRATIONS.md](docs/INTEGRATIONS.md) · [AI.md](docs/AI.md) | pagamentos, WhatsApp, IA |
 | [LGPD.md](docs/LGPD.md) | privacidade e proteção de dados |
-| [WSCLINIC.md](docs/WSCLINIC.md) | **troca de nome AivexaClínica → WSCLINIC**: o que mudou e o que fazer em servidor já instalado |
+| [WSFACILITSAUDE.md](docs/WSFACILITSAUDE.md) | **troca de nome WSCLINIC (e AivexaClínica) → WS Facilit Saúde**: o que mudou e o que fazer em servidor já instalado |
 | [CHANGELOG.md](CHANGELOG.md) | histórico e definição de pronto |
 
 ## Testes

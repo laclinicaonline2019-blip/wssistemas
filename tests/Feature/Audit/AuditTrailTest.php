@@ -64,7 +64,7 @@ class AuditTrailTest extends TestCase
         ['admin' => $admin, 'branch' => $branch] = $this->createClinic();
         $this->api($admin)->patchJson("/api/v1/branches/{$branch->id}", ['name' => 'Ação com acentuação & "aspas"'])->assertOk();
 
-        $this->artisan('wsclinic:audit:verify')->assertSuccessful();
+        $this->artisan('wsfacilitsaude:audit:verify')->assertSuccessful();
 
         $chain = app(AuditChain::class);
         foreach ($chain->scopes() as $scope) {
@@ -90,7 +90,7 @@ class AuditTrailTest extends TestCase
         DB::table('audit_logs')->where('id', $ids[1])->delete();
         $this->assertFalse($chain->verify($company->id)['ok']);
 
-        $this->artisan('wsclinic:audit:verify')->assertFailed();
+        $this->artisan('wsfacilitsaude:audit:verify')->assertFailed();
     }
 
     public function test_audit_listing_filters_and_export(): void

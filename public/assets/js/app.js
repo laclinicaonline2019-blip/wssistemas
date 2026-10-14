@@ -1,5 +1,5 @@
 /*
- * WSCLINIC — comportamento da interface (JS puro, sem inline scripts:
+ * WS Facilit Saúde — comportamento da interface (JS puro, sem inline scripts:
  * compatível com a Content-Security-Policy "script-src 'self'").
  * Toda regra de segurança/negócio é validada no backend; este arquivo só
  * melhora a experiência.
@@ -15,7 +15,7 @@
     if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
     else document.documentElement.removeAttribute('data-theme');
   }
-  try { applyTheme(localStorage.getItem('wsclinic.theme') || localStorage.getItem('aivexa.theme')); } catch (e) { /* storage indisponível */ }
+  try { applyTheme(localStorage.getItem('wsfacilitsaude.theme') || localStorage.getItem('wsclinic.theme') || localStorage.getItem('aivexa.theme')); } catch (e) { /* storage indisponível */ }
 
   document.addEventListener('click', function (ev) {
     var t = ev.target;
@@ -34,7 +34,7 @@
     var themeBtn = t.closest('[data-theme-set]');
     if (themeBtn) {
       var theme = themeBtn.getAttribute('data-theme-set');
-      try { localStorage.setItem('wsclinic.theme', theme); } catch (e) { /* ignore */ }
+      try { localStorage.setItem('wsfacilitsaude.theme', theme); } catch (e) { /* ignore */ }
       applyTheme(theme);
     }
 

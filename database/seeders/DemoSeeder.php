@@ -49,15 +49,15 @@ class DemoSeeder extends Seeder
 
     public function run(TenantContext $context, CompanyProvisioningService $provisioning): void
     {
-        if (app()->isProduction() || config('wsclinic.stage') === 'production') {
+        if (app()->isProduction() || config('wsfacilitsaude.stage') === 'production') {
             throw new RuntimeException('DemoSeeder não pode ser executado em produção.');
         }
 
         $this->call(DatabaseSeeder::class);
 
         $context->runAsSystem(function () use ($context, $provisioning) {
-            if (! User::query()->where('email', 'superadmin@demo.wsclinic.local')->exists()) {
-                $super = new User(['name' => 'Super Admin Demo', 'email' => 'superadmin@demo.wsclinic.local', 'password' => self::PASSWORD]);
+            if (! User::query()->where('email', 'superadmin@demo.wsfacilitsaude.local')->exists()) {
+                $super = new User(['name' => 'Super Admin Demo', 'email' => 'superadmin@demo.wsfacilitsaude.local', 'password' => self::PASSWORD]);
                 $super->is_super_admin = true;
                 $super->save();
             }
@@ -71,12 +71,12 @@ class DemoSeeder extends Seeder
                     'legal_name' => 'Clínica Demonstração Ltda (FICTÍCIA)',
                     'trade_name' => 'Clínica Demonstração',
                     'document' => '11222333000181',
-                    'email' => 'contato@demo.wsclinic.local',
+                    'email' => 'contato@demo.wsfacilitsaude.local',
                     'saas_plan_id' => SaasPlan::query()->where('code', 'profissional')->value('id'),
                     'status' => Company::STATUS_ACTIVE,
                 ],
                 headquarters: ['name' => 'Matriz Centro', 'code' => 'MATRIZ', 'city' => 'São Paulo', 'state' => 'SP'],
-                admin: ['name' => 'Ana Administradora', 'email' => 'admin@demo.wsclinic.local', 'password' => self::PASSWORD],
+                admin: ['name' => 'Ana Administradora', 'email' => 'admin@demo.wsfacilitsaude.local', 'password' => self::PASSWORD],
             );
 
             $context->runFor($result['company']->id, function () use ($result) {
@@ -86,11 +86,11 @@ class DemoSeeder extends Seeder
                 $roles = Role::query()->pluck('id', 'key');
 
                 $people = [
-                    ['Bruno Gestor da Filial', 'gestor.filial@demo.wsclinic.local', 'admin_filial', $filial->id],
-                    ['Dra. Carla Cardiologista', 'medica@demo.wsclinic.local', 'medico', null],
-                    ['Diego Recepcionista', 'recepcao@demo.wsclinic.local', 'recepcao', $matriz->id],
-                    ['Elisa Financeiro', 'financeiro@demo.wsclinic.local', 'financeiro', null],
-                    ['Fábio Enfermeiro', 'enfermagem@demo.wsclinic.local', 'enfermagem', $filial->id],
+                    ['Bruno Gestor da Filial', 'gestor.filial@demo.wsfacilitsaude.local', 'admin_filial', $filial->id],
+                    ['Dra. Carla Cardiologista', 'medica@demo.wsfacilitsaude.local', 'medico', null],
+                    ['Diego Recepcionista', 'recepcao@demo.wsfacilitsaude.local', 'recepcao', $matriz->id],
+                    ['Elisa Financeiro', 'financeiro@demo.wsfacilitsaude.local', 'financeiro', null],
+                    ['Fábio Enfermeiro', 'enfermagem@demo.wsfacilitsaude.local', 'enfermagem', $filial->id],
                 ];
 
                 $users = [];
@@ -106,13 +106,13 @@ class DemoSeeder extends Seeder
 
         $this->command?->info('Demo pronta. Senha de todos os usuários: '.self::PASSWORD);
         $this->command?->table(['Perfil', 'E-mail'], [
-            ['Super Admin (plataforma)', 'superadmin@demo.wsclinic.local'],
-            ['Admin da empresa', 'admin@demo.wsclinic.local'],
-            ['Admin da filial (Zona Sul)', 'gestor.filial@demo.wsclinic.local'],
-            ['Médica', 'medica@demo.wsclinic.local'],
-            ['Recepção (Matriz)', 'recepcao@demo.wsclinic.local'],
-            ['Financeiro', 'financeiro@demo.wsclinic.local'],
-            ['Enfermagem (Zona Sul)', 'enfermagem@demo.wsclinic.local'],
+            ['Super Admin (plataforma)', 'superadmin@demo.wsfacilitsaude.local'],
+            ['Admin da empresa', 'admin@demo.wsfacilitsaude.local'],
+            ['Admin da filial (Zona Sul)', 'gestor.filial@demo.wsfacilitsaude.local'],
+            ['Médica', 'medica@demo.wsfacilitsaude.local'],
+            ['Recepção (Matriz)', 'recepcao@demo.wsfacilitsaude.local'],
+            ['Financeiro', 'financeiro@demo.wsfacilitsaude.local'],
+            ['Enfermagem (Zona Sul)', 'enfermagem@demo.wsfacilitsaude.local'],
         ]);
     }
 
@@ -148,7 +148,7 @@ class DemoSeeder extends Seeder
                 'birth_date' => $birth->format('Y-m-d'),
                 'sex' => $faker->randomElement(['F', 'M']),
                 'whatsapp' => '1199'.str_pad((string) (1000000 + $i), 7, '0', STR_PAD_LEFT),
-                'email' => "paciente{$i}@demo.wsclinic.local",
+                'email' => "paciente{$i}@demo.wsfacilitsaude.local",
                 'city' => 'São Paulo', 'state' => 'SP',
                 'home_branch_id' => $i % 3 === 0 ? $filial->id : $matriz->id,
                 'contacts' => $isMinor ? [['type' => 'guardian', 'name' => $faker->firstName().' '.$faker->lastName().' '.$faker->lastName(), 'relationship' => 'mãe', 'phone' => '11988887777']] : [],

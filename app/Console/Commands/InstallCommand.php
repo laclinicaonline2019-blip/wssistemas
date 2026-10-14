@@ -16,20 +16,20 @@ use RuntimeException;
  */
 class InstallCommand extends Command
 {
-    protected $signature = 'wsclinic:install
+    protected $signature = 'wsfacilitsaude:install
         {--super-admin-name=} {--super-admin-email=} {--super-admin-password=}
         {--company-legal-name=} {--company-trade-name=} {--company-document=}
         {--admin-name=} {--admin-email=} {--admin-password=}
         {--skip-company : Não criar a primeira clínica}';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:install'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:install', 'aivexa:install'];
 
-    protected $description = 'Instala e configura o WSCLINIC';
+    protected $description = 'Instala e configura o WS Facilit Saúde';
 
     public function handle(Installer $installer, HealthChecker $health): int
     {
-        $this->components->info('WSCLINIC — instalação');
+        $this->components->info('WS Facilit Saúde — instalação');
 
         foreach ($installer->requirements() as $label => $c) {
             $this->components->twoColumnDetail($label, ($c['ok'] ? '<fg=green>OK</>' : ($c['required'] ? '<fg=red>FALHA</>' : '<fg=yellow>AVISO</>')).' '.$c['detail']);
@@ -83,7 +83,7 @@ class InstallCommand extends Command
             $this->components->twoColumnDetail("Serviço: {$name}", ($check['ok'] ? '<fg=green>OK</>' : '<fg=red>FALHA</>').' '.$check['detail']);
         }
 
-        $this->components->info('Instalação concluída. Ambiente: '.config('wsclinic.stage'));
+        $this->components->info('Instalação concluída. Ambiente: '.config('wsfacilitsaude.stage'));
 
         return self::SUCCESS;
     }

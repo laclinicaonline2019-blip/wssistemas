@@ -23,7 +23,7 @@ class TwoFactorService
 
     public function otpauthUrl(User $user, string $secret): string
     {
-        return $this->google2fa->getQRCodeUrl(config('wsclinic.brand.name'), $user->email, $secret);
+        return $this->google2fa->getQRCodeUrl(config('wsfacilitsaude.brand.name'), $user->email, $secret);
     }
 
     public function qrCodeSvg(string $url): string

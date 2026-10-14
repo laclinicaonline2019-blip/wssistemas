@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\Cache;
 /** Sinal de vida do agendador (cron): a verificação de prontidão alerta se parar. */
 class HeartbeatCommand extends Command
 {
-    protected $signature = 'wsclinic:heartbeat';
+    protected $signature = 'wsfacilitsaude:heartbeat';
 
-    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
-    protected $aliases = ['aivexa:heartbeat'];
+    /** Nomes antigos (WSCLINIC e AivexaClínica) mantidos para crons e scripts já configurados. */
+    protected $aliases = ['wsclinic:heartbeat', 'aivexa:heartbeat'];
 
     protected $description = 'Registra que o agendador (cron) está rodando';
 

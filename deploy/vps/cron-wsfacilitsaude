@@ -1,0 +1,2 @@
+# /etc/cron.d/wsfacilitsaude — agendador (lembretes, cobranças, conciliação, backup, retenção, sinal de vida).
+* * * * * wsfacilitsaude cd /var/www/wsfacilitsaude/current && /usr/bin/php artisan schedule:run >> /dev/null 2>&1

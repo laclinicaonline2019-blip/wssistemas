@@ -27,7 +27,7 @@ class EnsureTwoFactorEnrolled
         }
 
         $required = $user->is_super_admin
-            ? config('wsclinic.security.super_admin_requires_2fa')
+            ? config('wsfacilitsaude.security.super_admin_requires_2fa')
             : (bool) $user->company?->setting('security.require_2fa', false);
 
         if ($required && ! $user->hasTwoFactorEnabled() && ! $isAccountRoute) {

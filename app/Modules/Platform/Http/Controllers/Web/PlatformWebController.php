@@ -88,7 +88,7 @@ class PlatformWebController extends Controller
         return back()->with('success', 'Empresa atualizada.');
     }
 
-    /** Prontidão para homologação/produção (mesma verificação do wsclinic:preflight). */
+    /** Prontidão para homologação/produção (mesma verificação do wsfacilitsaude:preflight). */
     public function readiness(ReadinessChecker $checker): View
     {
         $items = $checker->run();
@@ -98,7 +98,7 @@ class PlatformWebController extends Controller
 
     public function backups(BackupService $backup): View
     {
-        return view('platform.backups', ['backups' => $backup->list(), 'encrypted' => (bool) config('wsclinic.backup.password')]);
+        return view('platform.backups', ['backups' => $backup->list(), 'encrypted' => (bool) config('wsfacilitsaude.backup.password')]);
     }
 
     public function runBackup(Request $request, BackupService $backup): RedirectResponse

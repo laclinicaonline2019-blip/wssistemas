@@ -6,12 +6,12 @@
 ## Opção A — Docker (recomendado)
 
 ```bash
-git clone <repo> wsclinic && cd wsclinic
+git clone <repo> wsfacilitsaude && cd wsfacilitsaude
 cp .env.example .env
 docker compose up -d --build
 docker compose exec app composer install
 docker compose exec app php artisan key:generate
-docker compose exec app php artisan wsclinic:install      # interativo
+docker compose exec app php artisan wsfacilitsaude:install      # interativo
 # dados fictícios para avaliação (NUNCA em produção):
 docker compose exec app php artisan db:seed --class=DemoSeeder
 ```
@@ -28,12 +28,12 @@ Composer 2, MySQL 5.7.8+/MariaDB 10.3+ (ou PostgreSQL 13+).
 composer install
 cp .env.example .env && php artisan key:generate
 # ajuste DB_* no .env
-php artisan wsclinic:install
+php artisan wsfacilitsaude:install
 php artisan serve --port=8080
 php artisan queue:work          # em outro terminal
 ```
 
-## O instalador (`php artisan wsclinic:install`)
+## O instalador (`php artisan wsfacilitsaude:install`)
 
 1. valida requisitos do PHP · 2. conecta ao banco · 3. executa migrations · 4. sincroniza o
 catálogo de permissões e cria os planos padrão · 5. cria o **Super Admin** · 6. cria a primeira
@@ -43,7 +43,7 @@ catálogo de permissões e cria os planos padrão · 5. cria o **Super Admin** �
 É **idempotente** (pode ser executado novamente). Modo não interativo:
 
 ```bash
-php artisan wsclinic:install -n \
+php artisan wsfacilitsaude:install -n \
   --super-admin-name="Root" --super-admin-email=root@exemplo.com.br --super-admin-password='...' \
   --company-legal-name="Clínica X Ltda" --company-trade-name="Clínica X" --company-document=00000000000000 \
   --admin-name="Gestora" --admin-email=gestora@exemplo.com.br --admin-password='...'
@@ -54,4 +54,4 @@ Prefira o modo interativo para senhas (não ficam no histórico do shell).
 ## Usuários de demonstração (DemoSeeder)
 
 Senha de todos: `Demo@12345` — `superadmin@`, `admin@`, `gestor.filial@`, `medica@`, `recepcao@`,
-`financeiro@`, `enfermagem@` + `demo.wsclinic.local`. Todos os dados são fictícios.
+`financeiro@`, `enfermagem@` + `demo.wsfacilitsaude.local`. Todos os dados são fictícios.

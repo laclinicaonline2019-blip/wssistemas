@@ -26,5 +26,5 @@
         </tbody>
     </table></div>
 </section>
-<p class="small muted mt-2">Restauração: veja <span class="mono">docs/PRODUCAO.md</span> (descriptografar com <span class="mono">php artisan wsclinic:backup --decrypt=arquivo.enc</span> e importar com <span class="mono">mysql</span> ou phpMyAdmin).</p>
+<p class="small muted mt-2">Restauração: veja <span class="mono">docs/PRODUCAO.md</span> (descriptografar com <span class="mono">php artisan wsfacilitsaude:backup --decrypt=arquivo.enc</span> e importar com <span class="mono">mysql</span> ou phpMyAdmin).</p>
 @endsection

@@ -77,8 +77,8 @@ class PlatformTest extends TestCase
             '--admin-name' => 'Adm', '--admin-email' => 'adm@example.test', '--admin-password' => 'Senha@Forte123',
         ];
 
-        $this->artisan('wsclinic:install', $args)->assertSuccessful();
-        $this->artisan('wsclinic:install', $args)->assertSuccessful();
+        $this->artisan('wsfacilitsaude:install', $args)->assertSuccessful();
+        $this->artisan('wsfacilitsaude:install', $args)->assertSuccessful();
 
         // Super Admin já existia (setUp): não duplica; primeira clínica criada uma única vez.
         $this->assertSame(1, DB::table('users')->where('is_super_admin', true)->count());

@@ -69,7 +69,7 @@ class TwoFactorController extends Controller
         ]);
         $user = $request->user();
 
-        if ($user->is_super_admin && config('wsclinic.security.super_admin_requires_2fa')) {
+        if ($user->is_super_admin && config('wsfacilitsaude.security.super_admin_requires_2fa')) {
             return response()->json(['message' => '2FA é obrigatório para administradores da plataforma.'], 409);
         }
 

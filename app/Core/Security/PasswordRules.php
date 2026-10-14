@@ -8,9 +8,9 @@ final class PasswordRules
 {
     public static function default(): Password
     {
-        $rule = Password::min(config('wsclinic.security.password_min_length'))
+        $rule = Password::min(config('wsfacilitsaude.security.password_min_length'))
             ->letters()->mixedCase()->numbers()->symbols();
 
-        return config('wsclinic.security.password_breach_check') ? $rule->uncompromised() : $rule;
+        return config('wsfacilitsaude.security.password_breach_check') ? $rule->uncompromised() : $rule;
     }
 }
