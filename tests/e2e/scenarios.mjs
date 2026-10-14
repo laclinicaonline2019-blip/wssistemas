@@ -77,7 +77,13 @@ export const scenarios = {
   // Médico: atende o paciente que chegou (cenário "recepcao"), registra o prontuário, finaliza e pede exames.
   async medico(page, { base }) {
     await login(page, base, 'medica@demo.aivexa.local');
-    await page.goto(base + '/atendimento');
+    // A recepção agenda no primeiro horário livre — pode ser hoje ou num dos próximos dias.
+    const day = new Date();
+    for (let i = 0; i < 10; i++, day.setDate(day.getDate() + 1)) {
+      const iso = day.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+      await page.goto(base + '/atendimento?date=' + iso);
+      if (await page.getByText('Paciente Teste E2E').count()) break;
+    }
     await expectText(page, 'Paciente Teste E2E');
     await pause(page);
     const row = page.locator('tr', { hasText: 'Paciente Teste E2E' }).last();
