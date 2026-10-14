@@ -8,7 +8,10 @@ use Illuminate\Console\Command;
 /** Assinaturas: faturas de renovação, cobranças pendentes, conferência no gateway e régua de cobrança. */
 class BillingRunCommand extends Command
 {
-    protected $signature = 'aivexa:billing:run';
+    protected $signature = 'wsclinic:billing:run';
+
+    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
+    protected $aliases = ['aivexa:billing:run'];
 
     protected $description = 'Processa as assinaturas das clínicas (renovação, cobrança, atraso, bloqueio, cancelamento)';
 

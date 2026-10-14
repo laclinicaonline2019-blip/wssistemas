@@ -7,7 +7,7 @@
 ## Papéis
 
 - **Clínica:** controladora dos dados de seus pacientes.
-- **Plataforma (AivexaClínica):** operadora — trata dados conforme instruções da clínica (contrato/DPA).
+- **Plataforma (WSCLINIC):** operadora — trata dados conforme instruções da clínica (contrato/DPA).
 - Dados de saúde são **dados pessoais sensíveis** (art. 5º, II; art. 11).
 
 ## Mecanismos existentes (Fases 1–2)
@@ -42,7 +42,7 @@
 | Anexos do paciente | ✅ área privada fora da pasta pública, por clínica; download somente autenticado, com permissão e auditado; nunca excluídos (arquivamento) | 6 |
 | CID em atestado | ✅ somente com autorização expressa do paciente (registrada no documento) | 6 |
 | Minimização | painel de chamadas mostra só senha/nome parcial; IA recebe o mínimo necessário | 4/12 |
-| Retenção | ✅ política por clínica (*Administração → Segurança*), rotina diária `aivexa:retention:run`: avisos internos, logs técnicos da IA, texto do WhatsApp (opcional), conteúdo bruto de webhooks e links vencidos do portal. **Nunca** prontuário, documentos, anexos, financeiro ou auditoria (guarda legal) | 17 |
+| Retenção | ✅ política por clínica (*Administração → Segurança*), rotina diária `wsclinic:retention:run`: avisos internos, logs técnicos da IA, texto do WhatsApp (opcional), conteúdo bruto de webhooks e links vencidos do portal. **Nunca** prontuário, documentos, anexos, financeiro ou auditoria (guarda legal) | 17 |
 | Incidentes | procedimento em SECURITY.md | — |
 
 ## Ponto de atenção: auditoria × anonimização

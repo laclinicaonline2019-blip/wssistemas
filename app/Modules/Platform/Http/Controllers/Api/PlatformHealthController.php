@@ -15,7 +15,7 @@ class PlatformHealthController extends Controller
 
         return response()->json([
             'status' => $checker->healthy($results) ? 'ok' : 'degraded',
-            'stage' => config('aivexa.stage'),
+            'stage' => config('wsclinic.stage'),
             'checks' => $results,
             'php' => PHP_VERSION,
             'time' => now()->toIso8601String(),

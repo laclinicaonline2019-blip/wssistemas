@@ -1,4 +1,4 @@
-# AivexaClínica — Apache (HostGator/cPanel)
+# WSCLINIC — Apache (HostGator/cPanel)
 Options -Indexes
 
 <IfModule mod_rewrite.c>

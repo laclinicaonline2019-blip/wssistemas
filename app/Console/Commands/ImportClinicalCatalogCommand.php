@@ -11,7 +11,10 @@ use Illuminate\Console\Command;
 /** Importa as bases clínicas globais (alternativa à tela Plataforma → Bases clínicas). */
 class ImportClinicalCatalogCommand extends Command
 {
-    protected $signature = 'aivexa:catalog:import {type : cid ou medicamentos} {file : caminho do CSV} {--cid-version=CID-10}';
+    protected $signature = 'wsclinic:catalog:import {type : cid ou medicamentos} {file : caminho do CSV} {--cid-version=CID-10}';
+
+    /** Nome antigo (antes de WSCLINIC) mantido para crons e scripts já configurados. */
+    protected $aliases = ['aivexa:catalog:import'];
 
     protected $description = 'Importa a CID-10 (CSV do DATASUS) ou a base global de medicamentos';
 

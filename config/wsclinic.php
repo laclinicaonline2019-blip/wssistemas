@@ -3,8 +3,8 @@
 return [
 
     'brand' => [
-        'name' => env('APP_BRAND_NAME', 'AivexaClínica'),
-        'short' => 'Aivexa',
+        'name' => env('APP_BRAND_NAME', 'WSCLINIC'),
+        'short' => 'WSCLINIC',
     ],
 
     /*

@@ -74,7 +74,7 @@ class ConcurrentBookingTest extends BaseTestCase
             }
         });
 
-        $this->resultsDir = sys_get_temp_dir().'/aivexa-concurrency-'.getmypid();
+        $this->resultsDir = sys_get_temp_dir().'/wsclinic-concurrency-'.getmypid();
         @mkdir($this->resultsDir);
     }
 

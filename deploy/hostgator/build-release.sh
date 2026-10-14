@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Gera o pacote para envio via Gerenciador de Arquivos do cPanel (sem SSH/Composer no servidor).
-# Uso: deploy/hostgator/build-release.sh  → dist/aivexa-<versão>.zip
+# Uso: deploy/hostgator/build-release.sh  → dist/wsclinic-<versão>.zip
 # Empacota o último COMMIT (git archive HEAD) — faça commit das alterações antes.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 VERSION=$(git describe --tags --always 2>/dev/null || date +%Y%m%d%H%M)
 BUILD=$(mktemp -d)
-OUT="dist/aivexa-${VERSION}.zip"
+OUT="dist/wsclinic-${VERSION}.zip"
 
 git archive HEAD | tar -x -C "$BUILD"
 (cd "$BUILD" && composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress)

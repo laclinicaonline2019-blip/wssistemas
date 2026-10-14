@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 use Throwable;
 
 /**
- * Instalação/configuração inicial, compartilhada pelo comando `aivexa:install`
+ * Instalação/configuração inicial, compartilhada pelo comando `wsclinic:install`
  * (SSH/VPS) e pelo instalador web `/instalar` (cPanel sem SSH).
  */
 class Installer

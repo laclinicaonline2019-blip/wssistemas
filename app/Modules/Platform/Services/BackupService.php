@@ -39,10 +39,10 @@ class BackupService
     public function database(): array
     {
         $stamp = now()->format('Ymd-His');
-        $gz = $this->dir()."/aivexa-db-{$stamp}.sql.gz";
+        $gz = $this->dir()."/wsclinic-db-{$stamp}.sql.gz";
         $tables = DB::getDriverName() === 'pgsql' ? $this->pgDump($gz) : $this->mysqlDump($gz);
         $path = $this->maybeEncrypt($gz);
-        $this->prune('aivexa-db-', (int) config('aivexa.backup.keep', 14));
+        $this->prune('wsclinic-db-', (int) config('wsclinic.backup.keep', 14));
         $this->audit->record('backup.created', null, metadata: ['kind' => 'database', 'file' => basename($path), 'size' => filesize($path), 'tables' => $tables], actorType: 'system');
 
         return ['path' => $path, 'size' => filesize($path), 'tables' => $tables];
@@ -52,7 +52,7 @@ class BackupService
     public function files(): array
     {
         $root = storage_path('app');
-        $zipPath = $this->dir().'/aivexa-arquivos-'.now()->format('Ymd-His').'.zip';
+        $zipPath = $this->dir().'/wsclinic-arquivos-'.now()->format('Ymd-His').'.zip';
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new RuntimeException('Não foi possível criar o arquivo do backup.');
@@ -75,22 +75,26 @@ class BackupService
         }
         $zip->close();
         $path = $this->maybeEncrypt($zipPath);
-        $this->prune('aivexa-arquivos-', (int) config('aivexa.backup.keep_files', 4));
+        $this->prune('wsclinic-arquivos-', (int) config('wsclinic.backup.keep_files', 4));
         $this->audit->record('backup.created', null, metadata: ['kind' => 'files', 'file' => basename($path), 'size' => filesize($path), 'files' => $count], actorType: 'system');
 
         return ['path' => $path, 'size' => filesize($path), 'files' => $count];
     }
 
-    /** @return list<array{name: string, size: int, time: int}> */
+    /**
+     * Inclui também os arquivos aivexa-* (backups gerados antes da troca de nome para WSCLINIC).
+     *
+     * @return list<array{name: string, size: int, time: int}>
+     */
     public function list(): array
     {
-        return collect(glob($this->dir().'/aivexa-*') ?: [])->map(fn ($f) => ['name' => basename($f), 'size' => filesize($f), 'time' => filemtime($f)])
+        return collect(array_merge(glob($this->dir().'/wsclinic-*') ?: [], glob($this->dir().'/aivexa-*') ?: []))->map(fn ($f) => ['name' => basename($f), 'size' => filesize($f), 'time' => filemtime($f)])
             ->sortByDesc('time')->values()->all();
     }
 
     public function path(string $name): string
     {
-        if (! preg_match('/^aivexa-(db|arquivos)-\d{8}-\d{6}\.(sql\.gz|zip)(\.enc)?$/', $name) || ! is_file($p = $this->dir().'/'.$name)) {
+        if (! preg_match('/^(?:wsclinic|aivexa)-(db|arquivos)-\d{8}-\d{6}\.(sql\.gz|zip)(\.enc)?$/', $name) || ! is_file($p = $this->dir().'/'.$name)) {
             throw new RuntimeException('Backup não encontrado.');
         }
 
@@ -102,7 +106,7 @@ class BackupService
     {
         $in = fopen($source, 'rb');
         if (fread($in, strlen(self::MAGIC)) !== self::MAGIC) {
-            throw new RuntimeException('Arquivo não é um backup criptografado do aivexaclinica.');
+            throw new RuntimeException('Arquivo não é um backup criptografado do WSCLINIC.');
         }
         $key = hash_pbkdf2('sha256', $password, fread($in, 16), 200000, 32, true);
         $out = fopen($target, 'wb');
@@ -124,7 +128,7 @@ class BackupService
 
     private function maybeEncrypt(string $path): string
     {
-        $password = (string) config('aivexa.backup.password');
+        $password = (string) config('wsclinic.backup.password');
         if ($password === '') {
             return $path;
         }
@@ -151,7 +155,7 @@ class BackupService
         $db = DB::connection()->getDatabaseName();
         $out = gzopen($gz, 'wb6');
         $w = fn (string $s) => gzwrite($out, $s);
-        $w('-- aivexaclinica — backup do banco '.$db.' em '.now()->toIso8601String()."\n-- Restaurar: mysql BANCO < arquivo.sql (ou importar pelo phpMyAdmin)\n");
+        $w('-- WSCLINIC — backup do banco '.$db.' em '.now()->toIso8601String()."\n-- Restaurar: mysql BANCO < arquivo.sql (ou importar pelo phpMyAdmin)\n");
         $w("SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\nSET UNIQUE_CHECKS=0;\nSET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';\n\n");
 
         $snapshot = DB::transactionLevel() === 0;

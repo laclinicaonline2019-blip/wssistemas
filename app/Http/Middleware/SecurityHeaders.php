@@ -42,7 +42,7 @@ class SecurityHeaders
             "object-src 'none'",
         ]));
 
-        if (config('aivexa.security.hsts') && $request->isSecure()) {
+        if (config('wsclinic.security.hsts') && $request->isSecure()) {
             $headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 

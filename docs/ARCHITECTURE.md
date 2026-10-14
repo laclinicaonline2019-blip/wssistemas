@@ -1,4 +1,4 @@
-# Arquitetura — AivexaClínica
+# Arquitetura — WSCLINIC
 
 Plataforma SaaS multiempresa de gestão clínica. Este documento responde aos 15 itens do
 "primeiro passo" da especificação e registra as decisões técnicas (ADRs resumidos).
@@ -51,7 +51,7 @@ app/
   Modules/<Módulo>/
     Models/  Services/  Http/{Controllers/Api,Controllers/Web,Requests,Resources}
   Http/Middleware/      # ResolveTenant, EnsurePermission, EnsureSuperAdmin, SecurityHeaders…
-  Console/Commands/     # aivexa:install, aivexa:permissions:sync
+  Console/Commands/     # wsclinic:install, wsclinic:permissions:sync
 config/permissions.php  # catálogo único de permissões + perfis padrão
 database/migrations     # schema PostgreSQL (constraints, FKs compostas, triggers)
 resources/views         # Blade (server-side) — telas e layouts de impressão
@@ -147,7 +147,7 @@ precisa localizar o usuário antes de existir tenant (ver `TenantUserScope`).
 ## 7. Estratégia de permissões (RBAC)
 
 - Catálogo único em `config/permissions.php` (chaves granulares como `agenda.criar`,
-  `receita.emitir`), sincronizado por `php artisan aivexa:permissions:sync`.
+  `receita.emitir`), sincronizado por `php artisan wsclinic:permissions:sync`.
 - Perfis por empresa, criados a partir de templates (admin da empresa, admin da filial, médico,
   recepção, financeiro, enfermagem). O perfil de administrador é **protegido**.
 - **Vínculo com escopo:** `user_role_assignments(user, role, branch_id|NULL)` — NULL = empresa toda.
@@ -216,7 +216,7 @@ Nome físico aleatório (ULID), hash SHA-256 para integridade, validação de MI
 
 `audit_logs` **append-only** com duas proteções: (1) **cadeia criptográfica HMAC-SHA256 por
 empresa** — cada registro assina seu conteúdo e o hash do anterior, então qualquer alteração,
-exclusão ou inserção fora da aplicação é detectada por `aivexa:audit:verify` (executado diariamente
+exclusão ou inserção fora da aplicação é detectada por `wsclinic:audit:verify` (executado diariamente
 pelo cron); (2) **trigger** que bloqueia UPDATE/DELETE no banco quando o servidor permite (VPS;
 em hospedagem compartilhada o MySQL costuma negar triggers sem privilégio SUPER). Registra
 usuário, empresa, filial, data/hora, IP, user-agent, request-id, ação, registro, valores antes/
@@ -254,7 +254,7 @@ audit` + testes. Concorrência (agenda, cobranças) com testes multi-processo a 
 | 16 | SaaS comercial: assinatura recorrente (ASAAS da plataforma/MOCK), upgrade proporcional, downgrade agendado, régua de atraso e bloqueio | **Concluída** |
 | 17 | Segurança avançada: varredura de uploads (+ClamAV), Cloudflare/WAF, central de segurança, retenção LGPD, isolamento das rotas novas, roteiro de pentest (RLS planejado para VPS/PostgreSQL) | **Concluída** |
 | 18 | Testes completos: 6 cenários ponta a ponta no navegador, desempenho (N+1), carga, CI | **Concluída** |
-| 19 | Homologação: verificação de prontidão (`aivexa:preflight` + tela da plataforma), sinal de vida do cron, roteiro de aceite por módulo com sandbox e assinatura ([HOMOLOGACAO.md](HOMOLOGACAO.md)) | **Concluída** |
+| 19 | Homologação: verificação de prontidão (`wsclinic:preflight` + tela da plataforma), sinal de vida do cron, roteiro de aceite por módulo com sandbox e assinatura ([HOMOLOGACAO.md](HOMOLOGACAO.md)) | **Concluída** |
 | 20 | Produção: backup criptografado do banco e anexos com retenção, painel de backups, restauração testada a cada push, runbook de entrada no ar, deploy e rollback ([PRODUCAO.md](PRODUCAO.md)) | **Concluída** |
 
 ### Definição de pronto (por funcionalidade)

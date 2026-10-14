@@ -213,7 +213,7 @@ class BankReconciliationTest extends TestCase
         Http::assertSent(fn (HttpRequest $r) => $r->url() === 'https://api.pluggy.ai/auth' && $r['clientId'] === 'cid-abc' && $r['clientSecret'] === 'segredo-pluggy-xyz');
         Http::assertSent(fn (HttpRequest $r) => str_contains($r->url(), '/transactions') && $r->hasHeader('X-API-KEY', 'KEY-1') && $r['accountId'] === 'acc-123');
         $this->assertSame([15050, -790, 4000], $this->tenant(fn () => BankStatementLine::query()->where('reference', 'like', 'pluggy:%')->orderBy('reference')->pluck('amount_cents')->all()));
-        $this->artisan('aivexa:bank:sync')->assertSuccessful();
+        $this->artisan('wsclinic:bank:sync')->assertSuccessful();
         $this->assertSame(3, $this->tenant(fn () => BankStatementLine::query()->where('reference', 'like', 'pluggy:%')->count()));
         $this->assertNotNull($this->account->fresh()->last_synced_at);
     }

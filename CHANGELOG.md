@@ -2,6 +2,23 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [1.1.0] — 2026-10-09
+
+### Alterado
+- **Novo nome e nova logo: WSCLINIC** (antes AivexaClínica). Logo limpa com fundo transparente, ícones,
+  favicon e ícone do app; tela de login com fundo claro para a logo ficar legível; menu lateral e painel da TV
+  com a marca em versão clara. Cores da interface alinhadas à logo. Guia de atualização em `docs/WSCLINIC.md`.
+- Configuração `config/aivexa.php` → `config/wsclinic.php`; comandos `aivexa:*` → `wsclinic:*`
+  (nomes antigos mantidos como apelidos); modelos padrão de WhatsApp `wsclinic_*`; backups `wsclinic-*`
+  (os `aivexa-*` continuam listados).
+- Prontidão avisa se o `.env` ainda tiver o nome antigo (`APP_NAME`/`APP_BRAND_NAME`).
+- `atualizar.sh` (VPS) continua funcionando em servidores instalados em `/var/www/aivexa`.
+
+### Corrigido
+- Busca global (`/busca`) sem termo retornava erro 500.
+- `DemoSeeder` falhava no pacote de produção/homologação (sem Faker): agora usa um gerador próprio quando o
+  Faker não está instalado.
+
 ## [1.0.1] — 2026-10-03
 
 ### Adicionado

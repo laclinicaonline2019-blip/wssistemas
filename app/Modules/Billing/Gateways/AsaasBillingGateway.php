@@ -78,7 +78,7 @@ class AsaasBillingGateway implements BillingGateway
         }
 
         return Http::baseUrl(config('billing.asaas.sandbox') ? 'https://api-sandbox.asaas.com/v3/' : 'https://api.asaas.com/v3/')
-            ->withHeaders(['access_token' => $key, 'User-Agent' => 'AivexaClinica'])->acceptJson()->asJson()->timeout(20)->connectTimeout(8);
+            ->withHeaders(['access_token' => $key, 'User-Agent' => 'WSCLINIC'])->acceptJson()->asJson()->timeout(20)->connectTimeout(8);
     }
 
     private function call(\Closure $fn, string $action): array

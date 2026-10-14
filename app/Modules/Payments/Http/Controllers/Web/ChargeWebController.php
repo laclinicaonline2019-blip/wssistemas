@@ -76,7 +76,7 @@ class ChargeWebController extends Controller
     public function simulate(Request $request, PaymentCharge $charge): RedirectResponse
     {
         $outcome = $request->validate(['outcome' => ['required', Rule::in(['paid', 'overdue', 'refunded', 'paid_wrong'])]])['outcome'];
-        abort_if(app()->environment('production') && ! config('aivexa.payments.allow_mock_in_production'), 403);
+        abort_if(app()->environment('production') && ! config('wsclinic.payments.allow_mock_in_production'), 403);
 
         $c = $outcome === 'paid_wrong'
             ? $this->payments->simulateMock($request->user(), $charge, 'paid', $charge->amount_cents - 100)

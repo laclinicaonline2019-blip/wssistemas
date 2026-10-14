@@ -105,12 +105,12 @@ class WebInstallerController extends Controller
     private function guard(): void
     {
         abort_if($this->installer->isInstalled(), 404);
-        abort_if(blank(config('aivexa.install_token')), 404);
+        abort_if(blank(config('wsclinic.install_token')), 404);
     }
 
     private function validToken(string $token): bool
     {
-        return strlen((string) config('aivexa.install_token')) >= 16 && hash_equals((string) config('aivexa.install_token'), $token);
+        return strlen((string) config('wsclinic.install_token')) >= 16 && hash_equals((string) config('wsclinic.install_token'), $token);
     }
 
     private function page(string $step, array $errors = [], array $data = []): View

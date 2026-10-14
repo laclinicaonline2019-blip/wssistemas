@@ -20,7 +20,7 @@ class LoginService
     {
         $email = mb_strtolower(trim($email));
         $throttleKey = 'login:'.sha1($email.'|'.$ip);
-        $maxPerMinute = config('aivexa.security.login_rate_per_minute');
+        $maxPerMinute = config('wsclinic.security.login_rate_per_minute');
 
         if (RateLimiter::tooManyAttempts($throttleKey, $maxPerMinute)) {
             $retry = RateLimiter::availableIn($throttleKey);
@@ -95,8 +95,8 @@ class LoginService
         $attempts = $user->failed_login_attempts + 1;
         $data = ['failed_login_attempts' => $attempts];
 
-        if ($attempts >= config('aivexa.security.lockout_threshold')) {
-            $data['locked_until'] = now()->addMinutes(config('aivexa.security.lockout_minutes'));
+        if ($attempts >= config('wsclinic.security.lockout_threshold')) {
+            $data['locked_until'] = now()->addMinutes(config('wsclinic.security.lockout_minutes'));
             $data['failed_login_attempts'] = 0;
         }
 

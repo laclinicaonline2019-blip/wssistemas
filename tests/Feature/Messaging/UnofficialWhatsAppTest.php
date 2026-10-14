@@ -94,7 +94,7 @@ class UnofficialWhatsAppTest extends TestCase
         // Mensagens da clínica vão como TEXTO (sem modelo da Meta).
         $id = $this->book('09:00', '2026-10-12');
         $this->travelTo(CarbonImmutable::parse('2026-10-11 10:00', 'America/Sao_Paulo'));
-        $this->artisan('aivexa:messaging:run')->assertSuccessful();
+        $this->artisan('wsclinic:messaging:run')->assertSuccessful();
         Http::assertSent(fn (HttpRequest $r) => $r->url() === 'https://api.z-api.io/instances/3C1A2B3C4D5E6F/token/F1E2D3C4B5A6/send-text'
             && $r->hasHeader('Client-Token', 'seguranca-123') && $r['phone'] === '5511999990000' && str_contains($r['message'], 'Responda: 1 para CONFIRMAR'));
         $reminder = $this->tenant(fn () => Message::query()->where('purpose', 'reminder')->sole());

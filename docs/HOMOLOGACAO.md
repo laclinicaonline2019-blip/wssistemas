@@ -30,7 +30,7 @@ BACKUP_PASSWORD=<senha forte, guardada no cofre>
 3. Cron a cada minuto (obrigatório) e, depois de 2 minutos:
 
 ```bash
-php artisan aivexa:preflight          # 0 erros para seguir; avisos devem ser entendidos
+php artisan wsclinic:preflight          # 0 erros para seguir; avisos devem ser entendidos
 ```
 
 ou Super Admin → **Prontidão (produção)**. A tela mostra cada item com "como corrigir".
@@ -98,7 +98,7 @@ automaticamente no navegador (`tests/e2e`, ver [TESTING.md](TESTING.md)).
 - [ ] Criar usuário e perfil; permissões refletem na hora; usuário bloqueado não entra.
 - [ ] 2FA obrigatório para administradores; Central de segurança mostra logins com falha.
 - [ ] Exportação LGPD do paciente; anonimização mantém prontuário (nada clínico é apagado).
-- [ ] Auditoria: ações aparecem com quem/quando; a verificação diária da cadeia (`aivexa:audit:verify`) não acusa falhas.
+- [ ] Auditoria: ações aparecem com quem/quando; a verificação diária da cadeia (`wsclinic:audit:verify`) não acusa falhas.
 
 ### Plataforma (Super Admin)
 - [ ] Criar clínica, plano, trocar plano (upgrade proporcional), fatura sandbox paga via webhook.
@@ -108,8 +108,8 @@ automaticamente no navegador (`tests/e2e`, ver [TESTING.md](TESTING.md)).
 
 ## 4. Ensaio de restauração (obrigatório antes de produção)
 
-1. Super Admin → **Backups** → baixe o último `aivexa-db-*.sql.gz.enc`.
-2. Descriptografe: `php artisan aivexa:backup --decrypt=aivexa-db-….sql.gz.enc --to=restaurado.sql.gz`.
+1. Super Admin → **Backups** → baixe o último `wsclinic-db-*.sql.gz.enc`.
+2. Descriptografe: `php artisan wsclinic:backup --decrypt=wsclinic-db-….sql.gz.enc --to=restaurado.sql.gz`.
 3. Crie um banco vazio no cPanel e importe (`gunzip restaurado.sql.gz` e phpMyAdmin → Importar, ou
    `mysql banco_vazio < restaurado.sql`).
 4. Aponte uma cópia do sistema para esse banco e confira login, pacientes e financeiro.
@@ -117,7 +117,7 @@ automaticamente no navegador (`tests/e2e`, ver [TESTING.md](TESTING.md)).
 
 ## 5. Critérios de saída (assinatura)
 
-- [ ] `php artisan aivexa:preflight` com **0 erros** no servidor de homologação.
+- [ ] `php artisan wsclinic:preflight` com **0 erros** no servidor de homologação.
 - [ ] Todos os itens da seção 3 marcados, sem defeito crítico aberto.
 - [ ] Ensaio de restauração concluído.
 - [ ] Pentest externo feito com o roteiro de [PENTEST.md](PENTEST.md) e achados altos corrigidos.

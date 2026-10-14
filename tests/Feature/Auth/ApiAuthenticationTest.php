@@ -34,7 +34,7 @@ class ApiAuthenticationTest extends TestCase
 
     public function test_account_is_locked_after_repeated_failures(): void
     {
-        config(['aivexa.security.lockout_threshold' => 3, 'aivexa.security.login_rate_per_minute' => 100]);
+        config(['wsclinic.security.lockout_threshold' => 3, 'wsclinic.security.login_rate_per_minute' => 100]);
         ['admin' => $admin] = $this->createClinic();
 
         foreach (range(1, 3) as $_) {
@@ -54,7 +54,7 @@ class ApiAuthenticationTest extends TestCase
 
     public function test_login_is_rate_limited_per_email_and_ip(): void
     {
-        config(['aivexa.security.login_rate_per_minute' => 2]);
+        config(['wsclinic.security.login_rate_per_minute' => 2]);
         ['admin' => $admin] = $this->createClinic();
 
         $this->postJson('/api/v1/auth/token', ['email' => $admin->email, 'password' => 'x', 'device_name' => 't']);
@@ -77,7 +77,7 @@ class ApiAuthenticationTest extends TestCase
 
     public function test_tokens_expire(): void
     {
-        config(['aivexa.security.api_token_ttl_minutes' => 30]);
+        config(['wsclinic.security.api_token_ttl_minutes' => 30]);
         ['admin' => $admin] = $this->createClinic();
         $token = $this->apiToken($admin);
 

@@ -26,7 +26,7 @@ class QueueController extends Controller
     public function issue(Request $request): TicketResource
     {
         $data = $request->validate([
-            'type' => ['required', Rule::in(array_keys(config('aivexa.queue_types')))],
+            'type' => ['required', Rule::in(array_keys(config('wsclinic.queue_types')))],
             'patient_id' => ['nullable', 'string', 'size:26'],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);

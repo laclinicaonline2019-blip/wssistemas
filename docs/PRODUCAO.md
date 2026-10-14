@@ -49,7 +49,7 @@ Permissões: `.env` com `chmod 600`; `storage/` e `bootstrap/cache/` graváveis;
 Uma linha só, **a cada minuto**:
 
 ```bash
-/usr/local/bin/php /home/SUA_CONTA/aivexa/artisan schedule:run >> /dev/null 2>&1
+/usr/local/bin/php /home/SUA_CONTA/wsclinic/artisan schedule:run >> /dev/null 2>&1
 ```
 
 Ela executa (ver `routes/console.php`):
@@ -59,9 +59,9 @@ Ela executa (ver `routes/console.php`):
 | a cada minuto | fila (e-mails, WhatsApp, IA, PDFs, webhooks) e sinal de vida do cron |
 | a cada 5 min | lembretes e reenvio de mensagens |
 | a cada 10 min | sincronização de cobranças (cobre webhooks perdidos) |
-| 02:30 diário | **backup do banco** (`aivexa:backup`) |
+| 02:30 diário | **backup do banco** (`wsclinic:backup`) |
 | 03:10 diário | verificação da cadeia de auditoria |
-| 03:15 domingo | **backup dos anexos** (`aivexa:backup --files`) |
+| 03:15 domingo | **backup dos anexos** (`wsclinic:backup --files`) |
 | de hora em hora | régua das assinaturas (renovação, cobrança, bloqueio) |
 | 04:10 / 06:20 diário | retenção LGPD / sincronização bancária (Pluggy) |
 
@@ -87,7 +87,7 @@ A plataforma: `PLATFORM_ASAAS_SANDBOX=false` e webhook `https://app…/webhooks/
 
 1. [ ] Backup do banco de homologação (se for reaproveitar cadastros) — ou banco novo vazio.
 2. [ ] `php artisan migrate --force` (o pacote já vem com `vendor/`).
-3. [ ] `php artisan aivexa:preflight --strict` → **0 erros e 0 avisos** (ou avisos aceitos por escrito).
+3. [ ] `php artisan wsclinic:preflight --strict` → **0 erros e 0 avisos** (ou avisos aceitos por escrito).
 4. [ ] Super Admin → **Prontidão (produção)** confirma cron com sinal recente.
 5. [ ] Super Admin → **Backups** → *Gerar backup agora* → baixar e abrir (descriptografar) no seu computador.
 6. [ ] Login de cada perfil; 2FA dos administradores ativo.
@@ -104,14 +104,14 @@ A plataforma: `PLATFORM_ASAAS_SANDBOX=false` e webhook `https://app…/webhooks/
 - Restaurar:
 
 ```bash
-php artisan aivexa:backup --decrypt=storage/app/backups/aivexa-db-AAAAMMDD-HHMMSS.sql.gz.enc --to=/tmp/r.sql.gz
+php artisan wsclinic:backup --decrypt=storage/app/backups/wsclinic-db-AAAAMMDD-HHMMSS.sql.gz.enc --to=/tmp/r.sql.gz
 gunzip /tmp/r.sql.gz
 mysql -u USUARIO -p BANCO_NOVO < /tmp/r.sql        # ou phpMyAdmin → Importar
 # anexos: descriptografe o .zip.enc da mesma forma e extraia em storage/app/
 ```
 
 Depois: apontar `DB_DATABASE` para o banco restaurado, `php artisan config:cache`, conferir login e
-`php artisan aivexa:audit:verify`. Sem a `APP_KEY` original os campos criptografados (CPF, prontuário etc.)
+`php artisan wsclinic:audit:verify`. Sem a `APP_KEY` original os campos criptografados (CPF, prontuário etc.)
 **não podem ser lidos** — guarde a `APP_KEY` junto com a `BACKUP_PASSWORD` no cofre.
 
 ## 7. Atualização de versão (deploy)
@@ -120,7 +120,7 @@ Depois: apontar `DB_DATABASE` para o banco restaurado, `php artisan config:cache
 2. `php artisan down --secret=<token>` (manutenção, você acessa por `/<token>`).
 3. Enviar o novo `.zip` e extrair por cima (sem apagar `storage/` nem `.env`).
 4. `php artisan migrate --force && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache`.
-5. `php artisan aivexa:preflight` e `php artisan up`.
+5. `php artisan wsclinic:preflight` e `php artisan up`.
 
 ## 8. Reversão (rollback)
 
