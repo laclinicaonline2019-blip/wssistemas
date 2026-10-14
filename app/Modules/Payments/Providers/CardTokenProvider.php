@@ -18,7 +18,7 @@ interface CardTokenProvider
     /**
      * Autoriza/captura a venda com o token do cartão (e o split, se houver).
      *
-     * @param  array{subordinate_id: string, amount_cents: int}|null  $split
+     * @param  list<array{subordinate_id: string, amount_cents: int}>|null  $split  participantes do split (médico, profissionais, plataforma)
      * @return array{approved: bool, payment_id: ?string, message: string}
      */
     public function authorizeCard(PaymentGateway $gateway, PaymentCharge $charge, string $paymentToken, string $brand, int $installments, string $holderName, ?array $split): array;

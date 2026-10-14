@@ -50,6 +50,11 @@ use App\Modules\Reports\Http\Controllers\ReportWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\AgendaWebController;
 use App\Modules\Scheduling\Http\Controllers\Web\ScheduleConfigWebController;
 use App\Modules\Security\Http\Controllers\SecurityCenterController;
+use App\Modules\Sprint\Http\Controllers\Platform\PlatformSprintController;
+use App\Modules\Sprint\Http\Controllers\Web\SprintProfessionalController;
+use App\Modules\Sprint\Http\Controllers\Web\SprintReportController;
+use App\Modules\Sprint\Http\Controllers\Web\SprintSettingsController;
+use App\Modules\Sprint\Http\Controllers\Web\SprintWebController;
 use Illuminate\Support\Facades\Route;
 
 // ---------------------------------------------------------------- Portal do paciente (Fase 10)
@@ -430,6 +435,49 @@ Route::middleware(['auth', 'tenant', '2fa.enrolled'])->group(function () {
     Route::get('notificacoes/{notification}', [NotificationWebController::class, 'open'])->name('notifications.open');
     Route::post('notificacoes/lidas', [NotificationWebController::class, 'readAll'])->name('notifications.read_all');
 
+    // Melhor Sprint — split de pagamento (profissionais × clínica), PDV com confirmação em tela e NFS-e
+    Route::prefix('sprint')->name('sprint.')->group(function () {
+        Route::middleware('permission:sprint.vender|sprint.repasse')->group(function () {
+            Route::get('/', [SprintWebController::class, 'index'])->name('index');
+            Route::get('vendas/{sale}', [SprintWebController::class, 'show'])->name('sales.show');
+            Route::get('vendas/{sale}/situacao', [SprintWebController::class, 'status'])->middleware('throttle:120,1')->name('sales.status');
+            Route::get('vendas/{sale}/comprovante', [SprintWebController::class, 'receipt'])->name('sales.receipt');
+        });
+        Route::middleware('permission:sprint.vender')->group(function () {
+            Route::get('nova-venda', [SprintWebController::class, 'create'])->name('sales.create');
+            Route::post('vendas', [SprintWebController::class, 'store'])->middleware('throttle:60,1')->name('sales.store');
+            Route::post('vendas/{sale}/pagamentos', [SprintWebController::class, 'pay'])->middleware('throttle:60,1')->name('sales.pay');
+            Route::post('pagamentos/{payment}/consultar', [SprintWebController::class, 'syncPayment'])->middleware('throttle:30,1')->name('payments.sync');
+            Route::post('pagamentos/{payment}/cancelar', [SprintWebController::class, 'cancelPayment'])->name('payments.cancel');
+            Route::post('pagamentos/{payment}/simular', [SprintWebController::class, 'simulate'])->name('payments.simulate');
+        });
+        Route::middleware('permission:sprint.estornar')->group(function () {
+            Route::post('vendas/{sale}/cancelar', [SprintWebController::class, 'cancel'])->name('sales.cancel');
+            Route::post('vendas/{sale}/estornar', [SprintWebController::class, 'refund'])->middleware('throttle:20,1')->name('sales.refund');
+        });
+        Route::middleware('permission:sprint.nfse')->group(function () {
+            Route::post('vendas/{sale}/nfse', [SprintWebController::class, 'issueNfse'])->middleware('throttle:20,1')->name('sales.nfse');
+            Route::post('notas/{invoice}/consultar', [SprintWebController::class, 'syncNfse'])->middleware('throttle:30,1')->name('nfse.sync');
+            Route::post('notas/{invoice}/cancelar', [SprintWebController::class, 'cancelNfse'])->name('nfse.cancel');
+        });
+        Route::middleware('permission:sprint.profissionais')->prefix('profissionais')->name('professionals.')->group(function () {
+            Route::get('/', [SprintProfessionalController::class, 'index'])->name('index');
+            Route::post('/', [SprintProfessionalController::class, 'store'])->name('store');
+            Route::put('{professional}', [SprintProfessionalController::class, 'update'])->name('update');
+            Route::patch('{professional}/situacao', [SprintProfessionalController::class, 'toggle'])->name('toggle');
+            Route::post('importar-medicos', [SprintProfessionalController::class, 'importDoctors'])->name('import');
+        });
+        Route::middleware('permission:sprint.repasse')->group(function () {
+            Route::get('repasses', [SprintReportController::class, 'index'])->name('reports.index');
+            Route::get('repasses/exportar', [SprintReportController::class, 'export'])->middleware('throttle:20,1')->name('reports.export');
+            Route::post('repasses/{professional}/fechar', [SprintReportController::class, 'settle'])->name('reports.settle');
+        });
+        Route::middleware('permission:sprint.configurar')->group(function () {
+            Route::get('configuracoes', [SprintSettingsController::class, 'edit'])->name('settings');
+            Route::put('configuracoes', [SprintSettingsController::class, 'update'])->name('settings.update');
+        });
+    });
+
     Route::get('especialidades', [SpecialtyWebController::class, 'index'])->middleware('permission:medico.visualizar')->name('specialties.index');
     Route::post('especialidades', [SpecialtyWebController::class, 'store'])->middleware('permission:especialidade.gerenciar')->name('specialties.store');
     Route::put('especialidades/{specialty}', [SpecialtyWebController::class, 'update'])->middleware('permission:especialidade.gerenciar')->name('specialties.update');
@@ -456,6 +504,9 @@ Route::middleware(['auth', 'platform', '2fa.enrolled'])->prefix('plataforma')->n
     Route::post('assinaturas/{company}/prorrogar-teste', [PlatformBillingController::class, 'extendTrial'])->name('billing.trial');
     Route::post('faturas/{invoice}/pagamento-manual', [PlatformBillingController::class, 'manualPayment'])->name('billing.manual');
     Route::post('faturas/{invoice}/cancelar', [PlatformBillingController::class, 'void'])->name('billing.void');
+    Route::get('melhor-sprint', [PlatformSprintController::class, 'index'])->name('sprint.index');
+    Route::put('melhor-sprint/{company}/comissao', [PlatformSprintController::class, 'rate'])->name('sprint.rate');
+    Route::post('melhor-sprint/{company}/cobrada', [PlatformSprintController::class, 'invoice'])->name('sprint.invoice');
     Route::get('bases-clinicas', [ClinicalCatalogController::class, 'index'])->name('catalog.index');
     Route::post('bases-clinicas/cid', [ClinicalCatalogController::class, 'importCid'])->name('catalog.cid');
     Route::post('bases-clinicas/medicamentos', [ClinicalCatalogController::class, 'importMedications'])->name('catalog.medications');

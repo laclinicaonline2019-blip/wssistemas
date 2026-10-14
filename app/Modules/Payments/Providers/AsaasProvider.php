@@ -68,7 +68,9 @@ class AsaasProvider implements PaymentProvider
             'description' => mb_substr($request->description, 0, 500), 'externalReference' => $request->reference,
         ];
 
-        if ($request->split) {
+        if ($request->splits) {
+            $body['split'] = array_map(fn (array $s) => ['walletId' => $s['wallet_id'], 'fixedValue' => round($s['fixed_cents'] / 100, 2)], $request->splits);
+        } elseif ($request->split) {
             $body['split'] = [array_filter([
                 'walletId' => $request->split['wallet_id'],
                 'percentualValue' => $request->split['type'] === 'percent' ? round($request->split['value'] / 100, 2) : null,

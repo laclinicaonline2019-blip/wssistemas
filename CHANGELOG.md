@@ -2,6 +2,34 @@
 
 Formato: [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) · versionamento semântico.
 
+## [1.1.0] — 2026-10-14 — Melhor Sprint (split de pagamento)
+
+### Adicionado
+- **Melhor Sprint** (menu próprio, logo e permissões `sprint.vender`, `sprint.estornar`, `sprint.profissionais`,
+  `sprint.repasse`, `sprint.nfse`, `sprint.configurar`): PDV de vendas com itens por profissional e divisão ao vivo
+  (profissionais × clínica), cadastro de **profissionais** (médicos e parceiros, regra percentual ou fixa, PIX,
+  carteira ASAAS, subordinado Cielo, importação dos médicos).
+- **Pagamentos**: PIX (QR Code ASAAS) e crédito por link ASAAS ou cartão digitado na Cielo (Silent Order Post),
+  crédito/débito na maquininha (NSU, split da maquininha Cielo) e dinheiro com troco; **pagamentos mistos**;
+  **confirmação na tela** (consulta automática + aviso visual) mantendo a regra webhook autenticado + consulta à API.
+- **Separação dos valores** em cada pagamento: parte de cada profissional (split nativo ASAAS `fixedValue` /
+  Cielo `SplitPayments` com vários participantes, ou repasse interno), clínica, tarifa do gateway e **comissão da
+  plataforma** (taxa padrão `SPRINT_COMMISSION_BP`, taxa por clínica só pelo Super Admin, separada no gateway
+  quando a carteira/subordinado da plataforma estiver configurado). Estorno desfaz a divisão ou gera devolução.
+- **Relatórios**: repasse por profissional (recebido direto, a repassar, já repassado) com fechamento em conta a
+  pagar, valores que ficaram na clínica por forma de pagamento, exportação CSV; comprovante com via do cliente
+  e via da clínica; painel de comissões na plataforma.
+- **NFS-e opcional** (ASAAS `/invoices` ou MOCK) emitida **somente sobre a parte da clínica**, automática ao quitar
+  ou pelo botão; rotina `aivexa:sprint:run`.
+- API v1: `/sprint/professionals`, `/sprint/sales`, `/sprint/sales/{id}/payments` (idempotente), `/sprint/sales/{id}/nfse`.
+
+### Alterado
+- `PaymentService::createCharge` aceita a divisão já calculada (várias carteiras/subordinados); ASAAS e Cielo API
+  enviam split com vários participantes.
+
+### Atualização
+- `php artisan migrate --force` e `php artisan aivexa:permissions:sync --roles` (o perfil Administrador recebe as novas permissões; nos demais perfis já existentes, inclua `sprint.*` em *Perfis de acesso*).
+
 ## [1.0.1] — 2026-10-03
 
 ### Adicionado

@@ -28,6 +28,8 @@ use App\Modules\Platform\Services\CompanyProvisioningService;
 use App\Modules\Scheduling\Services\AvailabilityService;
 use App\Modules\Scheduling\Services\BookingService;
 use App\Modules\Scheduling\Services\ScheduleConfigService;
+use App\Modules\Sprint\Models\SprintProfessional;
+use App\Modules\Sprint\Models\SprintSetting;
 use Faker\Factory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -214,6 +216,13 @@ class DemoSeeder extends Seeder
         foreach ([$carla, $rafael, $beatriz] as $doctor) {
             SplitRule::create(['doctor_id' => $doctor->id, 'type' => 'percent', 'value' => 6000]);
         }
+        // Melhor Sprint: médicos (60%) e um parceiro com valor fixo; NFS-e MOCK sobre a parte da clínica.
+        foreach ([$carla, $rafael, $beatriz] as $doctor) {
+            SprintProfessional::create(['doctor_id' => $doctor->id, 'kind' => 'doctor', 'name' => $doctor->displayName(), 'split_type' => 'percent', 'split_value' => 6000]);
+        }
+        SprintProfessional::create(['kind' => 'partner', 'name' => 'Laboratório Parceiro (demonstração)', 'split_type' => 'fixed', 'split_value' => 3000, 'pix_key' => 'laboratorio@demo.aivexa.local']);
+        SprintSetting::create(['nfse_enabled' => true, 'nfse_auto' => true, 'nfse_gateway_id' => PaymentGateway::query()->value('id'),
+            'nfse_service_code' => '04.03', 'nfse_service_name' => 'Clínicas e congêneres', 'nfse_iss_bp' => 200]);
     }
 
     /** Alguns agendamentos nos próximos horários livres (sempre futuros). */

@@ -30,6 +30,7 @@
                 {!! $nav('platform.companies.index', 'platform.companies.*', 'building', 'Empresas') !!}
                 {!! $nav('platform.plans.index', 'platform.plans.*', 'layers', 'Planos SaaS') !!}
                 {!! $nav('platform.billing.index', 'platform.billing.*', 'cash', 'Assinaturas e faturas') !!}
+                {!! $nav('platform.sprint.index', 'platform.sprint.*', 'chart', 'Melhor Sprint') !!}
                 {!! $nav('platform.readiness', 'platform.readiness', 'shield', 'Prontidão (produção)') !!}
                 {!! $nav('platform.backups.index', 'platform.backups.*', 'file', 'Backups') !!}
                 {!! $nav('platform.catalog.index', 'platform.catalog.*', 'file', 'Bases clínicas') !!}
@@ -46,6 +47,7 @@
                 {!! $nav('workspace', ['workspace', 'encounters.*'], 'heart', 'Atendimento', $can('prontuario.editar')) !!}
                 {!! $nav('triage.index', 'triage.*', 'activity', 'Triagem', $can('triagem.registrar')) !!}
                 {!! $nav('documents.index', ['documents.*'], 'file', 'Documentos', $can('receita.imprimir') || $can('atestado.imprimir') || $can('documento.visualizar') || $can('exame.solicitar') || $can('prontuario.visualizar')) !!}
+                {!! $nav('sprint.index', 'sprint.*', 'cash', 'Melhor Sprint', $can('sprint.vender') || $can('sprint.repasse')) !!}
                 {!! $nav('cash.index', 'cash.index', 'cash', 'Caixa', $can('caixa.operar')) !!}
                 {!! $nav($can('financeiro.visualizar') || $can('relatorio.financeiro') ? 'finance.overview' : 'receivables.index', ['finance.*', 'receivables.*', 'payables.*', 'cash.sessions', 'cash.show', 'charges.*', 'splits.*'], 'chart', 'Financeiro', $can('financeiro.visualizar') || $can('relatorio.financeiro')) !!}
                 {!! $nav('bank.index', 'bank.*', 'cash', 'Conciliação bancária', $can('financeiro.conciliar')) !!}
@@ -67,6 +69,7 @@
                     $nav('audit.index', 'audit.*', 'list', 'Auditoria', $can('auditoria.visualizar')),
                     $nav('security.index', 'security.*', 'lock', 'Segurança', $can('auditoria.visualizar')),
                     $nav('gateways.index', 'gateways.*', 'cash', 'Pagamentos online', $can('integracao.gerenciar')),
+                    $nav('sprint.professionals.index', 'sprint.professionals.*', 'users', 'Profissionais (Sprint)', $can('sprint.profissionais') && ! $can('sprint.vender') && ! $can('sprint.repasse')),
                     $nav('messaging.settings', 'messaging.settings', 'chat', 'WhatsApp e mensagens', $can('integracao.gerenciar')),
                     $nav('company.edit', 'company.*', 'settings', 'Configurações', $can('empresa.visualizar')),
                     $nav('billing.index', 'billing.*', 'cash', 'Assinatura', $can('assinatura.gerenciar'))

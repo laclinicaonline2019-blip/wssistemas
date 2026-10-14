@@ -96,7 +96,7 @@ class CieloApiProvider implements CardTokenProvider, PaymentProvider
         ];
 
         if ($split) {
-            $payment['SplitPayments'] = [['SubordinateMerchantId' => $split['subordinate_id'], 'Amount' => $split['amount_cents']]];
+            $payment['SplitPayments'] = array_map(fn (array $s) => ['SubordinateMerchantId' => $s['subordinate_id'], 'Amount' => $s['amount_cents']], $split);
         }
 
         $response = $this->json(fn () => Http::withHeaders(['MerchantId' => $merchantId, 'MerchantKey' => $merchantKey, 'RequestId' => $charge->id])

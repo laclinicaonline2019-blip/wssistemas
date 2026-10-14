@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Melhor Sprint — split de pagamento (azul + verde da marca)
+   ========================================================================== */
+:root {
+  --ms-blue: #0b4fa8;
+  --ms-navy: #0a2a5e;
+  --ms-green: #3dae2b;
+  --ms-green-soft: #e9f8e5;
+  --ms-grad: linear-gradient(120deg, #0a2a5e 0%, #0b63c9 55%, #3dae2b 100%);
+}
+
+.ms-hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.ms-hero__brand { display: flex; align-items: center; gap: 14px; }
+.ms-hero__brand img { height: 52px; width: auto; }
+.ms-hero__brand h1 { margin: 0; font-size: 1.35rem; color: var(--ms-navy); }
+.ms-hero__brand p { margin: 2px 0 0; color: var(--text-2); font-size: .9rem; }
+.ms-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.ms-tabs .btn.is-active { background: var(--ms-navy); border-color: var(--ms-navy); color: #fff; }
+.btn-sprint { background: var(--ms-grad); border-color: transparent; color: #fff; }
+.btn-sprint:hover { filter: brightness(1.06); color: #fff; }
+
+.ms-kpi-house .kpi__value { color: var(--ms-blue); }
+.ms-kpi-pro .kpi__value { color: var(--ms-green); }
+
+/* PDV — itens da venda */
+.ms-items { display: grid; gap: 10px; }
+.ms-item { display: grid; grid-template-columns: 2fr 2fr 1fr .8fr 1fr auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.ms-item .field { margin: 0; }
+.ms-item__share { font-size: .82rem; color: var(--text-2); white-space: nowrap; padding-bottom: 10px; }
+.ms-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ms-summary div { padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); }
+.ms-summary strong { display: block; font-size: 1.25rem; }
+.ms-summary .ms-pro strong { color: var(--ms-green); }
+.ms-summary .ms-house strong { color: var(--ms-blue); }
+@media (max-width: 900px) {
+  .ms-item { grid-template-columns: 1fr 1fr; }
+  .ms-summary { grid-template-columns: 1fr; }
+}
+
+/* Checkout */
+.ms-total { font-size: 2.2rem; font-weight: 700; color: var(--ms-navy); line-height: 1.1; }
+.ms-methods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.ms-method { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 92px; padding: 12px;
+  border: 2px solid var(--border); border-radius: var(--radius); background: var(--surface); cursor: pointer; font-weight: 600; color: var(--text); }
+.ms-method svg { width: 28px; height: 28px; }
+.ms-method:hover { border-color: var(--ms-blue); }
+.ms-method.is-active { border-color: var(--ms-green); background: var(--ms-green-soft); color: var(--ms-navy); }
+.ms-panel { display: none; }
+.ms-panel.is-active { display: block; }
+@media (max-width: 700px) { .ms-methods { grid-template-columns: repeat(2, 1fr); } }
+
+.ms-pending { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; padding: 14px; border: 2px dashed var(--ms-blue); border-radius: var(--radius); background: #f3f8ff; }
+.ms-pending img { width: 200px; height: 200px; background: #fff; padding: 6px; border-radius: var(--radius-sm); }
+.ms-waiting { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--ms-blue); }
+.ms-waiting::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: ms-spin .8s linear infinite; }
+@keyframes ms-spin { to { transform: rotate(360deg); } }
+@media (max-width: 700px) { .ms-pending { grid-template-columns: 1fr; justify-items: center; } }
+
+.ms-division { display: grid; gap: 6px; }
+.ms-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: var(--border); }
+.ms-bar span { display: block; height: 100%; }
+.ms-bar .p-pro, .ms-legend .p-pro { background: var(--ms-green); }
+.ms-bar .p-house, .ms-legend .p-house { background: var(--ms-blue); }
+.ms-bar .p-platform, .ms-legend .p-platform { background: #f59e0b; }
+.ms-bar .p-fee, .ms-legend .p-fee { background: #94a3b8; }
+.ms-w-0 { width: 0%; }
+.ms-w-5 { width: 5%; }
+.ms-w-10 { width: 10%; }
+.ms-w-15 { width: 15%; }
+.ms-w-20 { width: 20%; }
+.ms-w-25 { width: 25%; }
+.ms-w-30 { width: 30%; }
+.ms-w-35 { width: 35%; }
+.ms-w-40 { width: 40%; }
+.ms-w-45 { width: 45%; }
+.ms-w-50 { width: 50%; }
+.ms-w-55 { width: 55%; }
+.ms-w-60 { width: 60%; }
+.ms-w-65 { width: 65%; }
+.ms-w-70 { width: 70%; }
+.ms-w-75 { width: 75%; }
+.ms-w-80 { width: 80%; }
+.ms-w-85 { width: 85%; }
+.ms-w-90 { width: 90%; }
+.ms-w-95 { width: 95%; }
+.ms-w-100 { width: 100%; }
+.ms-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .82rem; color: var(--text-2); }
+.ms-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+
+/* Confirmação em tela */
+.ms-confirm { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(7, 21, 48, .72); }
+.ms-confirm.is-open { display: flex; }
+.ms-confirm__box { background: #fff; border-radius: 18px; padding: 36px 44px; text-align: center; max-width: 420px; box-shadow: var(--shadow-lg); animation: ms-pop .35s ease-out; }
+.ms-confirm__check { width: 96px; height: 96px; margin: 0 auto 14px; border-radius: 50%; background: var(--ms-green); display: flex; align-items: center; justify-content: center; }
+.ms-confirm__check svg { width: 54px; height: 54px; stroke: #fff; stroke-width: 3.2; fill: none; }
+.ms-confirm__box h2 { margin: 0 0 6px; color: var(--ms-navy); }
+.ms-confirm__box p { margin: 0 0 18px; color: var(--text-2); }
+@keyframes ms-pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Comprovante */
+.ms-receipt { max-width: 380px; margin: 0 auto; font-size: 13px; color: #111; }
+.ms-receipt img { display: block; width: 180px; margin: 0 auto 6px; }
+.ms-receipt table { width: 100%; border-collapse: collapse; }
+.ms-receipt td { padding: 2px 0; vertical-align: top; }
+.ms-receipt hr { border: 0; border-top: 1px dashed #999; margin: 8px 0; }
+.ms-receipt .t-right { text-align: right; }
+.ms-receipt-page { background: #fff; }
+.ms-receipt__actions { justify-content: center; margin: 16px 0; }
+@media print { .ms-receipt__actions { display: none; } body { background: #fff; } }
+.ms-receipt .t-center { text-align: center; }

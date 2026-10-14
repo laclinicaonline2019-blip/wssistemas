@@ -23,6 +23,7 @@ use App\Modules\Queue\Http\Controllers\Api\QueueController;
 use App\Modules\Scheduling\Http\Controllers\Api\AppointmentController;
 use App\Modules\Scheduling\Http\Controllers\Api\AvailabilityController;
 use App\Modules\Scheduling\Http\Controllers\Api\ScheduleConfigController;
+use App\Modules\Sprint\Http\Controllers\Api\SprintApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -167,6 +168,15 @@ Route::prefix('v1')->name('api.')->group(function () {
             Route::post('charges/{charge}/sync', [ChargeController::class, 'sync'])->middleware(['permission:pagamento.visualizar|pagamento.cobrar', 'throttle:30,1'])->name('charges.sync');
             Route::post('charges/{charge}/cancel', [ChargeController::class, 'cancel'])->middleware('permission:pagamento.cobrar')->name('charges.cancel');
             Route::post('charges/{charge}/refund', [ChargeController::class, 'refund'])->middleware('permission:pagamento.estornar')->name('charges.refund');
+
+            // Melhor Sprint — vendas com split, pagamentos e NFS-e
+            Route::prefix('sprint')->name('sprint.')->group(function () {
+                Route::get('professionals', [SprintApiController::class, 'professionals'])->middleware('permission:sprint.vender|sprint.profissionais')->name('professionals');
+                Route::post('sales', [SprintApiController::class, 'store'])->middleware(['permission:sprint.vender', 'throttle:60,1'])->name('sales.store');
+                Route::get('sales/{sale}', [SprintApiController::class, 'show'])->middleware('permission:sprint.vender|sprint.repasse')->name('sales.show');
+                Route::post('sales/{sale}/payments', [SprintApiController::class, 'pay'])->middleware(['permission:sprint.vender', 'throttle:60,1'])->name('sales.pay');
+                Route::post('sales/{sale}/nfse', [SprintApiController::class, 'nfse'])->middleware(['permission:sprint.nfse', 'throttle:20,1'])->name('sales.nfse');
+            });
 
             // Fase 9 — convênios
             Route::middleware('permission:convenio.visualizar|convenio.gerenciar|convenio.autorizar|convenio.faturar')->group(function () {

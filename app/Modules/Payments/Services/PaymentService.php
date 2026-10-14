@@ -103,7 +103,11 @@ class PaymentService
 
     // ------------------------------------------------------------------ cobrança
 
-    public function createCharge(?User $actor, Receivable $receivable, PaymentGateway $gateway, string $billingType, int $amountCents, string $dueDate, string $idempotencyKey): PaymentCharge
+    /**
+     * @param  array|null  $splitSnapshot  divisão já calculada por quem chama (Melhor Sprint: vários profissionais + comissão),
+     *                                     com as listas "asaas" [{wallet_id, fixed_cents}] e "cielo" [{subordinate_id, amount_cents}]
+     */
+    public function createCharge(?User $actor, Receivable $receivable, PaymentGateway $gateway, string $billingType, int $amountCents, string $dueDate, string $idempotencyKey, ?array $splitSnapshot = null): PaymentCharge
     {
         if ($existing = PaymentCharge::query()->where('idempotency_key', $idempotencyKey)->first()) {
             return $existing; // repetição (clique duplo / reenvio) devolve a mesma cobrança
@@ -126,7 +130,7 @@ class PaymentService
 
         $provider = $this->provider($gateway);
         $patient = $receivable->patient_id ? Patient::query()->find($receivable->patient_id) : null;
-        $split = $provider->supportsNativeSplit() ? $this->splits->nativePayload($receivable, $gateway, $amountCents) : null;
+        $split = $splitSnapshot ?? ($provider->supportsNativeSplit() ? $this->splits->nativePayload($receivable, $gateway, $amountCents) : null);
 
         // 1) registra localmente ANTES de chamar o gateway (nunca fica cobrança remota "órfã" sem rastro)
         try {
@@ -152,6 +156,7 @@ class PaymentService
                 mb_substr($receivable->description, 0, 200), $customerId,
                 isset($split['wallet_id']) ? ['wallet_id' => $split['wallet_id'], 'type' => $split['type'], 'value' => $split['value']] : null,
                 (int) $gateway->setting('max_installments', 1),
+                $gateway->provider === 'asaas' ? ($split['asaas'] ?? []) : [],
             ));
         } catch (Throwable $e) {
             $charge->forceFill(['status' => 'failed', 'review_reason' => mb_substr($e->getMessage(), 0, 255)])->save();
@@ -211,7 +216,8 @@ class PaymentService
 
             $max = max(1, (int) $gateway->setting('max_installments', 1));
             $split = $charge->split_snapshot && isset($charge->split_snapshot['subordinate_id'])
-                ? ['subordinate_id' => $charge->split_snapshot['subordinate_id'], 'amount_cents' => (int) $charge->split_snapshot['expected_cents']] : null;
+                ? [['subordinate_id' => $charge->split_snapshot['subordinate_id'], 'amount_cents' => (int) $charge->split_snapshot['expected_cents']]]
+                : (($charge->split_snapshot['cielo'] ?? []) ?: null);
 
             $result = $provider->authorizeCard($gateway, $charge, $paymentToken, $brand, min($max, max(1, $installments)), $holderName, $split);
             $this->audit->record($result['approved'] ? 'payment.card_authorized' : 'payment.card_denied', $charge->receivable, metadata: [

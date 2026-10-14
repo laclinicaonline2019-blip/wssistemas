@@ -13,6 +13,7 @@ use App\Modules\Payments\Models\PaymentCharge;
 use App\Modules\Payments\Models\PaymentGateway;
 use App\Modules\Payments\Models\PaymentSplit;
 use App\Modules\Payments\Models\SplitRule;
+use App\Modules\Sprint\Services\SprintLedger;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -120,6 +121,10 @@ class SplitService
         if ($txn->kind !== 'receipt' || ! $txn->receivable_id) {
             return null;
         }
+        // Venda do Melhor Sprint: a divisão (vários profissionais + comissão) é do próprio módulo.
+        if ($charge && app(SprintLedger::class)->onChargeReceipt($txn, $charge)) {
+            return null;
+        }
 
         $r = Receivable::query()->find($txn->receivable_id);
         if (! $r || ! ($rule = $this->ruleFor($r))) {
@@ -165,6 +170,8 @@ class SplitService
                 'mode' => 'internal', 'status' => 'pending',
             ]);
         }
+
+        app(SprintLedger::class)->onReversal($reversal);
     }
 
     /**

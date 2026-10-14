@@ -209,6 +209,18 @@ return [
             ],
         ],
 
+        'sprint' => [
+            'label' => 'Melhor Sprint (split de pagamento)',
+            'permissions' => [
+                'sprint.vender' => 'Realizar vendas e receber pagamentos (PIX, cartão, dinheiro)',
+                'sprint.estornar' => 'Cancelar e estornar vendas',
+                'sprint.profissionais' => 'Cadastrar profissionais e regras de divisão',
+                'sprint.repasse' => 'Relatórios de repasse, valores da clínica e fechamento',
+                'sprint.nfse' => 'Emitir e cancelar NFS-e da parte da clínica',
+                'sprint.configurar' => 'Configurar o Melhor Sprint (gateways e NFS-e)',
+            ],
+        ],
+
         'relatorio' => [
             'label' => 'Relatórios',
             'permissions' => [
@@ -286,6 +298,7 @@ return [
                 'pagamento.visualizar', 'pagamento.cobrar', 'convenio.autorizar', 'documento.anexar',
                 'receita.imprimir', 'atestado.imprimir', 'ia.conversas',
                 'relatorio.operacional', 'relatorio.financeiro', 'impressao.configurar',
+                'sprint.vender', 'sprint.estornar', 'sprint.repasse', 'sprint.nfse',
             ],
         ],
         'medico' => [
@@ -311,6 +324,7 @@ return [
                 'agenda.encaixe', 'fila.visualizar', 'fila.gerenciar', 'convenio.visualizar',
                 'convenio.autorizar', 'caixa.operar', 'pagamento.visualizar', 'pagamento.cobrar',
                 'documento.anexar', 'receita.imprimir', 'atestado.imprimir', 'ia.conversas',
+                'sprint.vender',
             ],
         ],
         'financeiro' => [
@@ -322,6 +336,7 @@ return [
                 'financeiro.repasse', 'financeiro.conciliar', 'financeiro.fechamento',
                 'caixa.operar', 'caixa.conferir', 'pagamento.visualizar', 'pagamento.cobrar',
                 'pagamento.estornar', 'convenio.visualizar', 'convenio.faturar', 'relatorio.financeiro',
+                'sprint.vender', 'sprint.estornar', 'sprint.profissionais', 'sprint.repasse', 'sprint.nfse',
             ],
         ],
         'enfermagem' => [

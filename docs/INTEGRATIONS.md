@@ -53,6 +53,36 @@ interface PaymentProviderInterface {
   transação e split registrados → consulta confirmada → comprovante. Nenhum pagamento é confirmado
   por declaração do paciente nem por webhook não autenticado.
 
+## Melhor Sprint — split de pagamento — implementado
+
+Módulo de vendas com **divisão entre profissionais (médicos/parceiros) e clínica**, pagamentos mistos e
+comissão da plataforma. Menu *Melhor Sprint* (permissões `sprint.*`). Usa os mesmos gateways configurados em
+*Pagamentos online*; toda venda vira uma conta a receber (origem `sprint`), então caixa, livro, recibos,
+conciliação e relatórios continuam valendo.
+
+| Forma | Canal | Como funciona | Divisão |
+|---|---|---|---|
+| PIX | ASAAS | QR Code na tela; confirma sozinho (webhook + consulta; a tela também consulta a cada 15 s) | `split` com `walletId` + `fixedValue` de cada profissional com carteira **e da plataforma** |
+| Crédito | ASAAS | link/fatura do ASAAS (cliente paga no celular; QR do link na tela) | idem |
+| Crédito | Cielo API E-commerce | cartão digitado na página segura (Silent Order Post) | `SplitPayments` com o subordinado de cada profissional **e da plataforma** |
+| Crédito/Débito | Maquininha Cielo / outra | registra com NSU; opção "a maquininha já fez o split" | subordinados Cielo = já liquidado; demais = repasse interno |
+| Dinheiro | Caixa | exige caixa aberto; calcula o troco | repasse interno |
+
+- **Regra de divisão** no cadastro do profissional (percentual ou valor fixo), ajustável por item na venda.
+  Pagamento parcial/misto: cada pagamento é dividido na mesma proporção e o último fecha os centavos.
+- **Comissão da plataforma** (`SPRINT_COMMISSION_BP`, padrão 1,50%; taxa por clínica definida só pelo Super
+  Admin em *Plataforma → Melhor Sprint*): sai da parte da clínica. Com `SPRINT_PLATFORM_ASAAS_WALLET` /
+  `SPRINT_PLATFORM_CIELO_SUBORDINATE`, o próprio gateway separa a comissão; nos demais casos ela fica "a cobrar"
+  e o Super Admin marca como cobrada.
+- **Repasse interno**: *Repasses e relatórios* → "Fechar repasse" gera a conta a pagar (categoria *Repasse médico*
+  ou *Repasse a parceiros*). Estorno de algo já repassado vira devolução no próximo fechamento.
+- **NFS-e opcional** pelo ASAAS (`POST /invoices` + `/invoices/{id}/authorize`, consulta e cancelamento) sobre o
+  **valor que ficou para a clínica** (total − partes dos profissionais). Automática ao quitar ou pelo botão; exige
+  "Notas fiscais" habilitado no ASAAS (certificado A1, inscrição municipal) e paciente com CPF. A rotina
+  `aivexa:sprint:run` (a cada 10 min) acompanha a autorização na prefeitura. MOCK disponível para demonstração.
+- Homologação: valide no SANDBOX do ASAAS um PIX com split (carteiras de teste) e uma NFS-e; na Cielo, uma venda
+  com `SplitPayments` de dois subordinados de teste.
+
 ## Convênios — padrão TISS (Fase 9) — implementado
 
 | Item | Como está |

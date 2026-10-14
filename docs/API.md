@@ -132,6 +132,16 @@ e `POST /pagar/{token}/cartao` recebem apenas o `PaymentToken`).
 Situações: `pending`, `paid`, `overdue`, `cancelled`, `refunded`, `failed`, `review` (valor divergente,
 duplicidade, chargeback — exige conferência).
 
+### Melhor Sprint — split de pagamento
+
+| Método | Rota | Permissão / notas |
+|---|---|---|
+| GET | `/sprint/professionals` | `sprint.vender\|sprint.profissionais` — profissionais ativos com a regra (`split_type`, `split_value`) e se recebem split nativo |
+| POST | `/sprint/sales` | `sprint.vender` — `{patient_id?, customer_name?, customer_document?, branch_id?, description?, issue_nfse?, items: [{professional_id?, description, amount_cents, split_type?: percent\|fixed, split_value?}]}`. `split_value` em centésimos de % (6000 = 60%) ou centavos. Resposta com `total_cents`, `professional_cents`, `house_cents`, `commission_bp` |
+| GET | `/sprint/sales/{id}` | `sprint.vender\|sprint.repasse` — situação (consulta o gateway se houver cobrança aberta), pagamentos e `division` (professional, house, platform, fee) |
+| POST | `/sprint/sales/{id}/payments` | `sprint.vender` — header **`Idempotency-Key`**; `{method: cash\|pix\|credit_card\|debit_card, channel: cash\|asaas\|cielo_api\|cielo_terminal\|terminal\|mock, amount_cents, nsu?, card_brand?, installments?, terminal_split?, cash_given_cents?}`. Online → `charge.pix_payload`/`payment_url`/`card_page_url`; maquininha/dinheiro → confirmado na hora. Erros: `invalid_channel`, `invalid_amount` (cobrança aberta reserva o saldo), `nsu_required`, `sale_closed` (409), `cash_session_required` |
+| POST | `/sprint/sales/{id}/nfse` | `sprint.nfse` — NFS-e sobre `house_cents` (venda quitada); `nfse_disabled`, `nfse_exists` (409) |
+
 ### Convênios (Fase 9)
 
 | Método | Rota | Permissão / notas |
