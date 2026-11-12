@@ -4,11 +4,15 @@
 @section('content')
 <div class="top"><div><h1>Olá, {{ explode(' ', (string) $customer->name)[0] }}! 👋</h1><div class="sub">{{ $customer->neighborhood?->name }}</div></div>
   <form method="post" action="{{ route('portal.logout') }}">@csrf<button class="btn sm">Sair</button></form></div>
-<div class="grid g3" style="margin-bottom:16px">
-  @if($loyalty)<div class="kpi"><div class="l">Seus pontos</div><div class="v" style="color:var(--green)">{{ $customer->points_balance }}</div><div class="s">troque por brindes abaixo</div></div>@endif
-  <div class="kpi"><div class="l">Cotações</div><div class="v">{{ $customer->quotes()->count() }}</div></div>
-  <div class="kpi"><div class="l">Compras registradas</div><div class="v">{{ $customer->receipts()->where('status','conferida')->count() }}</div><div class="s">notas fiscais conferidas</div></div>
+@if($loyalty)
+<div class="grid g2" style="margin-bottom:16px;align-items:start">
+  <div>@include('partials.loyalty-card', ['customer' => $customer, 'card' => $card])</div>
+  <div class="card" style="margin:0"><h3>Extrato de pontos</h3>
+    <table>@forelse($points as $p)<tr><td class="small">{{ $p->created_at->format('d/m/Y') }}</td><td class="small">{{ $p->reason }}</td><td class="num small" style="color:{{ $p->points < 0 ? 'var(--red)' : 'var(--green)' }}">{{ $p->points > 0 ? '+' : '' }}{{ $p->points }}</td></tr>
+    @empty<tr><td class="muted small">Envie a foto da nota fiscal das suas compras para começar a pontuar. 📸</td></tr>@endforelse</table>
+  </div>
 </div>
+@endif
 <div class="card"><h2>📄 Enviar nota fiscal da compra</h2>
   <p class="small muted">Envie a foto da nota/cupom: você ganha pontos e participa da premiação do mês.</p>
   <form method="post" action="{{ route('portal.receipt') }}" enctype="multipart/form-data" class="row">@csrf<input type="file" name="file" accept="image/*,application/pdf" capture="environment" required><button class="btn g auto">Enviar</button></form></div>

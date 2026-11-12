@@ -21,7 +21,10 @@
     @empty<tr><td class="empty">Nenhuma.</td></tr>@endforelse</table></div>
 </div>
 <div class="grid g2">
-  <div class="card table-wrap"><h3>Extrato de pontos</h3>
+  <div class="card table-wrap"><h3>Cartão fidelidade</h3>
+    <div style="margin-bottom:10px">@include('partials.loyalty-card', ['customer' => $customer, 'card' => $card])</div>
+    <form method="post" action="{{ route('inbox.card', $customer) }}" style="margin-bottom:10px">@csrf<button class="btn sm g">💳 Enviar saldo ao cliente no WhatsApp</button></form>
+    <h3>Extrato de pontos</h3>
     <form method="post" action="{{ route('customers.points', $customer) }}" class="row" style="margin-bottom:8px">@csrf<input name="points" type="number" placeholder="+/- pontos" required><input name="reason" placeholder="Motivo" required><button class="btn sm auto">Ajustar</button></form>
     <table>@forelse($points as $p)<tr><td class="small">{{ $p->created_at->format('d/m/Y') }}</td><td>{{ $p->reason }}</td><td class="num" style="color:{{ $p->points < 0 ? 'var(--red)' : 'var(--green)' }}">{{ $p->points > 0 ? '+' : '' }}{{ $p->points }}</td></tr>
     @empty<tr><td class="empty">Sem pontos.</td></tr>@endforelse</table></div>

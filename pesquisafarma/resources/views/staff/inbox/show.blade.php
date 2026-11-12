@@ -30,7 +30,8 @@
   <div>
     <div class="card"><h3>Cliente</h3>
       <div class="small">Bairro: <b>{{ $customer->neighborhood?->name ?? '—' }}</b></div>
-      <div class="small">Pontos: <b>{{ $customer->points_balance }}</b></div>
+      <div style="margin:8px 0">@include('partials.loyalty-card', ['customer' => $customer, 'card' => $card])</div>
+      <form method="post" action="{{ route('inbox.card', $customer) }}">@csrf<button class="btn sm g">💳 Enviar saldo de pontos ao cliente</button></form>
       <div class="small">Promoções: {{ $customer->accepts_marketing ? 'aceita' : 'não aceita' }}</div>
       @unless($customer->isRegistered())<div class="alert err small" style="margin-top:8px">Cadastro incompleto (etapa: {{ $customer->bot_state }}). <a href="{{ route('customers.edit', $customer) }}">Completar</a></div>@endunless
     </div>

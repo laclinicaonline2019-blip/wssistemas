@@ -72,6 +72,7 @@ class PortalController extends Controller
             'rewards' => $loyalty->enabled($c) ? Reward::query()->where('active', true)->orderBy('points_cost')->get() : collect(),
             'promotions' => Promotion::query()->whereIn('status', ['aprovada', 'divulgada'])->with('pharmacy.neighborhood')->latest('id')->limit(12)->get()->filter->isCurrent(),
             'loyalty' => $loyalty->enabled($c),
+            'card' => $loyalty->card($c),
         ]);
     }
 

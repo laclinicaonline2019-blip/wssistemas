@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\WaMessage;
+use App\Services\LoyaltyService;
 use App\Services\QuoteService;
 use App\Services\ReceiptService;
 use App\Services\WhatsApp\WhatsAppService;
@@ -35,6 +36,7 @@ class InboxController extends Controller
             'customer' => $customer->load('neighborhood'),
             'messages' => $customer->messages()->with('user')->latest('id')->limit(150)->get()->reverse(),
             'quotes' => $customer->quotes()->latest('id')->limit(5)->get(),
+            'card' => app(LoyaltyService::class)->card($customer),
         ]);
     }
 
@@ -45,6 +47,15 @@ class InboxController extends Controller
         Activity::log('conversa.mensagem', 'Mensagem enviada para '.$customer->displayName(), $customer);
 
         return back();
+    }
+
+    /** Cliente perguntou os pontos: envia o cartão fidelidade com um clique. */
+    public function sendCard(Customer $customer, WhatsAppService $wa, LoyaltyService $loyalty)
+    {
+        $wa->toCustomer($customer, $loyalty->cardText($customer));
+        Activity::log('fidelidade.cartao', 'Cartão fidelidade enviado para '.$customer->displayName(), $customer);
+
+        return back()->with('ok', 'Cartão fidelidade enviado ao cliente.');
     }
 
     public function toQuote(WaMessage $message, QuoteService $quotes)

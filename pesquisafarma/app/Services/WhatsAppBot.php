@@ -94,8 +94,16 @@ Ah, e de *0 a 10*, quanto você indicaria a Pesquisa Farma a um amigo?' : ''));
             return;
         }
 
+        // Cliente pergunta os pontos: o robô responde na hora com o cartão fidelidade.
+        if (! $in->hasMedia() && preg_match('/^(meus? )?(pontos?|saldo|cartao|cartao fidelidade|fidelidade|quantos pontos( eu)?( tenho)?)\??$/', Text::slug($text))) {
+            $loyalty = app(LoyaltyService::class);
+            $this->reply($customer, $loyalty->enabled($customer) ? $loyalty->cardText($customer) : 'No momento o programa de pontos não está ativo. 🙏');
+
+            return;
+        }
+
         if (! $in->hasMedia() && $this->isSmallTalk($text)) {
-            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n📄 Para ganhar pontos, envie a foto da *nota fiscal* com a palavra NOTA.");
+            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n📄 Para ganhar pontos, envie a foto da *nota fiscal* com a palavra NOTA.\n💳 Para ver seus pontos, escreva *PONTOS*.");
 
             return;
         }

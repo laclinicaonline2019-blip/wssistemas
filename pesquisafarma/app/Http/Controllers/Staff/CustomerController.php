@@ -68,6 +68,7 @@ class CustomerController extends Controller
             'points' => $customer->points()->latest('id')->limit(50)->get(),
             'redemptions' => $customer->redemptions()->with('reward')->latest('id')->get(),
             'rewards' => Reward::query()->where('active', true)->orderBy('points_cost')->get(),
+            'card' => app(LoyaltyService::class)->card($customer),
             'stats' => [
                 'orders_total' => $customer->orders()->where('status', '!=', 'cancelado')->sum('total'),
                 'receipts_total' => $customer->receipts()->where('status', 'conferida')->sum('total'),

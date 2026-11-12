@@ -10,6 +10,7 @@ use App\Models\Redemption;
 use App\Models\Reward;
 use App\Models\Setting;
 use App\Support\Activity;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -22,6 +23,54 @@ class LoyaltyService
     public function enabled(?Customer $c = null): bool
     {
         return Setting::get('loyalty_enabled') === '1' && (! $c || $c->loyalty_enabled);
+    }
+
+    /** Número do cartão fidelidade (fixo por cliente). */
+    public static function cardNumber(Customer $c): string
+    {
+        return 'PF '.str_pad((string) $c->id, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Resumo do cartão: saldo, próximo brinde e quanto falta, brindes já liberados.
+     *
+     * @return array{number:string, points:int, next:?Reward, missing:int, progress:int, available:Collection, purchases:int, earned:int}
+     */
+    public function card(Customer $c): array
+    {
+        $rewards = Reward::query()->where('active', true)->where(fn ($q) => $q->whereNull('stock')->orWhere('stock', '>', 0))->orderBy('points_cost')->get();
+        $next = $rewards->first(fn ($r) => $r->points_cost > $c->points_balance);
+
+        return [
+            'number' => self::cardNumber($c),
+            'points' => (int) $c->points_balance,
+            'next' => $next,
+            'missing' => $next ? $next->points_cost - $c->points_balance : 0,
+            'progress' => $next ? (int) min(100, round($c->points_balance / max(1, $next->points_cost) * 100)) : 100,
+            'available' => $rewards->filter(fn ($r) => $r->points_cost <= $c->points_balance),
+            'purchases' => $c->receipts()->where('status', 'conferida')->count(),
+            'earned' => (int) $c->points()->where('points', '>', 0)->sum('points'),
+        ];
+    }
+
+    /** Mensagem do cartão para o WhatsApp (robô "PONTOS" ou botão do televendas). */
+    public function cardText(Customer $c): string
+    {
+        $card = $this->card($c);
+        $lines = ['💳 *Cartão Fidelidade Pesquisa Farma*', 'Nº '.$card['number'].' · '.$c->displayName(), '', '⭐ Saldo: *'.$card['points'].' pontos*'];
+        if ($card['available']->isNotEmpty()) {
+            $lines[] = '🎁 Você já pode trocar por: '.$card['available']->pluck('name')->implode(', ').'!';
+        }
+        if ($card['next']) {
+            $lines[] = '🎯 Faltam *'.$card['missing'].' pontos* para: '.$card['next']->name;
+        }
+        $lines[] = '';
+        $lines[] = '📸 Cada compra com nota fiscal enviada aqui soma pontos.';
+        if (Setting::get('portal_enabled') === '1') {
+            $lines[] = '👉 Veja seu cartão e troque pontos: '.route('portal.login');
+        }
+
+        return implode("\n", $lines);
     }
 
     /** @return array{points:int, details:array<int,string>} */

@@ -61,3 +61,14 @@ details summary{cursor:pointer;font-weight:600;color:var(--navy2)}
 .resp .c-item{min-width:180px}.resp .c-price{width:130px}
 @media (max-width:900px){.app{flex-direction:column}.side{width:100%;height:auto;position:static}.side nav{display:flex;flex-wrap:wrap}.side .grp{width:100%}.g2,.g3,.g4{grid-template-columns:1fr}.main{padding:14px}.offer-line{grid-template-columns:1fr 1fr}.hide-sm{display:none}.resp .c-item{min-width:0;width:38%}.resp .c-price{width:30%}.resp td,.resp th{padding:6px 4px}.resp input{padding:6px}}
 @media print{.side,.btn,.toolbar,form{display:none!important}.main{padding:0}}
+/* Cartão fidelidade */
+.lcard{position:relative;max-width:380px;aspect-ratio:1.6;border-radius:16px;padding:16px 18px;color:#fff;overflow:hidden;
+  background:radial-gradient(circle at 85% 15%,rgba(47,179,68,.45),transparent 45%),linear-gradient(135deg,#0d2a4a 0%,#163e6b 60%,#9e1218 140%);
+  box-shadow:0 10px 24px rgba(13,42,74,.28);display:flex;flex-direction:column;gap:6px}
+.lcard-top{display:flex;align-items:center;gap:8px}.lcard-top img{width:34px;height:34px;background:#fff;border-radius:50%;padding:2px}
+.lcard-top b{font-size:15px;line-height:1}.lcard-top b span{color:#ff6b6b}.lcard-top small{display:block;font-size:11px;opacity:.8;letter-spacing:.06em;text-transform:uppercase}
+.lcard-pts{margin-top:auto;font-size:14px;opacity:.95}.lcard-pts span{font-size:38px;font-weight:800;line-height:1;margin-right:4px}
+.lcard-bar{height:8px;background:rgba(255,255,255,.22);border-radius:99px;overflow:hidden}.lcard-bar i{display:block;height:100%;background:#4ade80;border-radius:99px}
+.lcard-next{font-size:12px;opacity:.95}
+.lcard-foot{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.08em;opacity:.85;font-family:ui-monospace,Menlo,monospace}
+.lcard-foot{gap:8px;font-size:clamp(9px,2.6vw,12px)}.lcard-foot span{white-space:nowrap}.lcard-foot span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}

@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/conversas', [Staff\InboxController::class, 'index'])->name('inbox');
         Route::get('/conversas/{customer}', [Staff\InboxController::class, 'show'])->name('inbox.show');
         Route::post('/conversas/{customer}', [Staff\InboxController::class, 'send'])->name('inbox.send');
+        Route::post('/conversas/{customer}/cartao', [Staff\InboxController::class, 'sendCard'])->name('inbox.card');
         Route::post('/mensagens/{message}/cotacao', [Staff\InboxController::class, 'toQuote'])->name('inbox.to_quote');
         Route::post('/mensagens/{message}/nota', [Staff\InboxController::class, 'toReceipt'])->name('inbox.to_receipt');
 

@@ -334,9 +334,27 @@ class FluxoCompletoTest extends TestCase
         preg_match('/\*(\d{6})\*/', MockGateway::$sent[0]['text'], $m);
         $this->post(route('portal.verify'), ['code' => '000000'])->assertSessionHasErrors('code');
         $this->post(route('portal.verify'), ['code' => $m[1]])->assertRedirect(route('portal.home'));
-        $this->get(route('portal.home'))->assertOk()->assertSee('Brindes')->assertSee('Enviar nota fiscal');
+        $this->get(route('portal.home'))->assertOk()->assertSee('Brindes')->assertSee('Enviar nota fiscal')->assertSee('Cartão Fidelidade')->assertSee('Faltam');
         $this->post(route('portal.receipt'), ['file' => UploadedFile::fake()->image('cupom.png')])->assertSessionHas('ok');
         $this->assertSame('portal', Receipt::first()->source);
+    }
+
+    public function test_cartao_fidelidade_robo_pontos_e_botao_do_televendas(): void
+    {
+        $customer = Customer::first();
+        app(LoyaltyService::class)->add($customer, 120, 'Compra conferida');
+        $this->whatsapp($customer->phone, 'Quantos pontos eu tenho?');
+        $msg = $this->lastSentTo($customer->phone);
+        $this->assertStringContainsString('Cartão Fidelidade', $msg);
+        $this->assertStringContainsString('*120 pontos*', $msg);
+        $this->assertStringContainsString('Faltam *30 pontos* para: Squeeze Pesquisa Farma', $msg);
+        $this->assertSame(0, Quote::count(), 'pergunta de pontos não vira cotação');
+
+        $tele = User::where('role', 'televendas')->first();
+        $this->actingAs($tele)->get(route('inbox.show', $customer))->assertOk()->assertSee('Cartão Fidelidade')->assertSee('PF 000001');
+        MockGateway::$sent = [];
+        $this->post(route('inbox.card', $customer))->assertSessionHas('ok');
+        $this->assertStringContainsString('120 pontos', MockGateway::$sent[0]['text']);
     }
 
     public function test_todas_as_telas_abrem(): void

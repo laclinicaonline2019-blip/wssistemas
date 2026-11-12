@@ -52,7 +52,8 @@ Cliente (WhatsApp) ──► Robô: 1º contato = cadastro (nome, CEP/bairro, en
 | **Notas fiscais** | Captação da venda pela foto da nota (IA), vínculo automático ao pedido, conferência, notas avulsas (sem pedido) também geram comissão |
 | **Comissões** | Fechamento por farmácia (semanal/mensal), automático todo dia às 06:10 para o período anterior; emitido/pago/cancelado |
 | **Fidelidade** | Regras de pontos (por R$, bônus por produto, multiplicador por farmácia), brindes com estoque e nº mínimo de compras, trocas, **premiação mensal** (sorteio por nota ou ranking) |
-| **Área do cliente** (`/cliente`) | Login por código no WhatsApp, pontos, brindes, envio de nota, promoções, histórico e avaliação; liga/desliga nas configurações |
+| **Cartão fidelidade** | Na área do cliente, na conversa e na ficha: saldo, nº do cartão, barra até o próximo brinde e brindes liberados. O cliente escreve **PONTOS** no WhatsApp e o robô responde na hora; o televendas envia o saldo com um clique |
+| **Área do cliente** (`/cliente`) | Login por código no WhatsApp, cartão fidelidade, pontos, brindes, envio de nota, promoções, histórico e avaliação; liga/desliga nas configurações |
 | **Relatórios** | Vendas **por farmácia (empresa)**, compras **por cliente**, cotado × comprado, **televendas** (atendimentos, conversão, tempos, avaliação, ações e mensagens), **tempos** (pedido→envio, envio→1ª resposta, resposta de cada farmácia, pedido→finalização, notas de 1 a 5), extrato detalhado; exportação Excel (CSV) e impressão |
 | **Atividades** | Tudo o que cada televendas, farmácia e admin faz fica registrado (quem, o quê, quando, IP) |
 
