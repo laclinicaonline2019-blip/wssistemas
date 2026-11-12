@@ -68,6 +68,27 @@ class AiAssistant
         return $this->cleanItems($this->parseText((string) $text));
     }
 
+    /**
+     * Classifica a foto enviada pelo cliente: nota fiscal/cupom de compra, receita/lista/caixa para cotar, ou outra coisa.
+     * Devolve null quando a IA não está disponível (o robô então pergunta ao cliente).
+     */
+    public function classifyImage(string $bytes, string $mime): ?string
+    {
+        if (! $this->enabled()) {
+            return null;
+        }
+        try {
+            $data = $this->call('classificar_foto', 'Você classifica fotos enviadas por clientes de farmácia no Brasil. "nota_fiscal": nota fiscal, NFC-e, cupom fiscal ou comprovante de compra com itens e valores. "receita": receita médica, lista de medicamentos, foto de caixa/embalagem de remédio. "outro": qualquer outra coisa.',
+                'Classifique esta imagem.', $bytes, $mime, $this->obj(['tipo' => ['type' => 'string', 'enum' => ['nota_fiscal', 'receita', 'outro']]]));
+
+            return in_array($data['tipo'] ?? null, ['nota_fiscal', 'receita'], true) ? $data['tipo'] : null;
+        } catch (Throwable $e) {
+            Log::warning('IA não classificou a foto: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
     /** @return array<string, mixed> */
     public function readReceipt(string $bytes, string $mime): array
     {

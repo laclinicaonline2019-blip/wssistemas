@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Pharmacy;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Staff\PromotionController;
 use App\Models\CommissionStatement;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Promotion;
 use App\Models\QuotePharmacy;
+use App\Models\Receipt;
 use App\Services\QuoteService;
+use App\Services\ReceiptService;
 use App\Services\ReportService;
 use App\Support\Activity;
+use App\Support\Text;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -93,6 +97,40 @@ class PanelController extends Controller
             'orders' => Order::query()->where('pharmacy_id', $pid)->whereBetween('created_at', [$svc->from, $svc->to])->with('customer')->latest('id')->get(),
             'statements' => CommissionStatement::query()->where('pharmacy_id', $pid)->where('status', '!=', 'cancelado')->latest('period_end')->limit(24)->get(),
         ]);
+    }
+
+    /** Balcão: confere o cartão fidelidade do cliente (nº do cartão ou celular). */
+    public function card(Request $request)
+    {
+        $customer = null;
+        $q = trim((string) $request->query('cartao'));
+        if ($q !== '') {
+            $digits = Text::digits($q);
+            $customer = (strlen($digits) <= 7 && $digits !== '') ? Customer::find((int) $digits) : Customer::where('phone', Text::phone($digits))->first();
+            if ($customer && ! $customer->isRegistered()) {
+                $customer = null;
+            }
+        }
+        $pid = $this->pharmacyId();
+
+        return view('pharmacy.card', [
+            'q' => $q, 'customer' => $customer,
+            'recent' => Receipt::query()->where('pharmacy_id', $pid)->where('source', 'farmacia')->with('customer')->latest('id')->limit(20)->get(),
+        ]);
+    }
+
+    public function cardSale(Request $request, Customer $customer, ReceiptService $receipts)
+    {
+        $data = $request->validate(['total' => 'required', 'nf_number' => 'nullable|string|max:60', 'purchase_date' => 'nullable|date|before_or_equal:today',
+            'file' => 'nullable|file|max:8192|mimes:jpg,jpeg,png,webp,pdf']);
+        $total = Text::money($data['total']);
+        if (! $total || $total <= 0) {
+            return back()->with('error', 'Informe o valor da compra.');
+        }
+        $f = $request->file('file');
+        $r = $receipts->registerCardSale(auth()->user()->pharmacy, $customer, $total, $data['nf_number'] ?? null, $data['purchase_date'] ?? null, $f?->get(), $f?->getMimeType(), auth()->id());
+
+        return redirect()->route('panel.card')->with('ok', "Venda {$r->code} registrada para {$customer->displayName()}. O cliente foi avisado no WhatsApp.");
     }
 
     public function promotions()

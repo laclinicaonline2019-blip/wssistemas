@@ -13,6 +13,10 @@
   </div>
 </div>
 @endif
+<div class="card"><h2>🏪 Use seu cartão nas farmácias credenciadas</h2>
+  <p class="small muted">Comprou direto na loja? Mostre seu cartão (nº {{ $card['number'] }}) no balcão e envie a foto da nota aqui ou no WhatsApp: você ganha pontos mesmo sem fazer cotação.</p>
+  <div class="grid g2">@foreach($pharmacies as $x)<div class="small"><b>{{ $x['p']->trade_name }}</b> — {{ $x['p']->neighborhood?->name }}@if($x['d'] !== null) ({{ number_format($x['d'], 1, ',', '.') }} km)@endif<br><span class="muted">{{ $x['p']->fullAddress() }}</span> · <a href="{{ $x['p']->mapsUrl() }}" target="_blank">mapa</a></div>@endforeach</div>
+</div>
 <div class="card"><h2>📄 Enviar nota fiscal da compra</h2>
   <p class="small muted">Envie a foto da nota/cupom: você ganha pontos e participa da premiação do mês.</p>
   <form method="post" action="{{ route('portal.receipt') }}" enctype="multipart/form-data" class="row">@csrf<input type="file" name="file" accept="image/*,application/pdf" capture="environment" required><button class="btn g auto">Enviar</button></form></div>

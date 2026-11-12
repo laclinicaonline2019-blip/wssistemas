@@ -6,6 +6,10 @@
   @if($receipt->reviewer) · conferida por {{ $receipt->reviewer->name }} em {{ $receipt->reviewed_at->format('d/m/Y H:i') }}@endif</div></div>
   <form method="post" action="{{ route('receipts.ai', $receipt) }}">@csrf<button class="btn sm">🤖 Ler novamente com IA</button></form>
 </div>
+@if($duplicates->isNotEmpty())
+<div class="alert err">⚠️ Possível nota repetida: @foreach($duplicates as $d)<a href="{{ route('receipts.show', $d) }}">{{ $d->code }}</a> ({{ $d->customer->displayName() }}, {{ $d->total ? money($d->total) : '—' }}, {{ $d->statusLabel() }})@if(! $loop->last), @endif @endforeach</div>
+@endif
+@if($receipt->source === 'farmacia')<div class="alert ok">💳 Venda registrada pela farmácia no balcão (cartão fidelidade, sem cotação).</div>@endif
 <div class="grid g2">
   <div class="card">
     @if($fileUrl)
@@ -25,7 +29,7 @@
         <div class="row">
           <div class="f"><label>Data da compra</label><input type="date" name="purchase_date" value="{{ $receipt->purchase_date?->toDateString() }}"></div>
           <div class="f"><label>Nº da nota</label><input name="nf_number" value="{{ $receipt->nf_number }}"></div>
-          <div class="f"><label>Pedido / cotação</label><select name="order_id"><option value="">Compra avulsa (sem pedido)</option>@foreach($orders as $o)<option value="{{ $o->id }}" @selected($receipt->order_id === $o->id)>{{ $o->code }} · {{ $o->pharmacy->trade_name }} · {{ money($o->total) }}</option>@endforeach</select></div>
+          <div class="f"><label>Pedido / cotação</label><select name="order_id"><option value="">Compra com cartão, sem cotação</option>@foreach($orders as $o)<option value="{{ $o->id }}" @selected($receipt->order_id === $o->id)>{{ $o->code }} · {{ $o->pharmacy->trade_name }} · {{ money($o->total) }}</option>@endforeach</select></div>
         </div>
         <h3>Itens da nota</h3>
         <div class="table-wrap"><table>
@@ -55,7 +59,8 @@
       @if($receipt->status === 'conferida')<p class="small">Comissão: {{ $receipt->order_id ? 'calculada no pedido sobre o total da nota' : money($receipt->commission_amount).' ('.number_format($receipt->commission_percent, 2, ',', '').'%)' }}</p>@endif
     </div>
     @if($receipt->status === 'pendente')
-    <div class="card"><form method="post" action="{{ route('receipts.reject', $receipt) }}" class="row">@csrf<input name="reason" placeholder="Motivo (ilegível, duplicada, não é nota...)" required><button class="btn r auto">Rejeitar</button></form></div>
+    <div class="card"><form method="post" action="{{ route('receipts.reject', $receipt) }}" class="row">@csrf<input name="reason" list="motivos" placeholder="Motivo (ilegível, duplicada, não é nota...)" required>
+      <datalist id="motivos"><option>Farmácia não credenciada</option><option>Nota ilegível</option><option>Nota já enviada</option><option>Não é nota fiscal</option><option>Nota de outra pessoa</option></datalist><button class="btn r auto">Rejeitar</button></form></div>
     @endif
   </div>
 </div>

@@ -357,6 +357,47 @@ class FluxoCompletoTest extends TestCase
         $this->assertStringContainsString('120 pontos', MockGateway::$sent[0]['text']);
     }
 
+    public function test_compra_no_balcao_com_cartao_sem_cotacao(): void
+    {
+        $customer = Customer::first();
+        // Foto sem legenda e sem IA: o robô pergunta se é receita ou nota
+        $this->whatsapp($customer->phone, null, 'foto-do-cupom');
+        $this->assertStringContainsString('Responda *1* ou *2*', $this->lastSentTo($customer->phone));
+        $this->whatsapp($customer->phone, '2');
+        $this->assertSame(0, Quote::count());
+        $receipt = Receipt::firstOrFail();
+        $this->assertNull($receipt->order_id);
+        $this->assertStringContainsString('Recebemos sua nota fiscal', $this->lastSentTo($customer->phone));
+
+        // "1" → vira cotação
+        $this->whatsapp($customer->phone, null, 'foto-da-receita');
+        $this->whatsapp($customer->phone, '1');
+        $this->assertSame(1, Quote::count());
+
+        // Lista de credenciadas
+        $this->whatsapp($customer->phone, 'Farmácias');
+        $this->assertStringContainsString('Farmácias credenciadas perto de você', $this->lastSentTo($customer->phone));
+
+        // Farmácia confere o cartão no balcão e registra a venda
+        $pharmacyUser = User::where('email', 'farmacia@demo.local')->first();
+        $this->actingAs($pharmacyUser)->get(route('panel.card', ['cartao' => LoyaltyService::cardNumber($customer)]))->assertOk()->assertSee('Cartão válido');
+        $this->get(route('panel.card', ['cartao' => '999999']))->assertSee('não encontrado');
+        $this->post(route('panel.card.sale', $customer), ['total' => '80,00', 'nf_number' => '12345'])->assertSessionHas('ok');
+        $sale = Receipt::where('source', 'farmacia')->firstOrFail();
+        $this->assertStringContainsString('registrou sua compra de *R$ 80,00*', $this->lastSentTo($customer->phone));
+
+        // Conferência: comissão da farmácia (5%) e pontos do cliente
+        $admin = User::where('role', 'admin')->first();
+        $this->actingAs($admin)->post(route('receipts.verify', $sale), ['pharmacy_id' => $sale->pharmacy_id, 'total' => '80,00', 'nf_number' => '12345', 'order_id' => ''])->assertSessionHas('ok');
+        $this->assertEqualsWithDelta(4.0, $sale->fresh()->commission_amount, 0.001);
+        $this->assertSame(80, $customer->fresh()->points_balance);
+
+        // O cliente manda a mesma nota pelo WhatsApp: bloqueada como repetida
+        $this->post(route('receipts.verify', $receipt), ['pharmacy_id' => $sale->pharmacy_id, 'total' => '80,00', 'nf_number' => '12345', 'order_id' => ''])->assertSessionHas('error');
+        $this->assertSame('pendente', $receipt->fresh()->status);
+        $this->assertSame(80, $customer->fresh()->points_balance);
+    }
+
     public function test_todas_as_telas_abrem(): void
     {
         $admin = User::where('role', 'admin')->first();

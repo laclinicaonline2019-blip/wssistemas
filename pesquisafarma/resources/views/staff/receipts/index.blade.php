@@ -7,7 +7,7 @@
   <tr><th>Nota</th><th>Recebida</th><th>Cliente</th><th>Farmácia</th><th>Pedido</th><th class="num">Total</th><th>Situação</th><th></th></tr>
   @forelse($receipts as $r)
   <tr><td><a href="{{ route('receipts.show', $r) }}"><b>{{ $r->code }}</b></a><div class="small muted">{{ $r->source }}</div></td><td class="small">{{ $r->created_at->format('d/m H:i') }}</td>
-    <td>{{ $r->customer->displayName() }}</td><td>{{ $r->pharmacy?->trade_name ?? $r->issuer_name ?? '—' }}</td><td>{{ $r->order?->code ?? 'avulsa' }}</td>
+    <td>{{ $r->customer->displayName() }}</td><td>{{ $r->pharmacy?->trade_name ?? $r->issuer_name ?? '—' }}</td><td>{{ $r->order?->code ?? ($r->source === 'farmacia' ? '💳 cartão (farmácia)' : '💳 cartão, sem cotação') }}</td>
     <td class="num">{{ $r->total ? money($r->total) : '—' }}</td><td><span class="badge b-{{ $r->status }}">{{ $r->statusLabel() }}</span></td>
     <td><a class="btn sm p" href="{{ route('receipts.show', $r) }}">{{ $r->status === 'pendente' ? 'Conferir' : 'Ver' }}</a></td></tr>
   @empty <tr><td colspan="8" class="empty">Nada por aqui.</td></tr>

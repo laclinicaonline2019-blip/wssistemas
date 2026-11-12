@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Painel') · Pesquisa Farma</title>
 <link rel="icon" href="{{ asset('img/icone.png') }}">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=1">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=4">
 </head>
 <body>
 @php($u = auth()->user())
@@ -38,6 +38,7 @@
     @else
       <div class="grp">{{ $u->pharmacy?->trade_name }}</div>
       <a href="{{ route('panel.home') }}" class="{{ request()->routeIs('panel.home','panel.quote') ? 'on' : '' }}">💊 Cotações</a>
+      <a href="{{ route('panel.card') }}" class="{{ request()->routeIs('panel.card') ? 'on' : '' }}">💳 Cartão fidelidade</a>
       <a href="{{ route('panel.orders') }}" class="{{ request()->routeIs('panel.orders') ? 'on' : '' }}">🧾 Pedidos</a>
       <a href="{{ route('panel.sales') }}" class="{{ request()->routeIs('panel.sales') ? 'on' : '' }}">💰 Vendas e comissão</a>
       <a href="{{ route('panel.promotions') }}" class="{{ request()->routeIs('panel.promotions') ? 'on' : '' }}">🔥 Promoções do dia</a>

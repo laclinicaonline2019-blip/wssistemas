@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Pharmacy;
 use App\Models\Promotion;
 use App\Models\Quote;
 use App\Models\Reward;
@@ -11,6 +12,7 @@ use App\Services\LoyaltyService;
 use App\Services\QuoteService;
 use App\Services\ReceiptService;
 use App\Services\WhatsApp\WhatsAppService;
+use App\Support\Geo;
 use App\Support\Text;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -73,6 +75,9 @@ class PortalController extends Controller
             'promotions' => Promotion::query()->whereIn('status', ['aprovada', 'divulgada'])->with('pharmacy.neighborhood')->latest('id')->limit(12)->get()->filter->isCurrent(),
             'loyalty' => $loyalty->enabled($c),
             'card' => $loyalty->card($c),
+            'pharmacies' => Pharmacy::query()->where('active', true)->with('neighborhood')->get()
+                ->map(fn ($p) => ['p' => $p, 'd' => Geo::distanceKm($c->coordinates(), $p->lat ? [$p->lat, $p->lng] : null)])
+                ->sortBy(fn ($x) => $x['d'] ?? 9999)->take(8)->values(),
         ]);
     }
 

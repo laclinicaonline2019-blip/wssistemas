@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\Neighborhood;
+use App\Models\Pharmacy;
 use App\Models\Quote;
 use App\Models\QuotePharmacy;
 use App\Models\Setting;
@@ -11,6 +12,7 @@ use App\Models\WaMessage;
 use App\Services\WhatsApp\InboundMessage;
 use App\Services\WhatsApp\WhatsAppService;
 use App\Support\Activity;
+use App\Support\Geo;
 use App\Support\Text;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -33,6 +35,7 @@ class WhatsAppBot
         private readonly ReceiptService $receipts,
         private readonly CepLookup $cep,
         private readonly FollowUpService $followUp,
+        private readonly AiAssistant $ai,
     ) {}
 
     public function handle(InboundMessage $in): void
@@ -82,14 +85,32 @@ class WhatsAppBot
 
         // Nota fiscal: com a palavra NOTA, ou qualquer foto quando pedimos a nota no pós-venda.
         if ($in->hasMedia() && ($inPostSale || preg_match('/\b(nota|cupom|comprovante|nf)\b/iu', $text))) {
-            $receipt = $this->receipts->create($customer, $in->mediaBytes, (string) ($in->mime ?: 'image/jpeg'), 'whatsapp');
-            $missing = $customer->bot_state === 'pos_venda' ? (array) $customer->bot_data : [];
-            if (empty($missing['need_delivery']) && empty($missing['need_nps'])) {
-                $customer->update(['bot_state' => null, 'bot_data' => null]);
+            $this->receiveReceipt($customer, $in->mediaBytes, (string) ($in->mime ?: 'image/jpeg'));
+
+            return;
+        }
+
+        // Respondeu se a foto anterior era para cotar ou a nota de uma compra.
+        if ($customer->bot_state === 'foto_tipo') {
+            $prev = WaMessage::find($customer->bot_data['message_id'] ?? 0);
+            $t = Text::slug($text);
+            $customer->update(['bot_state' => null, 'bot_data' => null]);
+            if ($prev && $prev->media_path && preg_match('/^(2|nota|nota fiscal|compra|cupom|comprei)\b/', $t)) {
+                $this->receiveReceipt($customer, Storage::disk('local')->get($prev->media_path), (string) ($prev->mime ?: 'image/jpeg'));
+
+                return;
             }
-            $this->reply($customer, "📄 Recebemos sua nota fiscal ({$receipt->code})! Assim que conferirmos, seus pontos entram e você já está concorrendo aos brindes do mês. 🎁"
-                .(! empty($missing['need_nps']) ? '
-Ah, e de *0 a 10*, quanto você indicaria a Pesquisa Farma a um amigo?' : ''));
+            if ($prev && $prev->media_path && preg_match('/^(1|cotar|cotacao|receita|orcamento|pesquisar)\b/', $t)) {
+                $bytes = Storage::disk('local')->get($prev->media_path);
+                $this->toQuote($customer, new InboundMessage($customer->phone, $prev->type, $prev->body, null, null, $bytes, $prev->mime), $prev, (string) $prev->body);
+
+                return;
+            }
+        }
+
+        // Farmácias credenciadas onde o cartão vale (mais próximas do cliente).
+        if (! $in->hasMedia() && preg_match('/^(farmacias?|credenciadas?|farmacias? credenciadas?|onde (posso )?usar( o cartao)?)\??$/', Text::slug($text))) {
+            $this->reply($customer, $this->pharmaciesText($customer));
 
             return;
         }
@@ -103,12 +124,57 @@ Ah, e de *0 a 10*, quanto você indicaria a Pesquisa Farma a um amigo?' : ''));
         }
 
         if (! $in->hasMedia() && $this->isSmallTalk($text)) {
-            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n📄 Para ganhar pontos, envie a foto da *nota fiscal* com a palavra NOTA.\n💳 Para ver seus pontos, escreva *PONTOS*.");
+            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n📄 Comprou numa farmácia credenciada? Mande a foto da *nota fiscal* e ganhe pontos.\n💳 Seus pontos: escreva *PONTOS* · 🏪 Onde usar o cartão: *FARMÁCIAS*.");
 
             return;
         }
 
+        // Foto sem legenda e sem cotação em aberto: nota fiscal de compra no balcão ou receita para cotar?
+        if ($in->hasMedia() && ! $this->quotes->openDraft($customer)) {
+            $kind = $this->ai->classifyImage($in->mediaBytes, (string) ($in->mime ?: 'image/jpeg'));
+            if ($kind === 'nota_fiscal') {
+                $this->receiveReceipt($customer, $in->mediaBytes, (string) ($in->mime ?: 'image/jpeg'));
+
+                return;
+            }
+            if ($kind === null) {
+                $customer->update(['bot_state' => 'foto_tipo', 'bot_data' => ['message_id' => $msg->id]]);
+                $this->reply($customer, "📷 Recebemos sua foto! Ela é:\n1️⃣ uma *receita/lista* para cotarmos\n2️⃣ a *nota fiscal* de uma compra (para ganhar pontos)\n\nResponda *1* ou *2*.");
+
+                return;
+            }
+        }
+
         $this->toQuote($customer, $in, $msg, $text);
+    }
+
+    /** Registra a nota fiscal (compra pela cotação ou direto no balcão com o cartão fidelidade). */
+    private function receiveReceipt(Customer $customer, string $bytes, string $mime): void
+    {
+        $receipt = $this->receipts->create($customer, $bytes, $mime, 'whatsapp');
+        $customer->refresh();
+        $missing = $customer->bot_state === 'pos_venda' ? (array) $customer->bot_data : [];
+        if (empty($missing['need_delivery']) && empty($missing['need_nps'])) {
+            $customer->update(['bot_state' => null, 'bot_data' => null]);
+        }
+        $this->reply($customer, "📄 Recebemos sua nota fiscal ({$receipt->code})! Assim que conferirmos, seus pontos entram e você já está concorrendo aos brindes do mês. 🎁"
+            .(! empty($missing['need_nps']) ? "\nAh, e de *0 a 10*, quanto você indicaria a Pesquisa Farma a um amigo?" : ''));
+    }
+
+    /** Lista as farmácias credenciadas mais próximas do cliente. */
+    private function pharmaciesText(Customer $customer): string
+    {
+        $origin = $customer->coordinates();
+        $list = Pharmacy::query()->where('active', true)->with('neighborhood')->get()
+            ->map(fn ($p) => ['p' => $p, 'd' => Geo::distanceKm($origin, $p->lat ? [$p->lat, $p->lng] : null)])
+            ->sortBy(fn ($x) => [$x['p']->neighborhood_id === $customer->neighborhood_id ? 0 : 1, $x['d'] ?? 9999])->take(6);
+        $lines = ['🏪 *Farmácias credenciadas perto de você*', 'Apresente seu cartão fidelidade (nº '.LoyaltyService::cardNumber($customer).'), compre e mande a foto da nota aqui para ganhar pontos! 💳', ''];
+        foreach ($list as $x) {
+            $lines[] = '• *'.$x['p']->trade_name.'* — '.($x['p']->neighborhood?->name ?? '').($x['d'] !== null ? ' ('.number_format($x['d'], 1, ',', '.').' km)' : '');
+            $lines[] = '   '.$x['p']->fullAddress();
+        }
+
+        return implode("\n", $lines);
     }
 
     private function toQuote(Customer $customer, InboundMessage $in, WaMessage $msg, string $text): void

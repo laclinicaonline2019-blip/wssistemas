@@ -139,6 +139,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/pedidos', [PanelController::class, 'orders'])->name('orders');
         Route::post('/pedidos/{order}/entregue', [PanelController::class, 'completeOrder'])->name('orders.complete');
         Route::get('/vendas', [PanelController::class, 'sales'])->name('sales');
+        Route::get('/cartao', [PanelController::class, 'card'])->name('card');
+        Route::post('/cartao/{customer}/venda', [PanelController::class, 'cardSale'])->middleware('throttle:30,1')->name('card.sale');
         Route::get('/promocoes', [PanelController::class, 'promotions'])->name('promotions');
         Route::post('/promocoes', [PanelController::class, 'storePromotion'])->name('promotions.store');
     });

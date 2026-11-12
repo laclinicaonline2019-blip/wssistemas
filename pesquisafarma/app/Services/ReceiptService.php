@@ -9,6 +9,7 @@ use App\Models\Receipt;
 use App\Services\WhatsApp\WhatsAppService;
 use App\Support\Activity;
 use App\Support\Text;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -137,6 +138,13 @@ class ReceiptService
         $pharmacy = Pharmacy::findOrFail((int) $data['pharmacy_id']);
         $total = Text::money($data['total']) ?? 0;
 
+        abort_unless($pharmacy->active, 422, 'Farmácia não credenciada: compras fora da rede não geram pontos nem comissão.');
+        $probe = (clone $receipt)->fill(['pharmacy_id' => $pharmacy->id, 'nf_number' => $data['nf_number'] ?? $receipt->nf_number]);
+        $dup = self::duplicates($probe, strict: true)->first();
+        if ($dup) {
+            throw new \InvalidArgumentException("Nota já lançada ({$dup->code}). A mesma nota não gera pontos nem comissão duas vezes.");
+        }
+
         DB::transaction(function () use ($receipt, $data, $pharmacy, $total, $userId) {
             $receipt->fill([
                 'pharmacy_id' => $pharmacy->id, 'total' => $total, 'status' => 'conferida', 'reviewed_by' => $userId, 'reviewed_at' => now(),
@@ -184,9 +192,58 @@ class ReceiptService
         return $receipt;
     }
 
+    /**
+     * Notas possivelmente repetidas (mesma chave, mesmo nº na mesma farmácia, ou mesmo cliente+farmácia+valor+data).
+     * strict = só as que certamente são a mesma nota, entre as já conferidas.
+     */
+    public static function duplicates(Receipt $r, bool $strict = false): Collection
+    {
+        return Receipt::query()->where('id', '!=', (int) $r->id)->where('status', $strict ? '=' : '!=', $strict ? 'conferida' : 'rejeitada')
+            ->where(function ($q) use ($r, $strict) {
+                $any = false;
+                if ($r->nf_key) {
+                    $q->orWhere('nf_key', $r->nf_key);
+                    $any = true;
+                }
+                if ($r->nf_number && $r->pharmacy_id) {
+                    $q->orWhere(fn ($w) => $w->where('pharmacy_id', $r->pharmacy_id)->where('nf_number', $r->nf_number));
+                    $any = true;
+                }
+                if (! $strict && $r->total && $r->pharmacy_id) {
+                    $q->orWhere(fn ($w) => $w->where('customer_id', $r->customer_id)->where('pharmacy_id', $r->pharmacy_id)->where('total', $r->total));
+                    $any = true;
+                }
+                if (! $any) {
+                    $q->whereRaw('1 = 0');
+                }
+            })->get();
+    }
+
+    /**
+     * A farmácia credenciada registra no painel a compra feita no balcão com o cartão fidelidade
+     * (sem cotação). Fica pendente de conferência como qualquer nota; o cliente é avisado.
+     */
+    public function registerCardSale(Pharmacy $pharmacy, Customer $customer, float $total, ?string $nfNumber, ?string $date, ?string $bytes = null, ?string $mime = null, ?int $userId = null): Receipt
+    {
+        $path = null;
+        if ($bytes) {
+            $ext = $mime === 'application/pdf' ? 'pdf' : 'jpg';
+            $path = 'notas/'.now()->format('Y/m').'/'.Str::random(24).'.'.$ext;
+            Storage::disk('local')->put($path, $bytes);
+        }
+        $receipt = Receipt::create(['customer_id' => $customer->id, 'pharmacy_id' => $pharmacy->id, 'source' => 'farmacia', 'file_path' => $path, 'mime' => $mime,
+            'total' => round($total, 2), 'nf_number' => $nfNumber ?: null, 'purchase_date' => $date ?: today(), 'issuer_cnpj' => Text::digits($pharmacy->cnpj) ?: null, 'issuer_name' => $pharmacy->trade_name]);
+        $this->autoLink($receipt);
+        Activity::log('nota.farmacia', "{$pharmacy->trade_name} registrou venda do cartão para {$customer->displayName()}: ".money($total), $receipt, userId: $userId);
+        $this->wa->toCustomer($customer, "💳 A *{$pharmacy->trade_name}* registrou sua compra de *".money($total).'* no cartão fidelidade Pesquisa Farma. Assim que conferirmos, seus pontos entram! 🎁');
+
+        return $receipt;
+    }
+
     public function reject(Receipt $receipt, string $reason, ?int $userId = null): void
     {
         $receipt->update(['status' => 'rejeitada', 'reject_reason' => $reason, 'reviewed_by' => $userId, 'reviewed_at' => now()]);
+        $this->wa->toCustomer($receipt->customer, "📄 Não conseguimos validar a nota {$receipt->code}: {$reason}.\nLembre: os pontos valem para compras nas *farmácias credenciadas* (escreva FARMÁCIAS para ver a lista).");
         Activity::log('nota.rejeitada', "Nota {$receipt->code} rejeitada: {$reason}", $receipt, userId: $userId);
     }
 

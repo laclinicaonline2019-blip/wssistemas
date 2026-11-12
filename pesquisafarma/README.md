@@ -49,6 +49,7 @@ Cliente (WhatsApp) ──► Robô: 1º contato = cadastro (nome, CEP/bairro, en
 | **Painel da farmácia** | Cotações aguardando, resposta com ético/genérico/similar e sugestões, pedidos, vendas e comissão, fechamentos, **promoções do dia** |
 | **Promoções** | Aprovação e **divulgação no WhatsApp** para a lista (toda a lista, mesmo bairro ou clientes próximos), só para quem aceitou; "SAIR" descadastra |
 | **Pós-venda** | Pesquisa única no WhatsApp (entrega S/N + indicação 0–10 + foto da nota), entregas com problema no painel com aviso à farmácia, NPS por televendas e no mês, % de pedidos com nota fiscal, clientes que compraram sem pedido |
+| **Compra no balcão com o cartão** | Cliente compra direto na farmácia credenciada, sem cotação: mostra o cartão e manda a foto da nota (a IA identifica se a foto é nota ou receita; sem IA o robô pergunta 1/2). A farmácia também pode conferir o cartão e registrar a venda no painel. Gera pontos e comissão; nota repetida é bloqueada; "FARMÁCIAS" no WhatsApp lista as credenciadas mais próximas |
 | **Notas fiscais** | Captação da venda pela foto da nota (IA), vínculo automático ao pedido, conferência, notas avulsas (sem pedido) também geram comissão |
 | **Comissões** | Fechamento por farmácia (semanal/mensal), automático todo dia às 06:10 para o período anterior; emitido/pago/cancelado |
 | **Fidelidade** | Regras de pontos (por R$, bônus por produto, multiplicador por farmácia), brindes com estoque e nº mínimo de compras, trocas, **premiação mensal** (sorteio por nota ou ranking) |

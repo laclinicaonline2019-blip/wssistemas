@@ -41,8 +41,9 @@ class ReceiptController extends Controller
 
         return view('staff.receipts.show', [
             'receipt' => $receipt,
-            'pharmacies' => Pharmacy::orderBy('trade_name')->get(),
+            'pharmacies' => Pharmacy::where('active', true)->orderBy('trade_name')->get(),
             'orders' => $orders,
+            'duplicates' => ReceiptService::duplicates($receipt)->load('customer'),
             'comparison' => ReceiptService::comparison($receipt),
             'pointsPreview' => $receipt->total ? $loyalty->calculate($receipt) : null,
             'fileUrl' => $receipt->file_path ? route('file', ['nota', $receipt->id]) : null,
@@ -57,7 +58,11 @@ class ReceiptController extends Controller
             'order_id' => 'nullable|exists:orders,id', 'items' => 'nullable|array',
         ]);
         $data['order_id'] = $data['order_id'] ?? null;
-        $this->receipts->verify($receipt, $data, auth()->id());
+        try {
+            $this->receipts->verify($receipt, $data, auth()->id());
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('receipts.show', $receipt)->with('ok', 'Nota conferida: venda captada, comissão e pontos lançados.');
     }

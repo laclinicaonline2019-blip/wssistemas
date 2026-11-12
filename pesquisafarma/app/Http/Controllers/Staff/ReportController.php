@@ -61,7 +61,7 @@ class ReportController extends Controller
                     ->map(fn ($o) => ['date' => $o->created_at, 'type' => 'Pedido', 'code' => $o->code, 'customer' => $o->customer, 'pharmacy' => $o->pharmacy, 'status' => $o->status, 'total' => $o->total, 'receipt_total' => $o->receipt_total, 'commission' => $o->commission_amount]);
                 $receipts = Receipt::query()->with(['customer', 'pharmacy'])->where('status', 'conferida')->whereNull('order_id')->whereBetween('reviewed_at', [$svc->from, $svc->to])
                     ->when($request->farmacia, fn ($q, $p) => $q->where('pharmacy_id', $p))->when($request->cliente, fn ($q, $c) => $q->where('customer_id', $c))->get()
-                    ->map(fn ($r) => ['date' => $r->reviewed_at, 'type' => 'Nota avulsa', 'code' => $r->code, 'customer' => $r->customer, 'pharmacy' => $r->pharmacy, 'status' => $r->status, 'total' => 0, 'receipt_total' => $r->total, 'commission' => $r->commission_amount]);
+                    ->map(fn ($r) => ['date' => $r->reviewed_at, 'type' => $r->source === 'farmacia' ? 'Cartão no balcão (farmácia)' : 'Compra com cartão (sem cotação)', 'code' => $r->code, 'customer' => $r->customer, 'pharmacy' => $r->pharmacy, 'status' => $r->status, 'total' => 0, 'receipt_total' => $r->total, 'commission' => $r->commission_amount]);
                 $data['rows'] = $orders->concat($receipts)->sortByDesc('date')->values();
                 $data['customers'] = Customer::query()->whereIn('id', $data['rows']->pluck('customer.id'))->orderBy('name')->get();
                 $csv = fn () => $data['rows']->map(fn ($r) => [$r['date']->format('d/m/Y H:i'), $r['type'], $r['code'], $r['customer']->name, $r['pharmacy']?->trade_name, $r['status'], $r['total'], $r['receipt_total'], $r['commission']]);
