@@ -46,6 +46,10 @@ Todas as 20 fases do roadmap foram entregues. Para ir ao ar falta o que depende 
 HostGator, chaves reais das integrações (homologação em sandbox primeiro) e um pentest externo.
 Roadmap completo em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#15-roadmap-de-desenvolvimento).
 
+## Outros sistemas neste repositório
+
+- **[Pesquisa Farma](pesquisafarma/README.md)** — marketplace de cotação de medicamentos pelo WhatsApp (farmácias, comissões, pontos e relatórios). Aplicação Laravel independente na pasta `pesquisafarma/`.
+
 ## Início rápido
 
 **Produção (HostGator):** siga [docs/HOSTGATOR.md](docs/HOSTGATOR.md).

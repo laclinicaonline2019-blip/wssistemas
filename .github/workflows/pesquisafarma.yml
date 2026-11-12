@@ -1,0 +1,27 @@
+name: Pesquisa Farma
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["pesquisafarma/**", ".github/workflows/pesquisafarma.yml"]
+  pull_request:
+    paths: ["pesquisafarma/**", ".github/workflows/pesquisafarma.yml"]
+
+jobs:
+  tests:
+    name: Testes (Pesquisa Farma)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pesquisafarma
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_sqlite, mbstring, intl
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env && php artisan key:generate
+      - run: vendor/bin/pint --test
+      - run: php artisan test
