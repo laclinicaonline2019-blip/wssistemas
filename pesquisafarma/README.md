@@ -26,9 +26,14 @@ Cliente (WhatsApp) ──► Robô: 1º contato = cadastro (nome, CEP/bairro, en
         ▼
    Resultado no WhatsApp (top 1/2/3 com bairro, distância, entrega e endereço) ──► cliente responde "1", "2"...
         ▼
-   Pedido gerado e enviado à farmácia e ao cliente ──► entregue ──► cliente avalia de 1 a 5
+   Pedido gerado e enviado à farmácia e ao cliente
         ▼
-   Cliente envia a foto da NOTA ──► IA lê CNPJ/itens/total ──► liga ao pedido ──► conferência
+   Pós-venda automático (prazo de entrega + 30 min): UMA mensagem com 3 perguntas
+     1️⃣ Seu pedido chegou? S/N   2️⃣ De 0 a 10, indicaria a Pesquisa Farma?   3️⃣ Foto da nota → brindes
+     cliente responde "S 10" + foto · "N" avisa a farmácia e o televendas e pergunta de novo em 1 h
+     cotação sem resposta → "número da opção, COMPREI ou DESISTI" (COMPREI → indicação + nota)
+        ▼
+   Foto da nota (sem precisar escrever NOTA) ──► IA lê CNPJ/itens/total ──► liga ao pedido ──► conferência
         ├─ comissão passa a incidir sobre TUDO o que foi comprado (total da nota)
         ├─ comparativo cotado × comprado (itens fora da cotação)
         └─ pontos de fidelidade + participação na premiação do mês
@@ -43,6 +48,7 @@ Cliente (WhatsApp) ──► Robô: 1º contato = cadastro (nome, CEP/bairro, en
 | **Farmácias** | Cadastro com **% de comissão e ciclo (semanal/mensal)**, CNPJ (reconhece a nota), coordenadas, regras de entrega (raio, taxa base + por km, grátis acima de, prazo) e **zonas de entrega por bairro**; acessos ao painel |
 | **Painel da farmácia** | Cotações aguardando, resposta com ético/genérico/similar e sugestões, pedidos, vendas e comissão, fechamentos, **promoções do dia** |
 | **Promoções** | Aprovação e **divulgação no WhatsApp** para a lista (toda a lista, mesmo bairro ou clientes próximos), só para quem aceitou; "SAIR" descadastra |
+| **Pós-venda** | Pesquisa única no WhatsApp (entrega S/N + indicação 0–10 + foto da nota), entregas com problema no painel com aviso à farmácia, NPS por televendas e no mês, % de pedidos com nota fiscal, clientes que compraram sem pedido |
 | **Notas fiscais** | Captação da venda pela foto da nota (IA), vínculo automático ao pedido, conferência, notas avulsas (sem pedido) também geram comissão |
 | **Comissões** | Fechamento por farmácia (semanal/mensal), automático todo dia às 06:10 para o período anterior; emitido/pago/cancelado |
 | **Fidelidade** | Regras de pontos (por R$, bônus por produto, multiplicador por farmácia), brindes com estoque e nº mínimo de compras, trocas, **premiação mensal** (sorteio por nota ou ranking) |
@@ -73,7 +79,7 @@ Demonstração: `admin@pesquisafarma.local` / `Trocar@123`, `televendas1@demo.lo
 `farmacia@demo.local` / `Demo@12345`.
 
 **Agendador (obrigatório em produção)** — no cron: `* * * * * php /caminho/pesquisafarma/artisan schedule:run`
-(expira respostas atrasadas, gera fechamentos de comissão e encerra cotações paradas há 3 dias).
+(envia o pós-venda, expira respostas atrasadas, gera fechamentos de comissão e encerra cotações paradas há 3 dias).
 
 ### WhatsApp
 

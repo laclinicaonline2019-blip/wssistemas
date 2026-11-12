@@ -45,12 +45,12 @@
 </table></div>
 @elseif($report === 'televendas')
 <div class="card table-wrap"><table>
-  <tr><th>Televendas</th><th class="num">Atendimentos</th><th class="num">Pedidos</th><th class="num">Conversão</th><th class="num">Vendas</th><th class="num">Pedido → envio</th><th class="num">Pedido → apresentar</th><th class="num">Pedido → finalizar</th><th class="num">Avaliação</th><th class="num">Ações</th><th class="num">Mensagens</th></tr>
+  <tr><th>Televendas</th><th class="num">Atendimentos</th><th class="num">Pedidos</th><th class="num">Conversão</th><th class="num">Vendas</th><th class="num">Pedido → envio</th><th class="num">Pedido → apresentar</th><th class="num">Pedido → finalizar</th><th class="num">Avaliação</th><th class="num">NPS</th><th class="num">Ações</th><th class="num">Mensagens</th></tr>
   @forelse($rows as $r)
   <tr><td><a href="{{ route('activity', ['usuario' => $r['user']->id]) }}">{{ $r['user']->name }}</a></td><td class="num">{{ $r['attendances'] }}</td><td class="num">{{ $r['orders'] }}</td><td class="num">{{ $r['conversion'] !== null ? $r['conversion'].'%' : '—' }}</td>
     <td class="num">{{ money($r['sales_total']) }}</td><td class="num">{{ minutes_label($r['avg_to_dispatch']) }}</td><td class="num">{{ minutes_label($r['avg_to_present']) }}</td><td class="num">{{ minutes_label($r['avg_to_close']) }}</td>
-    <td class="num">{{ $r['feedback_avg'] ? number_format($r['feedback_avg'], 1, ',', '').' ★ ('.$r['feedback_count'].')' : '—' }}</td><td class="num">{{ $r['actions'] }}</td><td class="num">{{ $r['messages'] }}</td></tr>
-  @empty <tr><td colspan="11" class="empty">Sem atendimentos.</td></tr>@endforelse
+    <td class="num">{{ $r['feedback_avg'] ? number_format($r['feedback_avg'], 1, ',', '').' ★ ('.$r['feedback_count'].')' : '—' }}</td><td class="num">{{ $r['nps'] !== null ? $r['nps'].' ('.$r['nps_count'].')' : '—' }}</td><td class="num">{{ $r['actions'] }}</td><td class="num">{{ $r['messages'] }}</td></tr>
+  @empty <tr><td colspan="12" class="empty">Sem atendimentos.</td></tr>@endforelse
 </table></div>
 @elseif($report === 'tempos')
 <div class="grid g4">
@@ -60,7 +60,11 @@
   <div class="kpi"><div class="l">Pedido → cotação apresentada</div><div class="v">{{ minutes_label($times['request_to_present']) }}</div></div>
   <div class="kpi"><div class="l">Pedido → finalização</div><div class="v">{{ minutes_label($times['request_to_close']) }}</div></div>
   <div class="kpi"><div class="l">Avaliação média</div><div class="v">{{ $times['feedback_avg'] ? number_format($times['feedback_avg'], 2, ',', '').' ★' : '—' }}</div><div class="s">{{ $times['feedback_count'] }} avaliação(ões)</div></div>
-  <div class="kpi" style="grid-column:span 2"><div class="l">Distribuição das notas</div>
+  <div class="kpi"><div class="l">Indicaria a Pesquisa Farma (NPS)</div><div class="v">{{ $times['nps'] ?? '—' }}</div><div class="s">{{ $times['nps_count'] }} resposta(s) · média {{ $times['nps_avg'] ?? '—' }}/10<br>{{ $times['nps_promoters'] }} promotores (9–10) · {{ $times['nps_passives'] }} neutros · {{ $times['nps_detractors'] }} detratores (0–6)</div></div>
+  <div class="kpi"><div class="l">Entrega confirmada pelo cliente</div><div class="v">{{ $times['ps_delivery_confirmed'] }}/{{ $times['ps_orders'] }}</div><div class="s">{{ $times['ps_issues'] }} com problema ({{ $times['ps_issues_open'] }} em aberto)</div></div>
+  <div class="kpi"><div class="l">Pedidos com nota fiscal conferida</div><div class="v">{{ $times['ps_receipt_rate'] !== null ? number_format($times['ps_receipt_rate'], 0).'%' : '—' }}</div><div class="s">{{ $times['ps_with_receipt'] }} de {{ $times['ps_orders'] }}</div></div>
+  <div class="kpi"><div class="l">Disseram que compraram sem pedido</div><div class="v">{{ $times['ps_bought_without_order'] }}</div><div class="s">{{ $times['ps_gave_up'] }} desistiram</div></div>
+  <div class="kpi" style="grid-column:span 2"><div class="l">Distribuição das notas de atendimento (1 a 5)</div>
     @foreach(array_reverse($times['feedback_dist'], true) as $n => $q)
       @php($pct = $times['feedback_count'] ? round($q / $times['feedback_count'] * 100) : 0)
       <div class="row" style="gap:6px;align-items:center;flex-wrap:nowrap"><span class="auto stars" style="width:70px">{{ str_repeat('★', $n) }}</span><div style="flex:1;background:#eef2f7;border-radius:4px;height:10px"><div style="width:{{ $pct }}%;background:var(--green);height:10px;border-radius:4px"></div></div><span class="auto small" style="width:60px">{{ $q }} ({{ $pct }}%)</span></div>

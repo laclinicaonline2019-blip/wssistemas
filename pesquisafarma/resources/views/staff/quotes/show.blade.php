@@ -16,7 +16,8 @@
   <div class="kpi"><div class="l">Envio às farmácias</div><div class="v" style="font-size:16px">{{ minutes_label(\App\Models\Quote::minutesBetween($quote->requested_at, $quote->dispatched_at)) }}</div><div class="s">{{ $quote->dispatched_at?->format('H:i') ?? 'não enviada' }}</div></div>
   <div class="kpi"><div class="l">1ª resposta</div><div class="v" style="font-size:16px">{{ minutes_label(\App\Models\Quote::minutesBetween($quote->dispatched_at, $quote->first_response_at)) }}</div><div class="s">após o envio</div></div>
   <div class="kpi"><div class="l">Pedido até finalizar</div><div class="v" style="font-size:16px">{{ minutes_label(\App\Models\Quote::minutesBetween($quote->requested_at, $quote->closed_at ?? ($quote->isOpen() ? now() : null))) }}</div>
-    <div class="s">@if($quote->feedback_rating)<span class="stars">{{ str_repeat('★', $quote->feedback_rating) }}</span> {{ $quote->feedback_comment }}@else sem avaliação @endif</div></div>
+    <div class="s">Indicaria: <b>{{ $quote->nps_score !== null ? $quote->nps_score.'/10' : '—' }}</b>@if($quote->feedback_rating) · <span class="stars">{{ str_repeat('★', $quote->feedback_rating) }}</span>@endif
+      @if($quote->customer_reported === 'comprou') · <b>cliente disse que comprou</b>@elseif($quote->customer_reported === 'desistiu') · cliente desistiu @endif</div></div>
 </div>
 
 <div class="grid g2">

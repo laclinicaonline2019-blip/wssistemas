@@ -6,11 +6,23 @@
     <div class="sub">{{ $order->created_at->format('d/m/Y H:i') }} · @if($order->quote)cotação <a href="{{ route('quotes.show', $order->quote) }}">{{ $order->quote->code }}</a> · @endif televendas {{ $order->operator?->name ?? '—' }}</div></div>
   <div class="row auto">
     @if($order->status === 'confirmado')
+      <form method="post" action="{{ route('orders.ask', $order) }}">@csrf<button class="btn">📲 Enviar pesquisa de pós-venda agora</button></form>
       <form method="post" action="{{ route('orders.complete', $order) }}">@csrf<button class="btn g">✔ Entregue / retirado</button></form>
       @unless($order->commission_statement_id)<form method="post" action="{{ route('orders.cancel', $order) }}">@csrf<button class="btn r" data-confirm="Cancelar o pedido?">Cancelar</button></form>@endunless
     @endif
   </div>
 </div>
+@if($order->hasOpenIssue())
+<div class="alert err">⚠️ {{ $order->delivery_issue }} <span class="small">({{ $order->delivery_issue_at->format('d/m H:i') }})</span>
+  <form method="post" action="{{ route('orders.resolve', $order) }}" style="display:inline">@csrf<button class="btn sm">Marcar como resolvido</button></form></div>
+@endif
+<div class="card"><h3>📲 Pós-venda</h3><div class="row">
+  <div class="small">Entrega confirmada pelo cliente: <b>{{ $order->delivery_confirmed_at ? $order->delivery_confirmed_at->format('d/m H:i') : 'ainda não' }}</b></div>
+  <div class="small">Pergunta automática: {{ $order->followup_at ? 'agendada para '.$order->followup_at->format('d/m H:i') : ($order->followup_count ? 'enviada '.$order->followup_count.'x' : '—') }}</div>
+  <div class="small">Indicação (0–10): <b>{{ $order->quote?->nps_score ?? '—' }}</b></div>
+  <div class="small">Nota fiscal: <b>{{ $order->receipts->where('status', 'conferida')->isNotEmpty() ? 'recebida e conferida ✔' : ($order->receipts->isNotEmpty() ? 'recebida, aguardando conferência' : ($order->quote?->receipt_requested_at ? 'solicitada em '.$order->quote->receipt_requested_at->format('d/m H:i') : 'não enviada')) }}</b></div>
+  @if($order->delivery_issue && ! $order->hasOpenIssue())<div class="small muted">Pendência resolvida: {{ $order->delivery_issue }}</div>@endif
+</div></div>
 <div class="grid g3">
   <div class="card"><h3>Cliente</h3><a href="{{ route('customers.show', $order->customer) }}"><b>{{ $order->customer->displayName() }}</b></a>
     <div class="small">{{ \App\Support\Text::formatPhone($order->customer->phone) }}</div><div class="small">{{ $order->quote?->delivery_address ?: $order->customer->fullAddress() }}</div></div>

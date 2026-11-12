@@ -3,6 +3,7 @@
 use App\Models\Quote;
 use App\Models\User;
 use App\Services\CommissionService;
+use App\Services\FollowUpService;
 use App\Services\QuoteService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,6 +11,10 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('pf:expirar-respostas', function (QuoteService $quotes) {
     $this->info($quotes->expireOverdue().' resposta(s) de farmácia marcadas como sem resposta.');
 })->purpose('Marca farmácias que não responderam no prazo');
+
+Artisan::command('pf:pos-venda', function (FollowUpService $followUp) {
+    $this->info($followUp->runDue().' pergunta(s) de pós-venda enviada(s).');
+})->purpose('Pergunta ao cliente se o pedido chegou / se comprou, pede indicação e a nota fiscal');
 
 Artisan::command('pf:fechar-comissoes', function (CommissionService $commissions) {
     $this->info($commissions->generateDue().' fechamento(s) de comissão gerado(s).');
@@ -22,6 +27,7 @@ Artisan::command('pf:encerrar-paradas', function () {
 })->purpose('Encerra cotações paradas há mais de 3 dias');
 
 Schedule::command('pf:expirar-respostas')->everyFiveMinutes();
+Schedule::command('pf:pos-venda')->everyFiveMinutes()->between('8:00', '21:00');
 Schedule::command('pf:fechar-comissoes')->dailyAt('06:10');
 Schedule::command('pf:encerrar-paradas')->dailyAt('03:20');
 

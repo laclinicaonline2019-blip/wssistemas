@@ -132,6 +132,8 @@ class ReportService
                 'avg_to_close' => $this->avg($q->map(fn ($x) => Quote::minutesBetween($x->requested_at, $x->closed_at))),
                 'feedback_avg' => $rated->count() ? round($rated->avg('feedback_rating'), 2) : null,
                 'feedback_count' => $rated->count(),
+                'nps' => self::nps($q)['nps'],
+                'nps_count' => self::nps($q)['nps_count'],
                 'actions' => ($actions[$u->id] ?? collect())->count(),
                 'messages' => ($messages[$u->id] ?? collect())->count(),
             ];
@@ -158,6 +160,37 @@ class ReportService
             'feedback_avg' => $rated->count() ? round($rated->avg('feedback_rating'), 2) : null,
             'feedback_count' => $rated->count(),
             'feedback_dist' => collect(range(1, 5))->mapWithKeys(fn ($n) => [$n => $rated->where('feedback_rating', $n)->count()])->all(),
+        ] + self::nps($q) + $this->postSale();
+    }
+
+    /** NPS = % promotores (9–10) − % detratores (0–6). */
+    public static function nps(Collection $quotes): array
+    {
+        $s = $quotes->whereNotNull('nps_score');
+        $n = $s->count();
+        $prom = $s->where('nps_score', '>=', 9)->count();
+        $det = $s->where('nps_score', '<=', 6)->count();
+
+        return ['nps' => $n ? (int) round(($prom - $det) / $n * 100) : null, 'nps_count' => $n, 'nps_promoters' => $prom,
+            'nps_passives' => $n - $prom - $det, 'nps_detractors' => $det, 'nps_avg' => $n ? round($s->avg('nps_score'), 1) : null];
+    }
+
+    /** Como sabemos se o cliente comprou: entrega confirmada, nota recebida, compra declarada. */
+    public function postSale(): array
+    {
+        $orders = Order::query()->whereBetween('created_at', $this->range())->where('status', '!=', 'cancelado')->withCount(['receipts as verified_receipts' => fn ($q) => $q->where('status', 'conferida')])->get();
+        $quotes = Quote::query()->whereBetween('requested_at', $this->range())->get();
+
+        return [
+            'ps_orders' => $orders->count(),
+            'ps_delivery_confirmed' => $orders->whereNotNull('delivery_confirmed_at')->count(),
+            'ps_delivered' => $orders->where('status', 'entregue')->count(),
+            'ps_issues' => $orders->whereNotNull('delivery_issue')->count(),
+            'ps_issues_open' => $orders->filter->hasOpenIssue()->count(),
+            'ps_with_receipt' => $orders->where('verified_receipts', '>', 0)->count(),
+            'ps_receipt_rate' => $orders->count() ? round($orders->where('verified_receipts', '>', 0)->count() / $orders->count() * 100, 1) : null,
+            'ps_bought_without_order' => $quotes->where('customer_reported', 'comprou')->count(),
+            'ps_gave_up' => $quotes->where('customer_reported', 'desistiu')->count(),
         ];
     }
 

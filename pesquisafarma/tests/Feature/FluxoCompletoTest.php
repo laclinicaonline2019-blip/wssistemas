@@ -13,6 +13,7 @@ use App\Models\Receipt;
 use App\Models\Reward;
 use App\Models\User;
 use App\Services\CommissionService;
+use App\Services\FollowUpService;
 use App\Services\LoyaltyService;
 use App\Services\QuoteService;
 use App\Services\ReceiptService;
@@ -145,19 +146,27 @@ class FluxoCompletoTest extends TestCase
         $this->assertSame(6.0, $order->commission_percent);
         $this->assertEqualsWithDelta(2.16, $order->commission_amount, 0.001);
         $this->assertSame('pedido', $quote->fresh()->status);
-        $this->assertStringContainsString('NOTA', $this->lastSentTo($phone));
+        $this->assertNotNull($order->followup_at, 'pós-venda agendado');
 
-        // 7) Pedido entregue → pede avaliação; cliente dá nota 5
-        $this->actingAs($tele)->post(route('orders.complete', $order))->assertSessionHas('ok');
+        // 7) Pós-venda: UMA mensagem com as 3 perguntas (chegou? indicaria? nota fiscal)
+        $this->travel(3)->hours();
+        $this->artisan('pf:pos-venda')->assertSuccessful();
+        $survey = $this->lastSentTo($phone);
+        $this->assertStringContainsString('chegou? *S* ou *N*', $survey);
+        $this->assertStringContainsString('0 a 10', $survey);
+        $this->assertStringContainsString('foto da nota fiscal', $survey);
         auth()->logout();
-        $this->whatsapp($phone, '5 ótimo atendimento');
+        $this->whatsapp($phone, 'S 10');
         $quote->refresh();
+        $order->refresh();
+        $this->assertSame('entregue', $order->status);
+        $this->assertNotNull($order->delivery_confirmed_at);
         $this->assertSame('finalizada', $quote->status);
-        $this->assertSame(5, $quote->feedback_rating);
-        $this->assertSame('ótimo atendimento', $quote->feedback_comment);
+        $this->assertSame(10, $quote->nps_score);
+        $this->assertStringContainsString('foto da nota', $this->lastSentTo($phone));
 
-        // 8) Cliente manda a nota fiscal (comprou também uma vitamina) → captação
-        $this->whatsapp($phone, 'segue a nota', 'fake-image-bytes');
+        // 8) Cliente manda só a foto (sem escrever NOTA) → captação da venda
+        $this->whatsapp($phone, null, 'fake-image-bytes');
         $receipt = Receipt::firstOrFail();
         $this->assertSame('pendente', $receipt->status);
         $this->assertSame($order->id, $receipt->order_id, 'liga automaticamente ao pedido recente');
@@ -194,6 +203,69 @@ class FluxoCompletoTest extends TestCase
         $this->assertSame($st->id, $order->fresh()->commission_statement_id);
         $this->expectExceptionMessage('Já existe fechamento');
         app(CommissionService::class)->generate(Pharmacy::find($bemEstar->pharmacy_id), CarbonImmutable::today(), CarbonImmutable::today());
+    }
+
+    private function presentedQuoteWithOrder(): array
+    {
+        $customer = Customer::first();
+        $svc = app(QuoteService::class);
+        $quote = $svc->createFromMessage($customer, 'Omeprazol 20mg', channel: 'telefone');
+        $pharmacy = Pharmacy::where('trade_name', 'Drogaria Bem Estar')->first();
+        $svc->dispatch($quote, [$pharmacy->id]);
+        $d = $quote->dispatches()->first();
+        $svc->respond($d, ['offers' => [$quote->items[0]->id => [['type' => 'generico', 'price' => '15']]], 'delivers' => '1', 'delivery_fee' => '5']);
+        $svc->present($quote->fresh());
+
+        return [$customer, $quote->fresh(), $d->fresh()];
+    }
+
+    public function test_pos_venda_nao_chegou_avisa_farmacia_e_pergunta_de_novo(): void
+    {
+        [$customer, $quote, $d] = $this->presentedQuoteWithOrder();
+        $this->whatsapp($customer->phone, '1');
+        $order = Order::firstOrFail();
+        app(FollowUpService::class)->askPostSale($customer->fresh(), $quote, $order, askDelivery: true);
+
+        $this->whatsapp($customer->phone, 'N 4 o motoboy não apareceu');
+        $order->refresh();
+        $this->assertTrue($order->hasOpenIssue());
+        $this->assertStringContainsString('motoboy', $order->delivery_issue);
+        $this->assertSame(4, $quote->fresh()->nps_score);
+        $this->assertNotNull($order->followup_at, 'pergunta de novo em 1 hora');
+        $pharmacyMsgs = array_filter(MockGateway::$sent, fn ($m) => $m['phone'] === $d->pharmacy->whatsapp && str_contains($m['text'], 'não recebeu'));
+        $this->assertNotEmpty($pharmacyMsgs, 'farmácia avisada');
+        $admin = User::where('role', 'admin')->first();
+        $this->actingAs($admin)->get(route('dashboard'))->assertOk()->assertSee('Entregas com problema');
+
+        // Respostas em partes: só a entrega agora
+        $this->travel(61)->minutes();
+        $this->artisan('pf:pos-venda');
+        auth()->logout();
+        $this->whatsapp($customer->phone, 'sim');
+        $this->assertSame('entregue', $order->fresh()->status);
+        $this->assertFalse($order->fresh()->hasOpenIssue());
+    }
+
+    public function test_pos_venda_respostas_separadas_e_cliente_que_comprou_sem_pedido(): void
+    {
+        [$customer, $quote] = $this->presentedQuoteWithOrder();
+        $this->travel(4)->hours();
+        $this->artisan('pf:pos-venda');
+        $this->assertStringContainsString('COMPREI', $this->lastSentTo($customer->phone));
+        $this->whatsapp($customer->phone, 'comprei');
+        $quote->refresh();
+        $this->assertSame('comprou', $quote->customer_reported);
+        $this->assertSame('finalizada', $quote->status);
+        $msg = $this->lastSentTo($customer->phone);
+        $this->assertStringNotContainsString('chegou?', $msg);
+        $this->assertStringContainsString('0 a 10', $msg);
+        // Manda a foto antes de responder a nota → registra a nota e cobra só a indicação
+        $this->whatsapp($customer->phone, null, 'foto');
+        $this->assertSame(1, Receipt::count());
+        $this->assertStringContainsString('0 a 10', $this->lastSentTo($customer->phone));
+        $this->whatsapp($customer->phone, '8');
+        $this->assertSame(8, $quote->fresh()->nps_score);
+        $this->assertNull($customer->fresh()->bot_state);
     }
 
     public function test_nota_avulsa_gera_comissao_propria_e_troca_de_brinde(): void

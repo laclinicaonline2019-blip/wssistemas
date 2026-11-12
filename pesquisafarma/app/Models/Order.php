@@ -16,7 +16,8 @@ class Order extends Model
     protected $casts = [
         'subtotal' => 'float', 'delivery_fee' => 'float', 'total' => 'float', 'receipt_total' => 'float',
         'commission_percent' => 'float', 'commission_base' => 'float', 'commission_amount' => 'float',
-        'completed_at' => 'datetime', 'cancelled_at' => 'datetime',
+        'completed_at' => 'datetime', 'cancelled_at' => 'datetime', 'followup_at' => 'datetime',
+        'delivery_confirmed_at' => 'datetime', 'delivery_issue_at' => 'datetime', 'delivery_issue_resolved_at' => 'datetime',
     ];
 
     public const STATUSES = ['confirmado' => 'Confirmado', 'entregue' => 'Entregue/retirado', 'cancelado' => 'Cancelado'];
@@ -24,6 +25,11 @@ class Order extends Model
     protected static function booted(): void
     {
         static::creating(fn (self $o) => $o->code ??= 'PED-'.now()->format('ymd').'-'.strtoupper(substr(bin2hex(random_bytes(3)), 0, 5)));
+    }
+
+    public function hasOpenIssue(): bool
+    {
+        return $this->delivery_issue !== null && $this->delivery_issue_resolved_at === null;
     }
 
     public function quote(): BelongsTo

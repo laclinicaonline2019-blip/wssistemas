@@ -22,7 +22,7 @@ use Throwable;
  *  2) texto ou foto → cotação (a IA monta os itens; o televendas confere e envia às farmácias);
  *  3) foto com "NOTA" na legenda → captação da venda pela nota fiscal;
  *  4) resposta 1/2/3 após a cotação → pedido na farmácia escolhida;
- *  5) nota de 1 a 5 → avaliação do atendimento.
+ *  5) pós-venda: "seu pedido chegou?", indicação de 0 a 10 e pedido da nota fiscal (concorre a brindes).
  * Tudo fica registrado na conversa, visível para todos os televendas.
  */
 class WhatsAppBot
@@ -32,6 +32,7 @@ class WhatsAppBot
         private readonly QuoteService $quotes,
         private readonly ReceiptService $receipts,
         private readonly CepLookup $cep,
+        private readonly FollowUpService $followUp,
     ) {}
 
     public function handle(InboundMessage $in): void
@@ -66,16 +67,12 @@ class WhatsAppBot
             return;
         }
 
-        if ($customer->bot_state === 'avaliacao' && preg_match('/^\s*([1-5])\b/', $text, $m)) {
-            $quote = Quote::find($customer->bot_data['quote_id'] ?? 0);
-            if ($quote) {
-                $this->quotes->saveFeedback($quote, (int) $m[1], trim(substr($text, strlen($m[0]))) ?: null);
-            }
-            $customer->update(['bot_state' => null, 'bot_data' => null]);
-            $this->reply($customer, (int) $m[1] >= 4 ? 'Muito obrigado pela avaliação! 💚' : 'Obrigado pela avaliação. Vamos melhorar! Se quiser, conte o que aconteceu. 🙏');
-
+        // Pós-venda (uma mensagem com 3 perguntas): chegou? indicaria (0–10)? foto da nota. Também COMPREI/DESISTI.
+        $inPostSale = in_array($customer->bot_state, Customer::FOLLOWUP_STATES, true);
+        if ($this->followUp->handle($customer, $text, $in->hasMedia(), $this->quotes)) {
             return;
         }
+        $customer->refresh();
 
         if ($customer->bot_state === 'escolha' && preg_match('/^\s*(?:op[cç][aã]o\s*)?([1-9])\s*$/iu', $text, $m)) {
             $this->chooseOption($customer, (int) $m[1]);
@@ -83,9 +80,16 @@ class WhatsAppBot
             return;
         }
 
-        if ($in->hasMedia() && preg_match('/\b(nota|cupom|comprovante|nf)\b/iu', $text)) {
+        // Nota fiscal: com a palavra NOTA, ou qualquer foto quando pedimos a nota no pós-venda.
+        if ($in->hasMedia() && ($inPostSale || preg_match('/\b(nota|cupom|comprovante|nf)\b/iu', $text))) {
             $receipt = $this->receipts->create($customer, $in->mediaBytes, (string) ($in->mime ?: 'image/jpeg'), 'whatsapp');
-            $this->reply($customer, "📄 Recebemos sua nota fiscal ({$receipt->code})! Vamos conferir e lançar seus pontos. Obrigado! 🎁");
+            $missing = $customer->bot_state === 'pos_venda' ? (array) $customer->bot_data : [];
+            if (empty($missing['need_delivery']) && empty($missing['need_nps'])) {
+                $customer->update(['bot_state' => null, 'bot_data' => null]);
+            }
+            $this->reply($customer, "📄 Recebemos sua nota fiscal ({$receipt->code})! Assim que conferirmos, seus pontos entram e você já está concorrendo aos brindes do mês. 🎁"
+                .(! empty($missing['need_nps']) ? '
+Ah, e de *0 a 10*, quanto você indicaria a Pesquisa Farma a um amigo?' : ''));
 
             return;
         }

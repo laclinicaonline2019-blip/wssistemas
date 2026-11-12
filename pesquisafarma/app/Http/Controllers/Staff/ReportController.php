@@ -48,8 +48,8 @@ class ReportController extends Controller
                 break;
             case 'televendas':
                 $data['rows'] = $svc->operators();
-                $csv = fn () => $data['rows']->map(fn ($r) => [$r['user']->name, $r['attendances'], $r['orders'], $r['sales_total'], $r['conversion'], $r['avg_to_dispatch'], $r['avg_to_present'], $r['avg_to_close'], $r['feedback_avg'], $r['actions'], $r['messages']]);
-                $head = ['Televendas', 'Atendimentos', 'Pedidos', 'Vendas', 'Conversão %', 'Min. até envio', 'Min. até apresentar', 'Min. até finalizar', 'Nota média', 'Ações', 'Mensagens'];
+                $csv = fn () => $data['rows']->map(fn ($r) => [$r['user']->name, $r['attendances'], $r['orders'], $r['sales_total'], $r['conversion'], $r['avg_to_dispatch'], $r['avg_to_present'], $r['avg_to_close'], $r['feedback_avg'], $r['nps'], $r['actions'], $r['messages']]);
+                $head = ['Televendas', 'Atendimentos', 'Pedidos', 'Vendas', 'Conversão %', 'Min. até envio', 'Min. até apresentar', 'Min. até finalizar', 'Nota média', 'NPS', 'Ações', 'Mensagens'];
                 break;
             case 'tempos':
                 $data['times'] = $svc->times();

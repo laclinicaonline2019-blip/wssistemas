@@ -17,7 +17,8 @@ class Quote extends Model
         'ai_extracted' => 'boolean', 'radius_km' => 'float',
         'requested_at' => 'datetime', 'attended_at' => 'datetime', 'dispatched_at' => 'datetime',
         'response_deadline_at' => 'datetime', 'first_response_at' => 'datetime', 'presented_at' => 'datetime',
-        'closed_at' => 'datetime', 'feedback_at' => 'datetime',
+        'closed_at' => 'datetime', 'feedback_at' => 'datetime', 'nps_at' => 'datetime', 'followup_at' => 'datetime',
+        'receipt_requested_at' => 'datetime',
     ];
 
     public const STATUSES = [
@@ -69,6 +70,12 @@ class Quote extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(WaMessage::class);
+    }
+
+    /** Classificação de indicação: promotor (9–10), neutro (7–8) ou detrator (0–6). */
+    public static function npsGroup(?int $score): ?string
+    {
+        return $score === null ? null : ($score >= 9 ? 'promotor' : ($score >= 7 ? 'neutro' : 'detrator'));
     }
 
     public function statusLabel(): string

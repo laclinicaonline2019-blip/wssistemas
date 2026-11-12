@@ -71,6 +71,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/pedidos', [Staff\OrderController::class, 'index'])->name('orders.index');
         Route::get('/pedidos/{order}', [Staff\OrderController::class, 'show'])->name('orders.show');
         Route::post('/pedidos/{order}/entregue', [Staff\OrderController::class, 'complete'])->name('orders.complete');
+        Route::post('/pedidos/{order}/resolvido', [Staff\OrderController::class, 'resolveIssue'])->name('orders.resolve');
+        Route::post('/pedidos/{order}/perguntar-entrega', [Staff\OrderController::class, 'askDelivery'])->name('orders.ask');
         Route::post('/pedidos/{order}/cancelar', [Staff\OrderController::class, 'cancel'])->name('orders.cancel');
 
         Route::resource('clientes', Staff\CustomerController::class)->parameters(['clientes' => 'customer'])->names('customers')->except('destroy');

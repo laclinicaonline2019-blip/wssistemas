@@ -27,7 +27,7 @@ use InvalidArgumentException;
  */
 class QuoteService
 {
-    public function __construct(private readonly AiAssistant $ai, private readonly WhatsAppService $wa) {}
+    public function __construct(private readonly AiAssistant $ai, private readonly WhatsAppService $wa, private readonly FollowUpService $followUp) {}
 
     // ------------------------------------------------------------------ Entrada
 
@@ -395,6 +395,9 @@ class QuoteService
         $this->wa->toCustomer($quote->customer, $this->customerMessage($quote, $top), $quote->id);
         $quote->forceFill(['status' => in_array($quote->status, ['enviada', 'respondida', 'apresentada'], true) ? 'apresentada' : $quote->status, 'presented_at' => $quote->presented_at ?? now()])->save();
         $quote->customer->update(['bot_state' => 'escolha', 'bot_data' => ['quote_id' => $quote->id]]);
+        if (! $quote->followup_at && $quote->followup_count === 0) {
+            $this->followUp->scheduleForQuote($quote); // sem resposta? perguntamos se comprou
+        }
         Activity::log('cotacao.apresentada', "Cotação {$quote->code} apresentada ao cliente", $quote, userId: $userId);
     }
 
@@ -459,6 +462,8 @@ class QuoteService
         });
 
         $order->load('items', 'customer', 'pharmacy.neighborhood');
+        $quote->forceFill(['followup_at' => null])->save();
+        $this->followUp->scheduleForOrder($order, $dispatch->delivery_eta_min); // pós-venda: "seu pedido chegou?"
         $this->wa->toPharmacy($order->pharmacy, $this->orderMessageForPharmacy($order), $quote->id);
         $this->wa->toCustomer($order->customer, $this->orderMessageForCustomer($order), $quote->id);
         $order->customer->update(['bot_state' => null, 'bot_data' => null]);
@@ -496,16 +501,17 @@ class QuoteService
         $lines[] = $o->fulfillment === 'entrega' ? '🛵 A farmácia vai entregar no seu endereço.' : '🏪 Seu pedido estará separado para retirada.';
         $lines[] = '*Total: '.money($o->total).'*';
         $lines[] = '';
-        $lines[] = '📸 Ao receber, envie a *foto da nota fiscal* aqui (escreva NOTA na legenda) e ganhe pontos para trocar por brindes e concorrer à premiação do mês! 🎁';
+        $lines[] = '📸 Ao receber, envie a *foto da nota fiscal* aqui e ganhe pontos para trocar por brindes e concorrer à premiação do mês! 🎁';
 
         return implode("\n", $lines);
     }
 
+    /** Farmácia ou televendas marcou como entregue/retirado: encerra e já faz a pesquisa de indicação. */
     public function completeOrder(Order $order, ?int $userId = null): void
     {
-        $order->update(['status' => 'entregue', 'completed_at' => now()]);
+        $order->update(['status' => 'entregue', 'completed_at' => now(), 'followup_at' => null]);
         if ($order->quote) {
-            $this->finish($order->quote, $userId);
+            $this->finish($order->quote, $userId, $order);
         }
         Activity::log('pedido.entregue', "Pedido {$order->code} entregue/retirado", $order, userId: $userId);
     }
@@ -514,25 +520,36 @@ class QuoteService
     {
         $order->status = 'cancelado';
         $order->cancelled_at = now();
+        $order->followup_at = null;
         $order->recalculateCommission();
         $order->save();
         $order->quote?->update(['status' => 'respondida']);
         Activity::log('pedido.cancelado', "Pedido {$order->code} cancelado", $order, userId: $userId);
     }
 
-    /** Encerra a cotação e pede a avaliação do atendimento ao cliente. */
-    public function finish(Quote $quote, ?int $userId = null): void
+    /** Encerra a cotação e inicia o pós-venda: indicação (0 a 10) e depois o pedido da nota fiscal. */
+    public function finish(Quote $quote, ?int $userId = null, ?Order $order = null): void
     {
-        $quote->update(['status' => 'finalizada', 'closed_at' => $quote->closed_at ?? now()]);
-        $this->wa->toCustomer($quote->customer, "🙏 Obrigado por usar a Pesquisa Farma!\nDe *1 a 5*, que nota você dá para o nosso atendimento? (responda só o número)", $quote->id);
-        $quote->customer->update(['bot_state' => 'avaliacao', 'bot_data' => ['quote_id' => $quote->id]]);
+        $quote->update(['status' => 'finalizada', 'closed_at' => $quote->closed_at ?? now(), 'followup_at' => null]);
+        if ($quote->nps_score === null) {
+            // Entrega já confirmada pela farmácia/televendas: pesquisa só com indicação + nota fiscal.
+            $this->followUp->askPostSale($quote->customer, $quote, $order ?? $quote->order, askDelivery: false);
+        }
         Activity::log('cotacao.finalizada', "Cotação {$quote->code} finalizada", $quote, userId: $userId);
     }
 
     public function markLost(Quote $quote, string $reason, ?int $userId = null): void
     {
-        $quote->update(['status' => 'perdida', 'lost_reason' => $reason, 'closed_at' => now()]);
+        $quote->update(['status' => 'perdida', 'lost_reason' => $reason, 'closed_at' => now(), 'followup_at' => null]);
         Activity::log('cotacao.perdida', "Cotação {$quote->code} perdida: {$reason}", $quote, userId: $userId);
+    }
+
+    /** Indicação: "de 0 a 10, quanto indicaria a Pesquisa Farma?" */
+    public function saveNps(Quote $quote, int $score): void
+    {
+        $score = max(0, min(10, $score));
+        $quote->update(['nps_score' => $score, 'nps_at' => now()]);
+        Activity::log('cotacao.indicacao', "Cliente deu nota {$score} de indicação (cotação {$quote->code})", $quote, ['grupo' => Quote::npsGroup($score)]);
     }
 
     public function saveFeedback(Quote $quote, int $rating, ?string $comment = null): void

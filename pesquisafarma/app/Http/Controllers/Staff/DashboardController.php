@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Promotion;
 use App\Models\Quote;
 use App\Models\Receipt;
@@ -29,6 +30,8 @@ class DashboardController extends Controller
             'promosPending' => Promotion::query()->where('status', 'pendente')->count(),
             'redemptionsPending' => Redemption::query()->where('status', 'solicitado')->count(),
             'operators' => $today->operators(),
+            'issues' => Order::query()->whereNotNull('delivery_issue')->whereNull('delivery_issue_resolved_at')->where('status', '!=', 'cancelado')->with(['customer', 'pharmacy'])->latest('delivery_issue_at')->get(),
+            'postSale' => $month->times(),
         ]);
     }
 }

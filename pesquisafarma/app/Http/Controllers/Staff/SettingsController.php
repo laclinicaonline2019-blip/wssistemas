@@ -27,7 +27,7 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'company_name' => 'required|string|max:80', 'company_whatsapp' => 'nullable|string|max:20', 'radius_near_km' => 'required|numeric|min:0.5|max:50',
-            'radius_far_km' => 'required|numeric|min:1|max:300', 'response_minutes' => 'required|integer|min:5|max:600', 'points_per_real' => 'required|numeric|min:0|max:100',
+            'radius_far_km' => 'required|numeric|min:1|max:300', 'response_minutes' => 'required|integer|min:5|max:600', 'followup_minutes' => 'required|integer|min:15|max:2880', 'points_per_real' => 'required|numeric|min:0|max:100',
             'max_pharmacies' => 'required|integer|min:1|max:100', 'welcome_message' => 'required|string|max:1000',
         ]);
         foreach ($data as $k => $v) {

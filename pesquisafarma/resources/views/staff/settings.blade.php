@@ -11,6 +11,8 @@
       <div class="f"><label>Raio "ampliada" (km)</label><input type="number" step="0.5" name="radius_far_km" value="{{ $s['radius_far_km'] }}"></div></div>
     <div class="row"><div class="f"><label>Prazo de resposta das farmácias (min)</label><input type="number" name="response_minutes" value="{{ $s['response_minutes'] }}"></div>
       <div class="f"><label>Máx. farmácias pré-selecionadas</label><input type="number" name="max_pharmacies" value="{{ $s['max_pharmacies'] }}"></div></div>
+    <div class="f"><label>Pós-venda: enviar a pesquisa após (min) — retirada e cotação sem resposta</label><input type="number" name="followup_minutes" value="{{ $s['followup_minutes'] }}">
+      <div class="small muted">Na entrega, a pesquisa vai no prazo informado pela farmácia + 30 min. Envio só entre 8h e 21h.</div></div>
     <label class="check"><input type="checkbox" name="auto_dispatch" value="1" @checked($s['auto_dispatch'] === '1')> Envio automático: quando a IA identificar os itens, enviar direto às farmácias próximas</label>
   </div>
   <div class="card"><h2>Cliente e fidelidade</h2>

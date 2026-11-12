@@ -54,6 +54,9 @@ class Customer extends Model
     }
 
     /** Etapas do cadastro feito pelo robô do WhatsApp. */
+    /** Etapas do pós-venda (respostas esperadas pelo robô). */
+    public const FOLLOWUP_STATES = ['pos_venda', 'aguardando_nota'];
+
     public const REGISTRATION_STATES = ['novo', 'nome', 'cep', 'numero', 'endereco', 'lgpd', 'promo'];
 
     public function isRegistered(): bool

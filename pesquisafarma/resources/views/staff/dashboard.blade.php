@@ -13,6 +13,19 @@
   <div class="kpi"><div class="l">Tempos médios hoje</div><div class="v" style="font-size:16px">⏱ {{ minutes_label($today['request_to_dispatch']) }} p/ enviar</div><div class="s">farmácias respondem em {{ minutes_label($today['pharmacy_response']) }} · finaliza em {{ minutes_label($today['request_to_close']) }}</div></div>
 </div>
 
+@if($issues->isNotEmpty())
+<div class="card" style="border-color:#f4b9bb"><h2>⚠️ Entregas com problema ({{ $issues->count() }})</h2><table>
+  @foreach($issues as $o)<tr><td><a href="{{ route('orders.show', $o) }}"><b>{{ $o->code }}</b></a></td><td>{{ $o->customer->displayName() }}</td><td>{{ $o->pharmacy->trade_name }}</td><td>{{ $o->delivery_issue }}</td><td class="small nowrap">{{ $o->delivery_issue_at->diffForHumans() }}</td></tr>@endforeach
+</table></div>
+@endif
+
+<div class="grid g4" style="margin-bottom:16px">
+  <div class="kpi"><div class="l">Indicação no mês (NPS)</div><div class="v">{{ $postSale['nps'] ?? '—' }}</div><div class="s">{{ $postSale['nps_count'] }} resposta(s) · {{ $postSale['nps_promoters'] }} promotores · {{ $postSale['nps_detractors'] }} detratores</div></div>
+  <div class="kpi"><div class="l">Entregas confirmadas pelo cliente</div><div class="v">{{ $postSale['ps_delivery_confirmed'] }}/{{ $postSale['ps_orders'] }}</div><div class="s">pedidos do mês</div></div>
+  <div class="kpi"><div class="l">Pedidos com nota fiscal</div><div class="v">{{ $postSale['ps_receipt_rate'] !== null ? number_format($postSale['ps_receipt_rate'], 0).'%' : '—' }}</div><div class="s">{{ $postSale['ps_with_receipt'] }} de {{ $postSale['ps_orders'] }} pedidos</div></div>
+  <div class="kpi"><div class="l">Compraram sem pedido</div><div class="v">{{ $postSale['ps_bought_without_order'] }}</div><div class="s">disseram "COMPREI" · {{ $postSale['ps_gave_up'] }} desistiram</div></div>
+</div>
+
 @if($receiptsPending || $promosPending || $redemptionsPending)
 <div class="card"><div class="row">
   @if($receiptsPending)<a class="btn" href="{{ route('receipts.index') }}">📄 {{ $receiptsPending }} nota(s) para conferir</a>@endif

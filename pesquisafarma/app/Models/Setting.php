@@ -20,6 +20,7 @@ class Setting extends Model
         'radius_near_km' => '3',
         'radius_far_km' => '15',
         'response_minutes' => '20',
+        'followup_minutes' => '180',
         'points_per_real' => '1',
         'portal_enabled' => '1',
         'loyalty_enabled' => '1',
