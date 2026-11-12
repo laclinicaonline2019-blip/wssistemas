@@ -1,0 +1,8 @@
+# Use SOMENTE se não for possível apontar o domínio/subdomínio para a pasta /public (ver docs/HOSTGATOR.md, opção B).
+# Coloque este arquivo como .htaccess na pasta raiz do sistema: tudo é encaminhado para /public e
+# arquivos sensíveis (.env, storage, vendor) ficam inacessíveis.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(\.env|\.git|storage|vendor|database|app|config|routes|bootstrap|resources|deploy|docs)(/|$) - [F,L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

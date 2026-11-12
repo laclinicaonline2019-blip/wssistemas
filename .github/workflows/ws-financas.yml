@@ -1,0 +1,57 @@
+name: WS Finanças
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths: ["ws-financas/**", ".github/workflows/ws-financas.yml"]
+  pull_request:
+    paths: ["ws-financas/**", ".github/workflows/ws-financas.yml"]
+
+defaults:
+  run:
+    working-directory: ws-financas
+
+jobs:
+  tests:
+    name: Testes (MariaDB — mesmo motor da HostGator)
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MARIADB_DATABASE: wsf_testing
+          MARIADB_USER: wsf
+          MARIADB_PASSWORD: wsf
+          MARIADB_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="healthcheck.sh --connect" --health-interval=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, pdo_sqlite, intl, gd, zip, sodium, mbstring
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Estilo (Pint)
+        run: vendor/bin/pint --test
+      - name: Testes (SQLite)
+        run: php artisan test
+      - name: Testes (MariaDB)
+        env: { DB_CONNECTION: mysql, DB_HOST: 127.0.0.1, DB_PORT: 3306, DB_DATABASE: wsf_testing, DB_USERNAME: wsf, DB_PASSWORD: wsf }
+        run: php artisan test
+
+  package:
+    name: Pacote ZIP para a HostGator
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.3", extensions: "intl, gd, zip, sodium, mbstring", coverage: none }
+      - run: deploy/build-zip.sh "$(date +%Y.%m.%d)-${GITHUB_SHA::7}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ws-financas-hostgator
+          path: ws-financas/dist/*.zip
+          retention-days: 30

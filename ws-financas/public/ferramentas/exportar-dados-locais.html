@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exportar dados locais — WS Finanças em Dia</title>
+<style>body{font-family:system-ui,sans-serif;max-width:620px;margin:40px auto;padding:0 16px;color:#13201b;background:#f2f6f4}
+button{background:#0c6b4d;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:1rem;cursor:pointer}
+.box{background:#fff;border:1px solid #d8e2dd;border-radius:14px;padding:18px}</style></head>
+<body><div class="box">
+<h1>Exportar meus dados do WS Finanças</h1>
+<p>Esta página lê os lançamentos que o WS Finanças antigo guardou <b>neste navegador</b> e baixa um arquivo <code>.json</code>. Nada é apagado.</p>
+<p id="info">Procurando dados…</p>
+<button id="baixar" hidden>Baixar meus dados</button>
+<p><small>Depois, entre no novo sistema → Importar → envie o arquivo.</small></p>
+</div>
+<script>
+(function(){
+  var raw = null; try { raw = localStorage.getItem("wsfin:v1"); } catch(e) {}
+  var info = document.getElementById("info"), b = document.getElementById("baixar");
+  if (!raw) { info.textContent = "Nenhum dado encontrado neste navegador/endereço. Abra esta página no mesmo navegador e no mesmo endereço (ou pasta) onde você usava o sistema antigo."; return; }
+  var n = 0; try { n = JSON.parse(raw).length; } catch(e) {}
+  info.textContent = "Encontramos " + n + " registro(s).";
+  b.hidden = false;
+  b.onclick = function(){ var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([raw], {type:"application/json"})); a.download = "ws-financas-dados-locais.json"; a.click(); };
+})();
+</script></body></html>

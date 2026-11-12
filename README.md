@@ -2,6 +2,8 @@
 
 # AivexaClínica
 
+> Este repositório também contém o **[WS Finanças em Dia](ws-financas/README.md)** (pasta `ws-financas/`), plataforma SaaS financeira independente.
+
 Plataforma **SaaS multiempresa de gestão de clínicas médicas**: matriz e filiais, equipe com
 perfis granulares, agenda inteligente, prontuário, receitas e atestados com impressão,
 financeiro, pagamentos (ASAAS/Cielo), convênios, portal do paciente e atendimento por IA/WhatsApp,
