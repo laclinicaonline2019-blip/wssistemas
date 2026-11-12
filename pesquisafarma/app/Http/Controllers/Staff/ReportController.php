@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\City;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Pharmacy;
@@ -15,6 +16,7 @@ class ReportController extends Controller
 {
     public const REPORTS = [
         'farmacias' => 'Vendas por farmácia',
+        'cidades' => 'Vendas por cidade/UF',
         'clientes' => 'Compras por cliente',
         'cotado-comprado' => 'Cotado × comprado',
         'televendas' => 'Televendas',
@@ -30,16 +32,22 @@ class ReportController extends Controller
 
         switch ($report) {
             case 'farmacias':
-                $data['rows'] = $svc->byPharmacy($request->integer('farmacia') ?: null);
+                $data['rows'] = $this->byPlace($svc->byPharmacy($request->integer('farmacia') ?: null), fn ($r) => $r['pharmacy']);
                 $csv = fn () => $data['rows']->map(fn ($r) => [$r['pharmacy']->trade_name, $r['pharmacy']->cnpj, $r['quotes_received'], $r['quotes_answered'], $r['orders'],
                     $r['orders_total'], $r['receipts'], $r['receipts_total'], $r['commission_base'], $r['percent'], $r['commission'], $r['cycle']]);
                 $head = ['Farmácia', 'CNPJ', 'Cotações recebidas', 'Respondidas', 'Pedidos', 'Total pedidos', 'Notas', 'Total notas', 'Base comissão', '%', 'Comissão', 'Ciclo'];
                 break;
             case 'clientes':
-                $data['rows'] = $svc->byCustomer($request->q);
+                $data['rows'] = $this->byPlace($svc->byCustomer($request->q), fn ($r) => $r['customer']);
                 $csv = fn () => $data['rows']->map(fn ($r) => [$r['customer']->name, Text::formatPhone($r['customer']->phone), $r['customer']->cpf, $r['customer']->neighborhood?->name,
                     $r['quotes'], $r['orders'], $r['orders_total'], $r['receipts'], $r['receipts_total'], $r['customer']->points_balance]);
                 $head = ['Cliente', 'Telefone', 'CPF', 'Bairro', 'Cotações', 'Pedidos', 'Total pedidos', 'Notas', 'Total notas', 'Pontos'];
+                break;
+            case 'cidades':
+                $data['rows'] = $svc->byCity($request->uf);
+                $csv = fn () => $data['rows']->map(fn ($r) => [$r['city']->name, $r['city']->uf, $r['pharmacies'], $r['customers'], $r['new_customers'], $r['quotes'], $r['orders'],
+                    $r['orders_total'], $r['direct'], $r['direct_total'], $r['commission'], $r['quote_share']]);
+                $head = ['Cidade', 'UF', 'Farmácias ativas', 'Clientes', 'Novos clientes', 'Cotações', 'Pedidos', 'Total pedidos', 'Compras sem cotação', 'Total sem cotação', 'Comissão', '% pela cotação'];
                 break;
             case 'cotado-comprado':
                 $data['rows'] = $svc->quotedVsBought();
@@ -74,6 +82,19 @@ class ReportController extends Controller
         }
 
         return view('staff.reports.show', $data);
+    }
+
+    /** Filtro por UF/cidade (query uf, cidade) aplicado a linhas com farmácia ou cliente. */
+    private function byPlace($rows, callable $model)
+    {
+        $uf = request('uf');
+        $city = request('cidade');
+        if (! $uf && ! $city) {
+            return $rows;
+        }
+        $cities = City::query()->when($uf, fn ($q) => $q->where('uf', $uf))->when($city, fn ($q) => $q->whereKey($city))->pluck('id')->all();
+
+        return $rows->filter(fn ($r) => in_array($model($r)->city_id, $cities))->values();
     }
 
     private function csv(string $name, array $head, $rows)

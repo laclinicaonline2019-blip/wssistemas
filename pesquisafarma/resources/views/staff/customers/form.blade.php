@@ -19,10 +19,7 @@
     <div class="f"><label>Número</label><input name="number" value="{{ old('number', $customer->number) }}"></div>
     <div class="f"><label>Complemento</label><input name="complement" value="{{ old('complement', $customer->complement) }}"></div>
   </div>
-  <div class="row">
-    <div class="f"><label>Bairro</label><select name="neighborhood_id"><option value="">—</option>@foreach($neighborhoods as $n)<option value="{{ $n->id }}" @selected(old('neighborhood_id', $customer->neighborhood_id) == $n->id)>{{ $n->label() }}</option>@endforeach</select></div>
-    <div class="f"><label>Cidade</label><input name="city" value="{{ old('city', $customer->city) }}"></div>
-  </div>
+  @include('partials.location', ['cityId' => old('city_id', $customer->city_id), 'neighborhoodId' => old('neighborhood_id', $customer->neighborhood_id)])
   <div class="f"><label>Observações</label><textarea name="notes" rows="2">{{ old('notes', $customer->notes) }}</textarea></div>
   <div class="row auto">
     <label class="check"><input type="checkbox" name="accepts_marketing" value="1" @checked(old('accepts_marketing', $customer->accepts_marketing))> Aceita receber promoções</label>

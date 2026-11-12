@@ -19,6 +19,8 @@ class CustomerController extends Controller
         $customers = Customer::query()->with('neighborhood')->withCount(['quotes', 'orders'])
             ->when($request->q, fn ($q, $s) => $q->where(fn ($w) => $w->where('name', 'like', "%{$s}%")->orWhere('phone', 'like', '%'.Text::digits($s).'%')->orWhere('cpf', 'like', "%{$s}%")))
             ->when($request->bairro, fn ($q, $b) => $q->where('neighborhood_id', $b))
+            ->when($request->cidade, fn ($q, $c) => $q->where('city_id', $c))
+            ->when($request->uf, fn ($q, $uf) => $q->whereHas('cityRef', fn ($c) => $c->where('uf', $uf)))
             ->when($request->incompleto, fn ($q) => $q->whereIn('bot_state', Customer::REGISTRATION_STATES))
             ->latest('id')->paginate(30)->withQueryString();
 
@@ -37,7 +39,8 @@ class CustomerController extends Controller
             'name' => 'required|string|max:120', 'phone' => ['required', 'string', 'min:12', Rule::unique('customers')->ignore($c?->id)],
             'cpf' => ['nullable', 'digits:11', Rule::unique('customers')->ignore($c?->id)], 'email' => 'nullable|email', 'birth_date' => 'nullable|date',
             'cep' => 'nullable|string|max:9', 'address' => 'nullable|string|max:200', 'number' => 'nullable|string|max:20', 'complement' => 'nullable|string|max:120',
-            'neighborhood_id' => 'nullable|exists:neighborhoods,id', 'city' => 'nullable|string|max:80', 'notes' => 'nullable|string|max:2000',
+            'city_id' => 'nullable|exists:cities,id',
+            'neighborhood_id' => ['nullable', Rule::exists('neighborhoods', 'id')->when($request->filled('city_id'), fn ($r) => $r->where('city_id', $request->integer('city_id')))], 'notes' => 'nullable|string|max:2000',
         ]);
         $data['accepts_marketing'] = $request->boolean('accepts_marketing');
         $data['loyalty_enabled'] = $request->boolean('loyalty_enabled');

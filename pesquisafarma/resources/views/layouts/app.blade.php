@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Painel') · Pesquisa Farma</title>
 <link rel="icon" href="{{ asset('img/icone.png') }}">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=4">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=5">
 </head>
 <body>
 @php($u = auth()->user())
@@ -31,7 +31,7 @@
       @if($u->isAdmin())
       <div class="grp">Cadastros</div>
       <a href="{{ route('pharmacies.index') }}" class="{{ request()->routeIs('pharmacies.*') ? 'on' : '' }}">🏪 Farmácias</a>
-      <a href="{{ route('neighborhoods.index') }}" class="{{ request()->routeIs('neighborhoods.*') ? 'on' : '' }}">📍 Bairros</a>
+      <a href="{{ route('neighborhoods.index') }}" class="{{ request()->routeIs('neighborhoods.*') ? 'on' : '' }}">📍 Cidades e bairros</a>
       <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') ? 'on' : '' }}">🔑 Usuários</a>
       <a href="{{ route('settings') }}" class="{{ request()->routeIs('settings') ? 'on' : '' }}">⚙️ Configurações</a>
       @endif
@@ -53,6 +53,6 @@
     @yield('content')
   </main>
 </div>
-<script src="{{ asset('js/app.js') }}?v=1"></script>
+<script src="{{ asset('js/app.js') }}?v=2"></script>
 </body>
 </html>

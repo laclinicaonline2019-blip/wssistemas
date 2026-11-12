@@ -22,10 +22,14 @@ class PharmacyController extends Controller
     public function index(Request $request)
     {
         $pharmacies = Pharmacy::query()->with('neighborhood')->withCount(['orders', 'dispatches'])
+            ->when($request->uf, fn ($q, $uf) => $q->whereHas('cityRef', fn ($c) => $c->where('uf', $uf)))
+            ->when($request->cidade, fn ($q, $c) => $q->where('city_id', $c))
+            ->when($request->bairro, fn ($q, $b) => $q->where('neighborhood_id', $b))
             ->when($request->q, fn ($q, $s) => $q->where(fn ($w) => $w->where('trade_name', 'like', "%{$s}%")->orWhere('cnpj', 'like', "%{$s}%")))
             ->orderBy('trade_name')->paginate(30)->withQueryString();
 
-        return view('staff.pharmacies.index', compact('pharmacies'));
+        return view('staff.pharmacies.index', ['pharmacies' => $pharmacies,
+            'byCity' => Pharmacy::query()->where('active', true)->with('cityRef')->get()->groupBy(fn ($p) => $p->cityRef?->label() ?? 'Sem cidade')->map->count()->sortDesc()]);
     }
 
     public function create()
@@ -40,8 +44,9 @@ class PharmacyController extends Controller
         $data = $request->validate([
             'trade_name' => 'required|string|max:120', 'legal_name' => 'nullable|string|max:160', 'cnpj' => ['nullable', 'digits:14', Rule::unique('pharmacies')->ignore($p?->id)],
             'phone' => 'nullable|string|max:20', 'whatsapp' => 'nullable|string|max:20', 'email' => 'nullable|email', 'responsible' => 'nullable|string|max:120',
-            'cep' => 'nullable|string|max:9', 'address' => 'nullable|string|max:200', 'number' => 'nullable|string|max:20', 'neighborhood_id' => 'nullable|exists:neighborhoods,id',
-            'city' => 'nullable|string|max:80', 'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
+            'cep' => 'nullable|string|max:9', 'address' => 'nullable|string|max:200', 'number' => 'nullable|string|max:20',
+            'city_id' => 'required|exists:cities,id',
+            'neighborhood_id' => ['required', Rule::exists('neighborhoods', 'id')->where('city_id', $request->integer('city_id'))], 'lat' => 'nullable|numeric|between:-90,90', 'lng' => 'nullable|numeric|between:-180,180',
             'commission_percent' => 'required|numeric|min:0|max:100', 'commission_cycle' => 'required|in:semanal,mensal',
             'delivery_radius_km' => 'nullable|numeric|min:0|max:100', 'delivery_base_fee' => 'nullable', 'delivery_fee_per_km' => 'nullable', 'free_delivery_above' => 'nullable',
             'delivery_eta_min' => 'nullable|integer|min:0|max:1440', 'opening_hours' => 'nullable|string|max:200', 'payment_methods' => 'nullable|string|max:200', 'notes' => 'nullable|string|max:2000',

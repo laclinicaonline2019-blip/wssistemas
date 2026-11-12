@@ -59,8 +59,12 @@ class PromotionController extends Controller
     public function broadcast(Request $request, Promotion $promotion, WhatsAppService $wa)
     {
         abort_unless(in_array($promotion->status, ['aprovada', 'divulgada'], true), 422);
-        $request->validate(['scope' => 'required|in:todos,bairro,proximos']);
+        $request->validate(['scope' => 'required|in:todos,cidade,bairro,proximos', 'city_id' => 'nullable|exists:cities,id']);
         $q = Customer::query()->where('accepts_marketing', true);
+        $cityId = $request->integer('city_id') ?: $promotion->pharmacy?->city_id;
+        if ($request->scope === 'cidade' && $cityId) {
+            $q->where('city_id', $cityId);
+        }
         if ($request->scope === 'bairro' && $promotion->pharmacy?->neighborhood_id) {
             $q->where('neighborhood_id', $promotion->pharmacy->neighborhood_id);
         }

@@ -11,7 +11,7 @@
   <div class="row">
     <div class="f"><label>Telefone/WhatsApp do cliente *</label><input name="phone" value="{{ old('phone') }}" placeholder="(11) 99999-0000" required></div>
     <div class="f"><label>Nome (se for novo)</label><input name="name" value="{{ old('name') }}"></div>
-    <div class="f"><label>Bairro</label><select name="neighborhood_id"><option value="">—</option>@foreach($neighborhoods as $n)<option value="{{ $n->id }}">{{ $n->label() }}</option>@endforeach</select></div>
+    <div class="f"><label>Bairro</label><select name="neighborhood_id"><option value="">—</option>@include('partials.neighborhood-options')</select></div>
   </div>
   <p class="small muted">Se o telefone já existir na base, a cotação vai para o cadastro existente.</p>
   @endif

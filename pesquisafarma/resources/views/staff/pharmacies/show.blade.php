@@ -18,7 +18,7 @@
         <td><form method="post" action="{{ route('pharmacies.zone.delete', [$pharmacy, $z]) }}">@csrf @method('DELETE')<button class="btn sm r">✕</button></form></td></tr>
       @empty<tr><td colspan="4" class="muted small">Nenhuma zona específica.</td></tr>@endforelse</table>
     <form method="post" action="{{ route('pharmacies.zone', $pharmacy) }}" class="row" style="margin-top:8px">@csrf
-      <select name="neighborhood_id" required>@foreach($neighborhoods as $n)<option value="{{ $n->id }}">{{ $n->label() }}</option>@endforeach</select><input name="fee" placeholder="Taxa R$"><input name="eta_min" type="number" placeholder="Prazo (min)"><button class="btn sm auto">Adicionar</button></form>
+      <select name="neighborhood_id" required>@include('partials.neighborhood-options')</select><input name="fee" placeholder="Taxa R$"><input name="eta_min" type="number" placeholder="Prazo (min)"><button class="btn sm auto">Adicionar</button></form>
   </div>
   <div class="card"><h2>🔑 Acesso ao painel da farmácia</h2>
     @forelse($pharmacy->users as $u)<div class="small">{{ $u->name }} — {{ $u->email }} {{ $u->active ? '' : '(inativo)' }}</div>@empty<p class="muted small">Ninguém tem acesso ainda. A farmácia também responde pelo link enviado no WhatsApp.</p>@endforelse

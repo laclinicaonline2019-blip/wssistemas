@@ -23,6 +23,24 @@ class Customer extends Model
         return $this->belongsTo(Neighborhood::class);
     }
 
+    public function cityRef(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    protected static function booted(): void
+    {
+        // Cidade sempre coerente com o bairro escolhido
+        static::saving(function ($m) {
+            if ($m->neighborhood_id && ($n = Neighborhood::find($m->neighborhood_id)) && $n->city_id) {
+                $m->city_id = $n->city_id;
+            }
+            if ($m->city_id && ($c = City::find($m->city_id))) {
+                $m->city = $c->name;
+            }
+        });
+    }
+
     public function quotes(): HasMany
     {
         return $this->hasMany(Quote::class);
@@ -57,7 +75,7 @@ class Customer extends Model
     /** Etapas do pós-venda (respostas esperadas pelo robô). */
     public const FOLLOWUP_STATES = ['pos_venda', 'aguardando_nota'];
 
-    public const REGISTRATION_STATES = ['novo', 'nome', 'cep', 'numero', 'endereco', 'lgpd', 'promo'];
+    public const REGISTRATION_STATES = ['novo', 'nome', 'cep', 'cidade', 'numero', 'endereco', 'lgpd', 'promo'];
 
     public function isRegistered(): bool
     {

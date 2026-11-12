@@ -106,6 +106,7 @@ class QuoteService
         $nearRadius = $quote->radius_km ?: (float) Setting::get('radius_near_km');
         $maxRadius = $radius ?? ($scope === 'ampliada' ? max($nearRadius, (float) Setting::get('radius_far_km')) : $nearRadius);
         $origin = $this->origin($quote);
+        $cityId = $quote->neighborhood?->city_id ?? $quote->customer?->city_id;
 
         return Pharmacy::query()->where('active', true)->with(['neighborhood', 'zones'])->get()
             ->map(function (Pharmacy $p) use ($quote, $origin, $nearRadius) {
@@ -116,7 +117,9 @@ class QuoteService
 
                 return ['pharmacy' => $p, 'distance' => $distance, 'within' => $within, 'same_area' => $sameArea, 'delivers' => $delivers, 'fee' => $fee, 'eta' => $eta];
             })
-            ->filter(fn ($c) => $c['within'] || ($c['distance'] !== null && $c['distance'] <= $maxRadius) || ($scope === 'ampliada' && $c['distance'] === null))
+            // Sem coordenadas, só entra farmácia da mesma cidade (o sistema atende vários municípios/estados).
+            ->filter(fn ($c) => $c['within'] || ($c['distance'] !== null && $c['distance'] <= $maxRadius)
+                || ($scope === 'ampliada' && $c['distance'] === null && $cityId && $c['pharmacy']->city_id === $cityId))
             ->sortBy(fn ($c) => [$c['same_area'] ? 0 : 1, $c['distance'] ?? 9999])
             ->values();
     }

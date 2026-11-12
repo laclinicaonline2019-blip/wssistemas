@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\Staff\ReportController;
+use App\Models\City;
 use App\Models\Customer;
+use App\Models\Neighborhood;
 use App\Models\Order;
 use App\Models\Pharmacy;
 use App\Models\Promotion;
@@ -397,6 +399,59 @@ class FluxoCompletoTest extends TestCase
         $this->post(route('receipts.verify', $receipt), ['pharmacy_id' => $sale->pharmacy_id, 'total' => '80,00', 'nf_number' => '12345', 'order_id' => ''])->assertSessionHas('error');
         $this->assertSame('pendente', $receipt->fresh()->status);
         $this->assertSame(40, $customer->fresh()->points_balance);
+    }
+
+    public function test_varias_cidades_e_estados(): void
+    {
+        // Cadastro: "Centro" existe em São Paulo e em Campinas → o robô pergunta a cidade
+        $phone = '5519988887777';
+        foreach (['oi', 'Ana Campineira', 'Centro'] as $t) {
+            $this->whatsapp($phone, $t);
+        }
+        $this->assertStringContainsString('qual é a sua *cidade*', $this->lastSentTo($phone));
+        $this->whatsapp($phone, 'Campinas/SP');
+        $c = Customer::where('phone', $phone)->first();
+        $campinas = City::where('name', 'Campinas')->first();
+        $this->assertSame($campinas->id, $c->city_id);
+        $this->assertSame($campinas->id, $c->neighborhood->city_id);
+        $this->assertSame('Campinas', $c->city);
+
+        // "bairro, cidade" de uma vez
+        $phone2 = '5521977776666';
+        foreach (['oi', 'Bia Carioca', 'Copacabana, Rio de Janeiro'] as $t) {
+            $this->whatsapp($phone2, $t);
+        }
+        $this->assertSame('Rio de Janeiro', Customer::where('phone', $phone2)->first()->city);
+
+        // Cotação em Campinas: só farmácias de Campinas (nem SP, nem RJ), mesmo na busca ampliada
+        $quote = app(QuoteService::class)->createFromMessage($c->fresh(), 'Dipirona', channel: 'telefone');
+        $near = app(QuoteService::class)->candidates($quote)->pluck('pharmacy.trade_name')->all();
+        $this->assertContains('Drogaria Central Campinas', $near);
+        $far = app(QuoteService::class)->candidates($quote, 'ampliada')->pluck('pharmacy.city')->unique()->values()->all();
+        $this->assertSame(['Campinas'], $far);
+
+        // Admin: cidade nova, bairro e farmácia — bairro precisa ser da cidade escolhida
+        $admin = User::where('role', 'admin')->first();
+        $this->actingAs($admin)->post(route('cities.store'), ['name' => 'Belo Horizonte', 'uf' => 'MG'])->assertSessionHas('ok');
+        $bh = City::where('uf', 'MG')->firstOrFail();
+        $this->post(route('neighborhoods.store'), ['name' => 'Savassi', 'city_id' => $bh->id])->assertSessionHas('ok');
+        $savassi = Neighborhood::where('name', 'Savassi')->first();
+        $this->assertSame('MG', $savassi->uf);
+        $base = ['trade_name' => 'Drogaria Savassi', 'commission_percent' => 5, 'commission_cycle' => 'mensal', 'active' => 1];
+        $this->post(route('pharmacies.store'), $base + ['city_id' => $campinas->id, 'neighborhood_id' => $savassi->id])->assertSessionHasErrors('neighborhood_id');
+        $this->post(route('pharmacies.store'), $base + ['city_id' => $bh->id, 'neighborhood_id' => $savassi->id])->assertRedirect();
+        $this->assertSame('Belo Horizonte', Pharmacy::where('trade_name', 'Drogaria Savassi')->value('city'));
+
+        // Importação cria a cidade que faltar
+        $csv = UploadedFile::fake()->createWithContent('bairros.csv', "bairro;cidade;uf;latitude;longitude\nBoa Viagem;Recife;PE;-8.1300;-34.9000\n");
+        $this->post(route('neighborhoods.import'), ['file' => $csv])->assertSessionHas('ok');
+        $this->assertDatabaseHas('cities', ['name' => 'Recife', 'uf' => 'PE']);
+
+        // Filtros e relatório por cidade
+        $this->get(route('pharmacies.index', ['uf' => 'RJ']))->assertOk()->assertSee('Farmácia Copa Saúde')->assertDontSee('Drogaria Central Campinas');
+        $this->get(route('reports', ['cidades']))->assertOk()->assertSee('Campinas/SP')->assertSee('Rio de Janeiro/RJ');
+        $this->get(route('reports', ['farmacias', 'uf' => 'SP', 'csv' => 1]))->assertOk();
+        $this->get(route('neighborhoods.index'))->assertOk()->assertSee('Belo Horizonte');
     }
 
     public function test_todas_as_telas_abrem(): void

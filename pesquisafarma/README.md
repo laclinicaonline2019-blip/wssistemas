@@ -45,7 +45,8 @@ Cliente (WhatsApp) ──► Robô: 1º contato = cadastro (nome, CEP/bairro, en
 |---|---|
 | **Conversas** | Caixa de entrada compartilhada por todos os televendas, envio manual, "→ Cotação" e "→ Nota fiscal" a partir de qualquer mensagem |
 | **Cotações** | Fila por prioridade, itens editáveis, preferência por item, leitura por IA, seleção de farmácias por distância, retorno das farmácias em tempo real, registro de resposta por telefone, ranking, cesta ideal, envio ao cliente, pedido, perda com motivo, avaliação e histórico |
-| **Farmácias** | Cadastro com **% de comissão e ciclo (semanal/mensal)**, CNPJ (reconhece a nota), coordenadas, regras de entrega (raio, taxa base + por km, grátis acima de, prazo) e **zonas de entrega por bairro**; acessos ao painel |
+| **Cidades e bairros** | Vários municípios e estados: cidades com UF e bairros dentro de cada cidade (com coordenadas), importação por CSV que cria as cidades, filtros por UF/cidade em farmácias, clientes e relatórios, relatório **Vendas por cidade/UF**, divulgação de promoção por cidade |
+| **Farmácias** | Cadastro por estado → cidade → bairro, com **% de comissão e ciclo (semanal/mensal)**, CNPJ (reconhece a nota), coordenadas, regras de entrega (raio, taxa base + por km, grátis acima de, prazo) e **zonas de entrega por bairro**; acessos ao painel |
 | **Painel da farmácia** | Cotações aguardando, resposta com ético/genérico/similar e sugestões, pedidos, vendas e comissão, fechamentos, **promoções do dia** |
 | **Promoções** | Aprovação e **divulgação no WhatsApp** para a lista (toda a lista, mesmo bairro ou clientes próximos), só para quem aceitou; "SAIR" descadastra |
 | **Pós-venda** | Pesquisa única no WhatsApp (entrega S/N + indicação 0–10 + foto da nota), entregas com problema no painel com aviso à farmácia, NPS por televendas e no mês, % de pedidos com nota fiscal, clientes que compraram sem pedido |
@@ -100,11 +101,13 @@ a nota é digitada na conferência.
 
 ### Bairros e distância
 
-Cada bairro tem um ponto central (latitude/longitude); importe por CSV em **Bairros**
+Cada bairro pertence a uma cidade (com UF) e tem um ponto central (latitude/longitude); importe por CSV em **Cidades e bairros**
 (`bairro;cidade;uf;latitude;longitude`). A farmácia pode ter coordenadas exatas. A busca "mais próximas"
 usa o raio curto (padrão 3 km), o mesmo bairro e as zonas de entrega. A "ampliada" vai até o raio longo
 (padrão 15 km), para mostrar ao cliente se vale a pena ir mais longe. No primeiro contato, o CEP é
-consultado no ViaCEP para identificar o bairro.
+consultado no ViaCEP para identificar bairro, cidade e estado. Sem CEP, o cliente informa "bairro, cidade";
+se o bairro existir em mais de uma cidade, o robô pergunta a cidade. Sem coordenadas, uma cotação nunca
+mistura farmácias de outra cidade.
 
 ## Testes
 

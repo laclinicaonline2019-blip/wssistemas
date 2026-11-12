@@ -37,3 +37,19 @@ document.addEventListener('click', (e) => {
 
 // Rola o chat para o fim
 document.querySelectorAll('.chat').forEach((c) => (c.scrollTop = c.scrollHeight));
+
+// Seletor Estado → Cidade → Bairro
+document.querySelectorAll('[data-location]').forEach((box) => {
+  const uf = box.querySelector('[data-loc-uf]'), city = box.querySelector('[data-loc-city]'), hood = box.querySelector('[data-loc-hood]');
+  const filter = (sel, attr, val) => sel.querySelectorAll('option[value]:not([value=""])').forEach((o) => { o.hidden = !!val && o.dataset[attr] !== val; });
+  const apply = () => {
+    filter(city, 'uf', uf.value);
+    if (city.selectedOptions[0]?.hidden) city.value = '';
+    filter(hood, 'city', city.value);
+    if (hood.selectedOptions[0]?.hidden) hood.value = '';
+  };
+  uf.addEventListener('change', apply);
+  city.addEventListener('change', () => { const o = city.selectedOptions[0]; if (o?.dataset.uf) uf.value = o.dataset.uf; apply(); });
+  hood.addEventListener('change', () => { const o = hood.selectedOptions[0]; if (o?.dataset.city) { city.value = o.dataset.city; const c = city.selectedOptions[0]; if (c?.dataset.uf) uf.value = c.dataset.uf; apply(); } });
+  apply();
+});

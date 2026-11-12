@@ -14,9 +14,8 @@
   <div class="row"><div class="f"><label>CEP</label><input name="cep" value="{{ old('cep', $pharmacy->cep) }}"></div>
     <div class="f" style="flex:3"><label>Endereço</label><input name="address" value="{{ old('address', $pharmacy->address) }}"></div>
     <div class="f"><label>Número</label><input name="number" value="{{ old('number', $pharmacy->number) }}"></div></div>
-  <div class="row"><div class="f"><label>Bairro</label><select name="neighborhood_id"><option value="">—</option>@foreach($neighborhoods as $n)<option value="{{ $n->id }}" @selected(old('neighborhood_id', $pharmacy->neighborhood_id) == $n->id)>{{ $n->label() }}</option>@endforeach</select></div>
-    <div class="f"><label>Cidade</label><input name="city" value="{{ old('city', $pharmacy->city) }}"></div>
-    <div class="f"><label>Latitude</label><input name="lat" value="{{ old('lat', $pharmacy->lat) }}" placeholder="-23.55"></div>
+  @include('partials.location', ['cityId' => old('city_id', $pharmacy->city_id), 'neighborhoodId' => old('neighborhood_id', $pharmacy->neighborhood_id), 'required' => true])
+  <div class="row">    <div class="f"><label>Latitude</label><input name="lat" value="{{ old('lat', $pharmacy->lat) }}" placeholder="-23.55"></div>
     <div class="f"><label>Longitude</label><input name="lng" value="{{ old('lng', $pharmacy->lng) }}" placeholder="-46.63"></div></div>
   <p class="small muted">Dica: no Google Maps, clique com o botão direito sobre a farmácia para copiar a latitude e longitude. Sem coordenadas, a distância usa o bairro.</p>
   <div class="row"><div class="f"><label>Horário de funcionamento</label><input name="opening_hours" value="{{ old('opening_hours', $pharmacy->opening_hours) }}"></div>

@@ -119,6 +119,8 @@ Route::middleware('auth')->group(function () {
             Route::get('/bairros', [Staff\NeighborhoodController::class, 'index'])->name('neighborhoods.index');
             Route::post('/bairros', [Staff\NeighborhoodController::class, 'store'])->name('neighborhoods.store');
             Route::put('/bairros/{neighborhood}', [Staff\NeighborhoodController::class, 'update'])->name('neighborhoods.update');
+            Route::post('/cidades', [Staff\NeighborhoodController::class, 'storeCity'])->name('cities.store');
+            Route::put('/cidades/{city}', [Staff\NeighborhoodController::class, 'updateCity'])->name('cities.update');
             Route::post('/bairros/importar', [Staff\NeighborhoodController::class, 'import'])->name('neighborhoods.import');
 
             Route::get('/usuarios', [Staff\UserController::class, 'index'])->name('users.index');

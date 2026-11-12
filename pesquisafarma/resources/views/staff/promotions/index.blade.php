@@ -24,7 +24,7 @@
         <form method="post" action="{{ route('promotions.status', $p) }}" style="display:inline">@csrf<input type="hidden" name="status" value="aprovada"><button class="btn sm g">Aprovar</button></form>
         <form method="post" action="{{ route('promotions.status', $p) }}" style="display:inline">@csrf<input type="hidden" name="status" value="recusada"><button class="btn sm r">Recusar</button></form>
       @elseif(in_array($p->status, ['aprovada','divulgada']))
-        <form method="post" action="{{ route('promotions.broadcast', $p) }}" class="row" style="gap:4px">@csrf<select name="scope" class="auto"><option value="todos">Toda a lista</option><option value="bairro">Mesmo bairro</option><option value="proximos">Clientes próximos</option></select>
+        <form method="post" action="{{ route('promotions.broadcast', $p) }}" class="row" style="gap:4px">@csrf<select name="scope" class="auto"><option value="cidade">Mesma cidade da farmácia</option><option value="todos">Toda a lista (todas as cidades)</option><option value="bairro">Mesmo bairro</option><option value="proximos">Clientes próximos</option></select>
           <button class="btn sm p auto" data-confirm="Enviar esta promoção pelo WhatsApp?">📣 Divulgar</button></form>
       @endif
     </td></tr>

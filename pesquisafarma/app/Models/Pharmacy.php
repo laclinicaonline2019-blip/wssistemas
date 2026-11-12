@@ -23,6 +23,24 @@ class Pharmacy extends Model
         return $this->belongsTo(Neighborhood::class);
     }
 
+    public function cityRef(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    protected static function booted(): void
+    {
+        // Cidade sempre coerente com o bairro escolhido
+        static::saving(function ($m) {
+            if ($m->neighborhood_id && ($n = Neighborhood::find($m->neighborhood_id)) && $n->city_id) {
+                $m->city_id = $n->city_id;
+            }
+            if ($m->city_id && ($c = City::find($m->city_id))) {
+                $m->city = $c->name;
+            }
+        });
+    }
+
     public function zones(): HasMany
     {
         return $this->hasMany(PharmacyDeliveryZone::class);

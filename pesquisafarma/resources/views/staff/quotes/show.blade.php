@@ -38,7 +38,7 @@
     <h2>📍 Entrega e alcance</h2>
     <form method="post" action="{{ route('quotes.update', $quote) }}">@csrf @method('PUT')
       <div class="row">
-        <div class="f"><label>Bairro do cliente</label><select name="neighborhood_id"><option value="">—</option>@foreach($neighborhoods as $n)<option value="{{ $n->id }}" @selected($quote->neighborhood_id === $n->id)>{{ $n->label() }}</option>@endforeach</select></div>
+        <div class="f"><label>Bairro do cliente</label><select name="neighborhood_id"><option value="">—</option>@include('partials.neighborhood-options', ['selected' => $quote->neighborhood_id])</select></div>
         <div class="f"><label>Receber</label><select name="fulfillment"><option value="entrega" @selected($quote->fulfillment==='entrega')>🛵 Entrega</option><option value="retirada" @selected($quote->fulfillment==='retirada')>🏪 Retirada</option></select></div>
       </div>
       <div class="f"><label>Endereço de entrega</label><input name="delivery_address" value="{{ $quote->delivery_address }}"></div>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\City;
 use App\Models\Customer;
 use App\Models\Neighborhood;
 use App\Models\Pharmacy;
@@ -247,37 +248,39 @@ class WhatsAppBot
                     return;
                 }
                 $customer->update(['name' => Str::title(mb_substr($text, 0, 120)), 'bot_state' => 'cep', 'bot_data' => $data]);
-                $this->reply($customer, "Prazer, {$this->firstName($customer)}! 😊\nQual é o seu *CEP*? (Se não souber, digite o nome do seu *bairro*.)");
+                $this->reply($customer, "Prazer, {$this->firstName($customer)}! 😊\nQual é o seu *CEP*? (Se não souber, digite *bairro e cidade*, ex.: _Centro, Campinas_)");
 
                 return;
 
             case 'cep':
                 $found = strlen(Text::digits($text)) === 8 ? $this->cep->find($text) : null;
                 if ($found) {
-                    $n = Neighborhood::findByName($found['neighborhood'], $found['city'])
-                        ?? Neighborhood::create(['name' => $found['neighborhood'], 'city' => $found['city'], 'uf' => $found['uf']]);
-                    $customer->update(['cep' => $found['cep'], 'address' => $found['address'], 'city' => $found['city'], 'neighborhood_id' => $n->id, 'bot_state' => 'numero']);
-                    $this->reply($customer, "📍 {$found['address']} — {$n->name}, {$found['city']}.\nQual o *número* e o *complemento*? (ex.: 120, apto 32)");
+                    $city = City::findOrCreateByName($found['city'], $found['uf']);
+                    $n = Neighborhood::findByName($found['neighborhood'], $city)
+                        ?? Neighborhood::create(['name' => $found['neighborhood'], 'city_id' => $city->id]);
+                    $customer->update(['cep' => $found['cep'], 'address' => $found['address'], 'city_id' => $city->id, 'neighborhood_id' => $n->id, 'bot_state' => 'numero']);
+                    $this->reply($customer, "📍 {$found['address']} — {$n->name}, {$city->label()}.\nQual o *número* e o *complemento*? (ex.: 120, apto 32)");
 
                     return;
                 }
                 if (strlen(Text::digits($text)) === 8) {
-                    $this->reply($customer, 'Não encontrei esse CEP. 😕 Digite o nome do seu *bairro*, por favor.');
+                    $this->reply($customer, 'Não encontrei esse CEP. 😕 Digite seu *bairro e cidade*, ex.: _Centro, Campinas_');
 
                     return;
                 }
-                $n = Neighborhood::findByName($text);
-                if (! $n) {
-                    if (mb_strlen($text) < 3) {
-                        $this->reply($customer, 'Digite o nome do seu *bairro*, por favor.');
+                $this->registerNeighborhood($customer, $text, $data);
 
-                        return;
-                    }
-                    $n = Neighborhood::create(['name' => Str::title(mb_substr($text, 0, 80)), 'city' => '']);
-                    Activity::log('bairro.novo', "Bairro \"{$n->name}\" criado pelo cadastro do WhatsApp (sem coordenadas)", $n);
+                return;
+
+            case 'cidade':
+                $city = City::match($text);
+                if (! $city) {
+                    $cities = City::query()->where('active', true)->orderBy('name')->limit(15)->get()->map->label()->implode(', ');
+                    $this->reply($customer, "Ainda não atendemos essa cidade ou não encontrei o nome. 😕\nCidades atendidas: {$cities}.\nDigite sua *cidade*:");
+
+                    return;
                 }
-                $customer->update(['neighborhood_id' => $n->id, 'city' => $customer->city ?: $n->city, 'bot_state' => 'endereco']);
-                $this->reply($customer, "Bairro *{$n->name}* ✅\nAgora o *endereço para entrega* (rua, número e complemento):");
+                $this->registerNeighborhood($customer, (string) ($data['bairro'] ?? ''), $data, $city);
 
                 return;
 
@@ -314,6 +317,41 @@ class WhatsAppBot
 
                 return;
         }
+    }
+
+    /** Bairro digitado (sem CEP): "Centro, Campinas" ou só "Centro" (pergunta a cidade se houver dúvida). */
+    private function registerNeighborhood(Customer $customer, string $text, array $data, ?City $city = null): void
+    {
+        $name = trim($text);
+        if (! $city && preg_match('/^(.+?)\s*[,\-\/]\s*(.+)$/u', $text, $m) && ($c = City::match($m[2]))) {
+            [$name, $city] = [trim($m[1]), $c];
+        }
+        if (mb_strlen($name) < 3) {
+            $this->reply($customer, 'Digite seu *bairro e cidade*, ex.: _Centro, Campinas_');
+
+            return;
+        }
+        if (! $city) {
+            $same = Neighborhood::allByName($name);
+            if ($same->count() === 1 && $same->first()->city_id) {
+                $city = City::find($same->first()->city_id);
+            } elseif (City::query()->count() === 1) {
+                $city = City::first();
+            } else {
+                $customer->update(['bot_state' => 'cidade', 'bot_data' => ['bairro' => $name] + $data]);
+                $this->reply($customer, 'E qual é a sua *cidade*? (ex.: _Campinas_ ou _Campinas/SP_)');
+
+                return;
+            }
+        }
+        $n = Neighborhood::findByName($name, $city);
+        if (! $n) {
+            $n = Neighborhood::create(['name' => Str::title(mb_substr($name, 0, 80)), 'city_id' => $city?->id]);
+            Activity::log('bairro.novo', "Bairro \"{$n->name}\" ({$city?->label()}) criado pelo cadastro do WhatsApp (sem coordenadas)", $n);
+        }
+        unset($data['bairro']);
+        $customer->update(['neighborhood_id' => $n->id, 'city_id' => $city?->id, 'bot_state' => 'endereco', 'bot_data' => $data]);
+        $this->reply($customer, "Bairro *{$n->name}*".($city ? " — {$city->label()}" : '')." ✅\nAgora o *endereço para entrega* (rua, número e complemento):");
     }
 
     private function createPendingQuote(Customer $customer, array $messageIds): void

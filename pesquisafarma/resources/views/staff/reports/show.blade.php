@@ -7,6 +7,7 @@
   @include('partials.period')
   @if(in_array($report, ['farmacias','extrato']))<div><label>Farmácia</label><select name="farmacia"><option value="">Todas</option>@foreach($pharmacies as $p)<option value="{{ $p->id }}" @selected(request('farmacia')==$p->id)>{{ $p->trade_name }}</option>@endforeach</select></div>@endif
   @if($report === 'extrato')<div><label>Cliente</label><select name="cliente"><option value="">Todos</option>@foreach($customers as $c)<option value="{{ $c->id }}" @selected(request('cliente')==$c->id)>{{ $c->displayName() }}</option>@endforeach</select></div>@endif
+  @if(in_array($report, ['farmacias','clientes','cidades']))<div><label>Estado / cidade</label><div class="row" style="gap:4px;flex-wrap:nowrap">@include('partials.city-filter')</div></div>@endif
   @if($report === 'clientes')<div><label>Cliente</label><input name="q" value="{{ request('q') }}" placeholder="Nome ou telefone"></div>@endif
   <button class="btn p">Aplicar</button>
   @if($report !== 'tempos')<a class="btn" href="{{ request()->fullUrlWithQuery(['csv' => 1]) }}">⬇ Excel (CSV)</a>@endif
@@ -23,6 +24,16 @@
     <td class="num">{{ money($r['commission_base']) }}</td><td class="num">{{ number_format($r['percent'], 1, ',', '') }}</td><td class="num"><b>{{ money($r['commission']) }}</b></td></tr>
   @empty <tr><td colspan="11" class="empty">Sem movimento no período.</td></tr>@endforelse
   @if($rows->isNotEmpty())<tr><th>Total</th><th class="num">{{ $rows->sum('quotes_received') }}</th><th></th><th></th><th class="num">{{ $rows->sum('orders') }}</th><th class="num">{{ money($rows->sum('orders_total')) }}</th><th class="num">{{ $rows->sum('receipts') }}</th><th class="num">{{ money($rows->sum('receipts_total')) }}</th><th class="num">{{ money($rows->sum('commission_base')) }}</th><th></th><th class="num">{{ money($rows->sum('commission')) }}</th></tr>@endif
+</table></div>
+@elseif($report === 'cidades')
+<div class="card table-wrap"><table>
+  <tr><th>Cidade</th><th class="num">Farmácias</th><th class="num">Clientes</th><th class="num">Novos</th><th class="num">Cotações</th><th class="num">Pedidos</th><th class="num">Total pedidos</th><th class="num">Sem cotação</th><th class="num">% pela cotação</th><th class="num">Comissão</th></tr>
+  @forelse($rows as $r)
+  <tr><td><b>{{ $r['city']->label() }}</b></td><td class="num"><a href="{{ route('pharmacies.index', ['cidade' => $r['city']->id]) }}">{{ $r['pharmacies'] }}</a></td><td class="num">{{ $r['customers'] }}</td><td class="num">{{ $r['new_customers'] }}</td>
+    <td class="num">{{ $r['quotes'] }}</td><td class="num">{{ $r['orders'] }}</td><td class="num">{{ money($r['orders_total']) }}</td><td class="num">{{ $r['direct'] }} · {{ money($r['direct_total']) }}</td>
+    <td class="num">{{ $r['quote_share'] !== null ? $r['quote_share'].'%' : '—' }}</td><td class="num"><b>{{ money($r['commission']) }}</b></td></tr>
+  @empty <tr><td colspan="10" class="empty">Nenhuma cidade cadastrada.</td></tr>@endforelse
+  @if($rows->isNotEmpty())<tr><th>Total</th><th class="num">{{ $rows->sum('pharmacies') }}</th><th class="num">{{ $rows->sum('customers') }}</th><th class="num">{{ $rows->sum('new_customers') }}</th><th class="num">{{ $rows->sum('quotes') }}</th><th class="num">{{ $rows->sum('orders') }}</th><th class="num">{{ money($rows->sum('orders_total')) }}</th><th class="num">{{ $rows->sum('direct') }}</th><th></th><th class="num">{{ money($rows->sum('commission')) }}</th></tr>@endif
 </table></div>
 @elseif($report === 'clientes')
 <div class="card table-wrap"><table>

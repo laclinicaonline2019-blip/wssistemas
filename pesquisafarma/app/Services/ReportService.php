@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ActivityLog;
+use App\Models\City;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Pharmacy;
@@ -77,6 +78,30 @@ class ReportService
             })
             ->filter(fn ($row) => $pharmacyId || $row['quotes_received'] || $row['orders'] || $row['receipts'])
             ->values();
+    }
+
+    /** Vendas por cidade/UF (vários municípios e estados). */
+    public function byCity(?string $uf = null): Collection
+    {
+        $orders = $this->orders()->with('pharmacy')->get()->groupBy(fn ($o) => $o->pharmacy->city_id);
+        $loose = $this->looseReceipts()->with('pharmacy')->get()->groupBy(fn ($r) => $r->pharmacy?->city_id);
+        $quotes = Quote::query()->whereBetween('requested_at', $this->range())->with('customer')->get()->groupBy(fn ($q) => $q->customer?->city_id);
+
+        return City::query()->when($uf, fn ($q) => $q->where('uf', $uf))->orderBy('uf')->orderBy('name')
+            ->withCount(['pharmacies as active_pharmacies' => fn ($q) => $q->where('active', true), 'customers',
+                'customers as new_customers' => fn ($q) => $q->whereBetween('created_at', $this->range())])->get()
+            ->map(function ($city) use ($orders, $loose, $quotes) {
+                $o = $orders[$city->id] ?? collect();
+                $r = $loose[$city->id] ?? collect();
+
+                return [
+                    'city' => $city, 'pharmacies' => $city->active_pharmacies, 'customers' => $city->customers_count, 'new_customers' => $city->new_customers,
+                    'quotes' => ($quotes[$city->id] ?? collect())->count(), 'orders' => $o->count(), 'orders_total' => round($o->sum('total'), 2),
+                    'direct' => $r->count(), 'direct_total' => round($r->sum('total'), 2),
+                    'commission' => round($o->sum('commission_amount') + $r->sum('commission_amount'), 2),
+                    'quote_share' => ($o->count() + $r->count()) ? round($o->count() / ($o->count() + $r->count()) * 100) : null,
+                ];
+            });
     }
 
     /** Compras por cliente. */

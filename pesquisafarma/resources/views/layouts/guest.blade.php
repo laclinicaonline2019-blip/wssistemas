@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>@yield('title', 'Pesquisa Farma')</title>
 <link rel="icon" href="{{ asset('img/icone.png') }}">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=4">
+<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=5">
 </head>
 <body>
 <div class="guest"><div class="box @yield('box')">
@@ -12,6 +12,6 @@
   @include('partials.flash')
   @yield('content')
 </div></div>
-<script src="{{ asset('js/app.js') }}?v=1"></script>
+<script src="{{ asset('js/app.js') }}?v=2"></script>
 </body>
 </html>
