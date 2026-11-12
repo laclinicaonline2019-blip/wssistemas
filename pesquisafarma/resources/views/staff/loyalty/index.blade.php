@@ -53,7 +53,7 @@
 <div class="grid g2">
   <div class="card">
     <h2>🏆 Premiação do mês</h2>
-    <p class="small muted">Participam os clientes que enviaram nota fiscal conferida no mês. Sorteio: cada nota = 1 chance. Ranking: maior valor comprado.</p>
+    <p class="small muted">Participam os clientes que enviaram nota fiscal conferida no mês{{ \App\Models\Setting::get('prize_requires_quote') === '1' ? ' de compras feitas pela cotação' : '' }}. Sorteio: cada nota = 1 chance. Ranking: maior valor comprado.</p>
     <table><tr><th>Mês</th><th>Premiação</th><th>Regra</th><th>Vencedor</th><th></th></tr>
       @forelse($campaigns as $cp)<tr><td>{{ $cp->month }}</td><td>{{ $cp->title }}</td><td>{{ $cp->rule }}@if($cp->min_total > 0) (≥ {{ money($cp->min_total) }})@endif</td><td>{{ $cp->winner?->displayName() ?? '—' }}</td>
         <td>@unless($cp->drawn_at)<form method="post" action="{{ route('loyalty.draw', $cp) }}">@csrf<button class="btn sm p" data-confirm="Apurar o vencedor agora?">Apurar</button></form>@endunless</td></tr>

@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Pharmacy;
 use App\Models\Receipt;
+use App\Models\Setting;
 use App\Services\WhatsApp\WhatsAppService;
 use App\Support\Activity;
 use App\Support\Text;
@@ -186,7 +187,11 @@ class ReceiptService
         if ($points > 0) {
             $msg .= "\n🎁 Você ganhou *{$points} pontos*! Saldo: *{$receipt->customer->fresh()->points_balance} pontos*.";
         }
-        $msg .= "\nVocê está participando da premiação do mês. Boa sorte! 🍀";
+        if (LoyaltyService::viaQuote($receipt) || Setting::get('prize_requires_quote') !== '1') {
+            $msg .= "\nVocê está participando da premiação do mês. Boa sorte! 🍀";
+        } else {
+            $msg .= "\n💡 Da próxima vez, *peça a cotação aqui antes de comprar*: você paga o melhor preço, ganha ".LoyaltyService::quoteIncentive().'!';
+        }
         $this->wa->toCustomer($receipt->customer, $msg, $receipt->quote_id);
 
         return $receipt;

@@ -191,6 +191,9 @@ class ReportService
             'ps_receipt_rate' => $orders->count() ? round($orders->where('verified_receipts', '>', 0)->count() / $orders->count() * 100, 1) : null,
             'ps_bought_without_order' => $quotes->where('customer_reported', 'comprou')->count(),
             'ps_gave_up' => $quotes->where('customer_reported', 'desistiu')->count(),
+            // Controle do cliente: compras pela cotação × diretas no balcão (só pela nota/cartão)
+            'ps_direct' => $direct = Receipt::query()->where('status', 'conferida')->whereNull('order_id')->whereNull('quote_id')->whereBetween('reviewed_at', $this->range())->count(),
+            'ps_quote_share' => ($orders->count() + $direct) ? round($orders->count() / ($orders->count() + $direct) * 100, 1) : null,
         ];
     }
 

@@ -11,6 +11,7 @@
   @if($customer)
   <div class="grid g2" style="margin-top:10px;align-items:start">
     <div>
+      <div class="alert err small">💡 Oriente o cliente: <b>pedindo a cotação pelo WhatsApp da Pesquisa Farma antes de comprar</b>, ele ganha {{ strip_tags(str_replace('*', '', \App\Services\LoyaltyService::quoteIncentive())) }}. Compra direta no balcão rende menos pontos.</div>
       <div class="alert ok">✔ Cartão válido — <b>{{ $customer->displayName() }}</b> · Nº {{ \App\Services\LoyaltyService::cardNumber($customer) }} · celular final {{ substr($customer->phone, -4) }}</div>
     </div>
     <form method="post" action="{{ route('panel.card.sale', $customer) }}" enctype="multipart/form-data">@csrf

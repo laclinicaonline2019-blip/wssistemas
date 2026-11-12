@@ -13,8 +13,8 @@
   </div>
 </div>
 @endif
-<div class="card"><h2>🏪 Use seu cartão nas farmácias credenciadas</h2>
-  <p class="small muted">Comprou direto na loja? Mostre seu cartão (nº {{ $card['number'] }}) no balcão e envie a foto da nota aqui ou no WhatsApp: você ganha pontos mesmo sem fazer cotação.</p>
+<div class="card"><h2>🏪 Farmácias parceiras</h2>
+  <div class="alert ok small">💊 <b>Peça sua cotação pelo WhatsApp antes de comprar</b>: comparamos o preço nessas farmácias, você paga menos e ganha {{ str_replace('*', '', \App\Services\LoyaltyService::quoteIncentive()) }}. Compra direta no balcão, sem cotação, rende só uma parte dos pontos.</div>
   <div class="grid g2">@foreach($pharmacies as $x)<div class="small"><b>{{ $x['p']->trade_name }}</b> — {{ $x['p']->neighborhood?->name }}@if($x['d'] !== null) ({{ number_format($x['d'], 1, ',', '.') }} km)@endif<br><span class="muted">{{ $x['p']->fullAddress() }}</span> · <a href="{{ $x['p']->mapsUrl() }}" target="_blank">mapa</a></div>@endforeach</div>
 </div>
 <div class="card"><h2>📄 Enviar nota fiscal da compra</h2>

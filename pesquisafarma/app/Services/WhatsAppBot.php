@@ -124,7 +124,7 @@ class WhatsAppBot
         }
 
         if (! $in->hasMedia() && $this->isSmallTalk($text)) {
-            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n📄 Comprou numa farmácia credenciada? Mande a foto da *nota fiscal* e ganhe pontos.\n💳 Seus pontos: escreva *PONTOS* · 🏪 Onde usar o cartão: *FARMÁCIAS*.");
+            $this->reply($customer, "Olá, {$this->firstName($customer)}! 👋\nPara cotar, envie a *lista dos medicamentos* ou a *foto da receita*.\n🎁 Comprando pela cotação você ganha ".LoyaltyService::quoteIncentive()."!\n💳 Seus pontos: escreva *PONTOS* · 🏪 Farmácias parceiras: *FARMÁCIAS*.");
 
             return;
         }
@@ -168,7 +168,7 @@ class WhatsAppBot
         $list = Pharmacy::query()->where('active', true)->with('neighborhood')->get()
             ->map(fn ($p) => ['p' => $p, 'd' => Geo::distanceKm($origin, $p->lat ? [$p->lat, $p->lng] : null)])
             ->sortBy(fn ($x) => [$x['p']->neighborhood_id === $customer->neighborhood_id ? 0 : 1, $x['d'] ?? 9999])->take(6);
-        $lines = ['🏪 *Farmácias credenciadas perto de você*', 'Apresente seu cartão fidelidade (nº '.LoyaltyService::cardNumber($customer).'), compre e mande a foto da nota aqui para ganhar pontos! 💳', ''];
+        $lines = ['🏪 *Farmácias credenciadas perto de você*', '💊 *Peça sua cotação aqui antes de comprar*: comparamos o preço nelas, você paga menos e ganha '.LoyaltyService::quoteIncentive().'!', ''];
         foreach ($list as $x) {
             $lines[] = '• *'.$x['p']->trade_name.'* — '.($x['p']->neighborhood?->name ?? '').($x['d'] !== null ? ' ('.number_format($x['d'], 1, ',', '.').' km)' : '');
             $lines[] = '   '.$x['p']->fullAddress();

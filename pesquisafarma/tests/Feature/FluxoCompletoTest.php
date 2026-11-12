@@ -183,9 +183,9 @@ class FluxoCompletoTest extends TestCase
         // A comissão passa a incidir sobre tudo o que foi comprado (nota)
         $this->assertEqualsWithDelta(60.0, $order->commission_base, 0.001);
         $this->assertEqualsWithDelta(3.6, $order->commission_amount, 0.001);
-        // Pontos: 1/R$ (60) + bônus vitamina (50)
-        $this->assertSame(110, $receipt->points_awarded);
-        $this->assertSame(110, $customer->fresh()->points_balance);
+        // Pontos: (1/R$ (60) + bônus vitamina (50)) x2 por ter comprado pela cotação
+        $this->assertSame(220, $receipt->points_awarded);
+        $this->assertSame(220, $customer->fresh()->points_balance);
         $matched = $receipt->items()->whereNotNull('quote_item_id')->count();
         $this->assertSame(2, $matched, 'losartana e dipirona reconhecidas como itens cotados');
         $this->assertEqualsWithDelta(24.0, ReceiptService::comparison($receipt->fresh(['order', 'items']))['difference'], 0.001);
@@ -275,14 +275,15 @@ class FluxoCompletoTest extends TestCase
         $admin = User::where('role', 'admin')->first();
         $this->actingAs($admin)->post(route('receipts.store'), ['customer_id' => $customer->id, 'file' => UploadedFile::fake()->image('nota.jpg')])->assertRedirect();
         $receipt = Receipt::first();
-        $this->post(route('receipts.verify', $receipt), ['pharmacy_id' => $pharmacy->id, 'total' => '200,00', 'order_id' => ''])->assertRedirect();
+        $this->post(route('receipts.verify', $receipt), ['pharmacy_id' => $pharmacy->id, 'total' => '400,00', 'order_id' => ''])->assertRedirect();
         $receipt->refresh();
         $this->assertNull($receipt->order_id);
-        $this->assertEqualsWithDelta(10.0, $receipt->commission_amount, 0.001); // 5% de 200
-        $this->assertSame(200, $customer->fresh()->points_balance);
+        $this->assertEqualsWithDelta(20.0, $receipt->commission_amount, 0.001); // 5% de 400: comissão cobrada mesmo sem cotação
+        $this->assertSame(200, $customer->fresh()->points_balance); // sem cotação: metade dos pontos
+        $this->assertStringContainsString('peça a cotação aqui antes de comprar', MockGateway::$sent[count(MockGateway::$sent) - 1]['text']);
 
         $st = app(CommissionService::class)->generate($pharmacy, CarbonImmutable::today()->startOfMonth(), CarbonImmutable::today());
-        $this->assertEqualsWithDelta(10.0, $st->commission_amount, 0.001);
+        $this->assertEqualsWithDelta(20.0, $st->commission_amount, 0.001);
         $this->assertSame(1, $st->sales_count);
 
         $squeeze = Reward::where('name', 'Squeeze Pesquisa Farma')->first();
@@ -390,12 +391,12 @@ class FluxoCompletoTest extends TestCase
         $admin = User::where('role', 'admin')->first();
         $this->actingAs($admin)->post(route('receipts.verify', $sale), ['pharmacy_id' => $sale->pharmacy_id, 'total' => '80,00', 'nf_number' => '12345', 'order_id' => ''])->assertSessionHas('ok');
         $this->assertEqualsWithDelta(4.0, $sale->fresh()->commission_amount, 0.001);
-        $this->assertSame(80, $customer->fresh()->points_balance);
+        $this->assertSame(40, $customer->fresh()->points_balance); // balcão sem cotação: metade dos pontos
 
         // O cliente manda a mesma nota pelo WhatsApp: bloqueada como repetida
         $this->post(route('receipts.verify', $receipt), ['pharmacy_id' => $sale->pharmacy_id, 'total' => '80,00', 'nf_number' => '12345', 'order_id' => ''])->assertSessionHas('error');
         $this->assertSame('pendente', $receipt->fresh()->status);
-        $this->assertSame(80, $customer->fresh()->points_balance);
+        $this->assertSame(40, $customer->fresh()->points_balance);
     }
 
     public function test_todas_as_telas_abrem(): void

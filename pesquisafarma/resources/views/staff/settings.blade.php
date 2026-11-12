@@ -19,6 +19,10 @@
     <label class="check"><input type="checkbox" name="portal_enabled" value="1" @checked($s['portal_enabled'] === '1')> Área do cliente disponível (<a href="{{ route('portal.login') }}" target="_blank">{{ route('portal.login') }}</a>)</label>
     <label class="check"><input type="checkbox" name="loyalty_enabled" value="1" @checked($s['loyalty_enabled'] === '1')> Programa de pontos ativo</label>
     <div class="f" style="margin-top:8px"><label>Pontos por R$ 1,00 (padrão, sem regras)</label><input type="number" step="0.01" name="points_per_real" value="{{ $s['points_per_real'] }}"></div>
+    <div class="row"><div class="f"><label>Multiplicador — compra pela cotação</label><input type="number" step="0.1" name="points_quote_multiplier" value="{{ $s['points_quote_multiplier'] }}"></div>
+      <div class="f"><label>Multiplicador — compra direta, sem cotação</label><input type="number" step="0.1" name="points_direct_multiplier" value="{{ $s['points_direct_multiplier'] }}"></div></div>
+    <label class="check"><input type="checkbox" name="prize_requires_quote" value="1" @checked($s['prize_requires_quote'] === '1')> Premiação do mês só para compras feitas pela cotação</label>
+    <p class="small muted">Incentivo para o cliente sempre cotar com a Pesquisa Farma. A comissão da farmácia é cobrada nos dois casos.</p>
     <h2 style="margin-top:16px">Inteligência artificial (Claude)</h2>
     <label class="check"><input type="checkbox" name="ai_enabled" value="1" @checked($s['ai_enabled'] === '1')> Usar IA para ler pedidos, receitas e notas fiscais</label>
     <p class="small">{{ $aiConfigured ? ($aiOn ? '✅ IA ativa (modelo '.config('pesquisafarma.anthropic.model').').' : 'Chave configurada, IA desligada.') : '⚠️ Defina ANTHROPIC_API_KEY no .env. Sem chave, os itens de texto são separados por regras simples.' }}</p>

@@ -22,6 +22,10 @@ class Setting extends Model
         'response_minutes' => '20',
         'followup_minutes' => '180',
         'points_per_real' => '1',
+        // Incentivo para o cliente cotar com a Pesquisa Farma (e não comprar por conta própria)
+        'points_quote_multiplier' => '2',     // compra pela cotação: pontos em dobro
+        'points_direct_multiplier' => '0.5',  // compra direta no balcão, sem cotação: metade
+        'prize_requires_quote' => '1',        // premiação do mês só para compras pela cotação
         'portal_enabled' => '1',
         'loyalty_enabled' => '1',
         'max_pharmacies' => '15',

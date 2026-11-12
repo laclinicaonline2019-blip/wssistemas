@@ -23,7 +23,7 @@
   <div class="kpi"><div class="l">Indicação no mês (NPS)</div><div class="v">{{ $postSale['nps'] ?? '—' }}</div><div class="s">{{ $postSale['nps_count'] }} resposta(s) · {{ $postSale['nps_promoters'] }} promotores · {{ $postSale['nps_detractors'] }} detratores</div></div>
   <div class="kpi"><div class="l">Entregas confirmadas pelo cliente</div><div class="v">{{ $postSale['ps_delivery_confirmed'] }}/{{ $postSale['ps_orders'] }}</div><div class="s">pedidos do mês</div></div>
   <div class="kpi"><div class="l">Pedidos com nota fiscal</div><div class="v">{{ $postSale['ps_receipt_rate'] !== null ? number_format($postSale['ps_receipt_rate'], 0).'%' : '—' }}</div><div class="s">{{ $postSale['ps_with_receipt'] }} de {{ $postSale['ps_orders'] }} pedidos</div></div>
-  <div class="kpi"><div class="l">Compraram sem pedido</div><div class="v">{{ $postSale['ps_bought_without_order'] }}</div><div class="s">disseram "COMPREI" · {{ $postSale['ps_gave_up'] }} desistiram</div></div>
+  <div class="kpi"><div class="l">Compras pela cotação</div><div class="v" style="color:{{ ($postSale['ps_quote_share'] ?? 100) >= 80 ? 'var(--green)' : 'var(--red)' }}">{{ $postSale['ps_quote_share'] !== null ? number_format($postSale['ps_quote_share'], 0).'%' : '—' }}</div><div class="s">{{ $postSale['ps_orders'] }} pela cotação · {{ $postSale['ps_direct'] }} direto no balcão · {{ $postSale['ps_bought_without_order'] }} "COMPREI" sem pedido</div></div>
 </div>
 
 @if($receiptsPending || $promosPending || $redemptionsPending)

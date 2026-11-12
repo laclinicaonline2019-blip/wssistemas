@@ -10,6 +10,7 @@ use App\Models\PrizeCampaign;
 use App\Models\Receipt;
 use App\Models\Redemption;
 use App\Models\Reward;
+use App\Models\Setting;
 use App\Services\LoyaltyService;
 use App\Services\WhatsApp\WhatsAppService;
 use App\Support\Activity;
@@ -41,7 +42,9 @@ class LoyaltyController extends Controller
     {
         $start = CarbonImmutable::createFromFormat('Y-m-d', $month.'-01')->startOfDay();
 
-        return Receipt::query()->where('status', 'conferida')->whereBetween('reviewed_at', [$start, $start->endOfMonth()])->with('customer')->get()
+        return Receipt::query()->where('status', 'conferida')->whereBetween('reviewed_at', [$start, $start->endOfMonth()])
+            ->when(Setting::get('prize_requires_quote') === '1', fn ($q) => $q->where(fn ($w) => $w->whereNotNull('order_id')->orWhereNotNull('quote_id')))
+            ->with('customer')->get()
             ->groupBy('customer_id')->map(fn ($rs) => ['customer' => $rs->first()->customer, 'receipts' => $rs->count(), 'total' => round($rs->sum('total'), 2)])
             ->filter(fn ($r) => $r['total'] >= $min)->sortByDesc('total')->values();
     }

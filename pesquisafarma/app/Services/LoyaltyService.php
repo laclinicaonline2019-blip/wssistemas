@@ -65,7 +65,8 @@ class LoyaltyService
             $lines[] = '🎯 Faltam *'.$card['missing'].' pontos* para: '.$card['next']->name;
         }
         $lines[] = '';
-        $lines[] = '📸 Cada compra com nota fiscal enviada aqui soma pontos.';
+        $lines[] = '💊 *Antes de comprar, peça sua cotação aqui*: você paga o melhor preço, ganha '.self::quoteIncentive().'!';
+        $lines[] = '📸 Depois é só mandar a foto da nota fiscal.';
         if (Setting::get('portal_enabled') === '1') {
             $lines[] = '👉 Veja seu cartão e troque pontos: '.route('portal.login');
         }
@@ -101,7 +102,30 @@ class LoyaltyService
             }
         }
 
-        return ['points' => (int) floor($points), 'details' => $details];
+        // Cotar com a Pesquisa Farma vale mais do que comprar por conta própria.
+        $viaQuote = self::viaQuote($receipt);
+        $mult = (float) Setting::get($viaQuote ? 'points_quote_multiplier' : 'points_direct_multiplier');
+        if ($mult != 1.0) {
+            $points *= $mult;
+            $details[] = ($viaQuote ? 'Compra pela cotação' : 'Compra sem cotação').': pontos x'.rtrim(rtrim(number_format($mult, 2, ',', ''), '0'), ',');
+        }
+
+        return ['points' => (int) floor($points), 'details' => $details, 'via_quote' => $viaQuote];
+    }
+
+    /** A compra veio de uma cotação feita com a Pesquisa Farma? */
+    public static function viaQuote(Receipt $receipt): bool
+    {
+        return $receipt->order_id !== null || $receipt->quote_id !== null;
+    }
+
+    /** Texto curto do incentivo, usado nas mensagens ao cliente. */
+    public static function quoteIncentive(): string
+    {
+        $q = (float) Setting::get('points_quote_multiplier');
+        $txt = $q >= 2 ? 'pontos em *dobro*' : ($q > 1 ? 'pontos x'.rtrim(rtrim(number_format($q, 1, ',', ''), '0'), ',') : 'pontos');
+
+        return $txt.(Setting::get('prize_requires_quote') === '1' ? ' e concorre à *premiação do mês*' : '');
     }
 
     public function awardForReceipt(Receipt $receipt, ?int $userId = null): int
