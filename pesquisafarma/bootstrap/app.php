@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\CustomerPortal;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,9 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: ['webhook/*']);
+        // Atrás de proxy/Cloudflare/balanceador: TRUSTED_PROXIES=* (ou os IPs) para reconhecer HTTPS
+        if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
+        }
         $middleware->redirectGuestsTo('/login');
         $middleware->redirectUsersTo(fn () => auth()->user()?->isPharmacy() ? '/farmacia' : '/painel');
-        $middleware->alias(['customer' => CustomerPortal::class]);
+        $middleware->alias(['customer' => CustomerPortal::class, '2fa' => RequireTwoFactor::class]);
+        $middleware->web(append: [SecurityHeaders::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

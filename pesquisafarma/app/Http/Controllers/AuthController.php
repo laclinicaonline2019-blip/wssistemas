@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Support\Activity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 
 class AuthController extends Controller
 {
@@ -16,9 +18,26 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $cred = $request->validate(['email' => 'required|email', 'password' => 'required']);
-        if (! Auth::attempt($cred + ['active' => true], $request->boolean('remember'))) {
+        $key = 'login:'.mb_strtolower($cred['email']);
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            return back()->withErrors(['email' => 'Conta bloqueada por muitas tentativas. Tente em '.ceil(RateLimiter::availableIn($key) / 60).' min.'])->onlyInput('email');
+        }
+        if (! Auth::validate($cred + ['active' => true])) {
+            RateLimiter::hit($key, 900);
+            Activity::log('login.falha', 'Tentativa de login falhou: '.$cred['email']);
+
             return back()->withErrors(['email' => 'E-mail ou senha inválidos.'])->onlyInput('email');
         }
+        RateLimiter::clear($key);
+        $user = User::query()->where('email', $cred['email'])->first();
+        // Verificação em duas etapas: senha certa, mas ainda falta o código do aplicativo
+        if ($user->two_factor_confirmed_at) {
+            $request->session()->put('2fa:user', $user->id);
+            $request->session()->put('2fa:remember', $request->boolean('remember'));
+
+            return redirect()->route('2fa.challenge');
+        }
+        Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         $user = $request->user();
         $user->update(['last_login_at' => now()]);

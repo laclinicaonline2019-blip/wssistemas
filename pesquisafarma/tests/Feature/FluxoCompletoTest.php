@@ -13,6 +13,7 @@ use App\Models\Quote;
 use App\Models\QuotePharmacy;
 use App\Models\Receipt;
 use App\Models\Reward;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\CommissionService;
 use App\Services\FollowUpService;
@@ -35,12 +36,15 @@ class FluxoCompletoTest extends TestCase
     {
         parent::setUp();
         $this->seed(DemoSeeder::class);
+        Setting::put('require_2fa_admin', '0'); // a 2FA tem teste próprio (SegurancaTest)
         MockGateway::$sent = [];
     }
 
     private function whatsapp(string $phone, ?string $text, ?string $image = null): void
     {
-        $this->postJson('/webhook/whatsapp/segredo-teste', array_filter(['phone' => $phone, 'text' => $text, 'image_base64' => $image ? base64_encode($image) : null, 'id' => uniqid('m')]))->assertOk();
+        // Foto real (JPEG): o sistema descarta arquivos que não são imagem/PDF de verdade
+        $bytes = $image !== null ? UploadedFile::fake()->image('foto.jpg', 12, 12)->get() : null;
+        $this->postJson('/webhook/whatsapp/segredo-teste', array_filter(['phone' => $phone, 'text' => $text, 'image_base64' => $bytes ? base64_encode($bytes) : null, 'id' => uniqid('m')]))->assertOk();
     }
 
     private function lastSentTo(string $phone): string
@@ -354,7 +358,7 @@ class FluxoCompletoTest extends TestCase
         $this->assertSame(0, Quote::count(), 'pergunta de pontos não vira cotação');
 
         $tele = User::where('role', 'televendas')->first();
-        $this->actingAs($tele)->get(route('inbox.show', $customer))->assertOk()->assertSee('Cartão Fidelidade')->assertSee('PF 000001');
+        $this->actingAs($tele)->get(route('inbox.show', $customer))->assertOk()->assertSee('Cartão Fidelidade')->assertSee(LoyaltyService::cardNumber($customer));
         MockGateway::$sent = [];
         $this->post(route('inbox.card', $customer))->assertSessionHas('ok');
         $this->assertStringContainsString('120 pontos', MockGateway::$sent[0]['text']);

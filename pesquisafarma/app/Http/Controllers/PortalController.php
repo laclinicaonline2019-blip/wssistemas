@@ -16,6 +16,7 @@ use App\Support\Geo;
 use App\Support\Text;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use InvalidArgumentException;
 
 /** Área do cliente: pontos, histórico, envio de nota fiscal, brindes e promoções. */
@@ -36,13 +37,17 @@ class PortalController extends Controller
     public function sendCode(Request $request, WhatsAppService $wa)
     {
         $request->validate(['phone' => 'required|string|min:10']);
-        $customer = Customer::query()->where('phone', Text::phone($request->phone))->first();
+        $phone = Text::phone($request->phone);
+        // No máximo 3 códigos por número a cada 15 minutos (evita abuso e custo de WhatsApp)
+        $tooMany = RateLimiter::tooManyAttempts('otp-send:'.$phone, 3);
+        RateLimiter::hit('otp-send:'.$phone, 900);
+        $customer = $tooMany ? null : Customer::query()->where('phone', $phone)->whereNull('anonymized_at')->first();
         if ($customer) {
             $code = (string) random_int(100000, 999999);
-            $customer->update(['portal_code' => Hash::make($code), 'portal_code_expires_at' => now()->addMinutes(10)]);
+            $customer->update(['portal_code' => Hash::make($code), 'portal_code_expires_at' => now()->addMinutes(10), 'portal_code_attempts' => 0]);
             $wa->toCustomer($customer, "🔐 Seu código de acesso à área do cliente Pesquisa Farma: *{$code}*\nVálido por 10 minutos. Não compartilhe.");
         }
-        $request->session()->put('portal_phone', Text::phone($request->phone));
+        $request->session()->put('portal_phone', $phone);
 
         return back()->with('code_sent', true)->with('ok', 'Se o número estiver cadastrado, você receberá o código no WhatsApp.');
     }
@@ -52,6 +57,16 @@ class PortalController extends Controller
         $request->validate(['code' => 'required|digits:6']);
         $customer = Customer::query()->where('phone', $request->session()->get('portal_phone'))->first();
         if (! $customer || ! $customer->portal_code || $customer->portal_code_expires_at?->isPast() || ! Hash::check($request->code, $customer->portal_code)) {
+            // 5 tentativas erradas invalidam o código (protege contra adivinhação, mesmo de vários IPs)
+            if ($customer && $customer->portal_code) {
+                $customer->increment('portal_code_attempts');
+                if ($customer->portal_code_attempts >= 5) {
+                    $customer->update(['portal_code' => null, 'portal_code_expires_at' => null, 'portal_code_attempts' => 0]);
+
+                    return redirect()->route('portal.login')->withErrors(['code' => 'Muitas tentativas. Peça um novo código.']);
+                }
+            }
+
             return back()->with('code_sent', true)->withErrors(['code' => 'Código inválido ou expirado.']);
         }
         $customer->update(['portal_code' => null, 'portal_code_expires_at' => null]);
@@ -113,6 +128,7 @@ class PortalController extends Controller
     public function logout(Request $request)
     {
         $request->session()->forget('customer_id');
+        $request->session()->regenerate(true);
 
         return redirect()->route('portal.login');
     }

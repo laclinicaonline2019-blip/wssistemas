@@ -109,6 +109,12 @@ consultado no ViaCEP para identificar bairro, cidade e estado. Sem CEP, o client
 se o bairro existir em mais de uma cidade, o robô pergunta a cidade. Sem coordenadas, uma cotação nunca
 mistura farmácias de outra cidade.
 
+## Produção
+
+Roteiro completo (servidor, WhatsApp e IA reais, homologação com 1–2 televendas e 1 farmácia, abertura):
+**[docs/PRODUCAO.md](docs/PRODUCAO.md)**. Conferência automática: `php artisan pf:verificar --testar-ia` e
+`php artisan pf:testar-whatsapp <celular>`.
+
 ## Testes
 
 ```bash

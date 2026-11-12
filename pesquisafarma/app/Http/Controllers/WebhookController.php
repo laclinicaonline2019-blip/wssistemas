@@ -28,6 +28,12 @@ class WebhookController extends Controller
     public function receive(Request $request, string $secret, WhatsAppGateway $gateway, WhatsAppBot $bot)
     {
         $this->authorizeSecret($secret);
+        // WhatsApp oficial: confere a assinatura HMAC que a Meta envia em cada chamada
+        if (config('pesquisafarma.whatsapp_driver') === 'meta') {
+            $appSecret = (string) config('pesquisafarma.meta.app_secret');
+            $sig = (string) $request->header('X-Hub-Signature-256');
+            abort_unless($appSecret !== '' && hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $appSecret), $sig), 403);
+        }
         foreach ($gateway->parse($request) as $message) {
             try {
                 $bot->handle($message);

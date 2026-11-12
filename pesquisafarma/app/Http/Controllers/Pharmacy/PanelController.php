@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\Promotion;
 use App\Models\QuotePharmacy;
 use App\Models\Receipt;
+use App\Services\LoyaltyService;
 use App\Services\QuoteService;
 use App\Services\ReceiptService;
 use App\Services\ReportService;
@@ -106,7 +107,9 @@ class PanelController extends Controller
         $q = trim((string) $request->query('cartao'));
         if ($q !== '') {
             $digits = Text::digits($q);
-            $customer = (strlen($digits) <= 7 && $digits !== '') ? Customer::find((int) $digits) : Customer::where('phone', Text::phone($digits))->first();
+            // Cartão com dígito verificador, ou o celular completo (não dá para "chutar" clientes)
+            $customer = strlen($digits) === 7 ? LoyaltyService::findByCard($q)
+                : (strlen($digits) >= 10 ? Customer::where('phone', Text::phone($digits))->whereNull('anonymized_at')->first() : null);
             if ($customer && ! $customer->isRegistered()) {
                 $customer = null;
             }

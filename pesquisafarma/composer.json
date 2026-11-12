@@ -11,8 +11,10 @@
     "require": {
         "php": "^8.3",
         "anthropic-ai/sdk": "^0.54",
+        "bacon/bacon-qr-code": "^3.1",
         "laravel/framework": "^13.17",
-        "laravel/tinker": "^3.0"
+        "laravel/tinker": "^3.0",
+        "pragmarx/google2fa": "^9.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

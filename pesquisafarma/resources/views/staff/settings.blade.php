@@ -26,6 +26,10 @@
     <h2 style="margin-top:16px">Inteligência artificial (Claude)</h2>
     <label class="check"><input type="checkbox" name="ai_enabled" value="1" @checked($s['ai_enabled'] === '1')> Usar IA para ler pedidos, receitas e notas fiscais</label>
     <p class="small">{{ $aiConfigured ? ($aiOn ? '✅ IA ativa (modelo '.config('pesquisafarma.anthropic.model').').' : 'Chave configurada, IA desligada.') : '⚠️ Defina ANTHROPIC_API_KEY no .env. Sem chave, os itens de texto são separados por regras simples.' }}</p>
+    <h2 style="margin-top:16px">Segurança</h2>
+    <label class="check"><input type="checkbox" name="require_2fa_admin" value="1" @checked($s['require_2fa_admin'] === '1')> Verificação em duas etapas obrigatória para administradores</label>
+    <label class="check"><input type="checkbox" name="require_2fa_staff" value="1" @checked($s['require_2fa_staff'] === '1')> Obrigatória também para televendas</label>
+    <p class="small muted">Prontidão para produção: rode <code>php artisan pf:verificar</code> no servidor.</p>
     <h2 style="margin-top:16px">WhatsApp</h2>
     <p class="small">Provedor: <b>{{ strtoupper($driver) }}</b> (WHATSAPP_DRIVER no .env: mock, zapi, evolution ou meta).</p>
     <div class="f"><label>URL do webhook (configure no provedor)</label><input id="wh" value="{{ $webhook }}" readonly></div><a href="#" class="btn sm" data-copy="#wh">Copiar</a>

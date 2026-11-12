@@ -14,6 +14,7 @@ use App\Services\WhatsApp\InboundMessage;
 use App\Services\WhatsApp\WhatsAppService;
 use App\Support\Activity;
 use App\Support\Geo;
+use App\Support\Media;
 use App\Support\Text;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -41,6 +42,11 @@ class WhatsAppBot
 
     public function handle(InboundMessage $in): void
     {
+        // Segurança: o tipo do arquivo vem do conteúdo, não do que o remetente informa; tipos não permitidos são descartados.
+        if ($in->hasMedia()) {
+            $real = Media::detect($in->mediaBytes);
+            $in = new InboundMessage($in->phone, $real ? $in->type : 'text', $in->text, $in->senderName, $in->providerId, $real ? $in->mediaBytes : null, $real);
+        }
         $phone = Text::phone($in->phone);
         if ($in->providerId && WaMessage::query()->where('provider_id', $in->providerId)->where('direction', 'in')->exists()) {
             return; // webhook repetido
@@ -49,7 +55,7 @@ class WhatsAppBot
         $customer->update(['last_contact_at' => now()]);
         $mediaPath = null;
         if ($in->hasMedia()) {
-            $mediaPath = 'whatsapp/'.now()->format('Y/m').'/'.Str::random(24).'.'.$this->ext($in->mime);
+            $mediaPath = 'whatsapp/'.now()->format('Y/m').'/'.Str::random(24).'.'.Media::extension((string) $in->mime);
             Storage::disk('local')->put($mediaPath, $in->mediaBytes);
         }
         $msg = WaMessage::create([
@@ -390,12 +396,5 @@ class WhatsAppBot
     private function firstName(Customer $c): string
     {
         return explode(' ', trim((string) $c->name))[0] ?: 'tudo bem';
-    }
-
-    private function ext(?string $mime): string
-    {
-        return match ($mime) {
-            'application/pdf' => 'pdf', 'image/png' => 'png', 'image/webp' => 'webp', 'audio/ogg', 'audio/ogg; codecs=opus' => 'ogg', default => 'jpg'
-        };
     }
 }

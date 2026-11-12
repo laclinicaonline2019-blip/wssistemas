@@ -3,7 +3,7 @@
 @section('content')
 <div class="top">
   <div><h1>{{ $customer->displayName() }}</h1><div class="sub">{{ \App\Support\Text::formatPhone($customer->phone) }} · {{ $customer->fullAddress() ?: 'sem endereço' }} · cliente desde {{ $customer->created_at->format('d/m/Y') }}</div></div>
-  <div class="row auto"><a class="btn" href="{{ route('inbox.show', $customer) }}">💬 Conversa</a><a class="btn" href="{{ route('customers.edit', $customer) }}">Editar</a><a class="btn p" href="{{ route('quotes.create', ['cliente' => $customer->id]) }}">+ Cotação</a></div>
+  <div class="row auto"><a class="btn" href="{{ route('inbox.show', $customer) }}">💬 Conversa</a><a class="btn" href="{{ route('customers.edit', $customer) }}">Editar</a>@can('admin')<a class="btn" href="{{ route('customers.export', $customer) }}">⬇ Dados (LGPD)</a>@endcan<a class="btn p" href="{{ route('quotes.create', ['cliente' => $customer->id]) }}">+ Cotação</a></div>
 </div>
 <div class="grid g4" style="margin-bottom:16px">
   <div class="kpi"><div class="l">Cotações</div><div class="v">{{ $quotes->count() }}</div></div>
@@ -33,4 +33,12 @@
     <table>@forelse($redemptions as $rd)<tr><td>{{ $rd->reward->name }}</td><td class="num">{{ $rd->points }} pts</td><td><span class="badge b-{{ $rd->status }}">{{ \App\Models\Redemption::STATUSES[$rd->status] }}</span></td></tr>
     @empty<tr><td class="empty">Nenhuma troca.</td></tr>@endforelse</table></div>
 </div>
+@can('admin')
+@unless($customer->anonymized_at)
+<details class="card"><summary>🗑️ LGPD — anonimizar cliente (pedido de exclusão)</summary>
+  <p class="small muted">Apaga nome, telefone, CPF, endereço, conversas e arquivos. Ficam só os valores de pedidos e notas (registros financeiros). Não pode ser desfeito.</p>
+  <form method="post" action="{{ route('customers.anonymize', $customer) }}" class="row">@csrf<input name="confirm" placeholder="Digite ANONIMIZAR para confirmar" required><button class="btn r auto">Anonimizar</button></form>
+</details>
+@endunless
+@endcan
 @endsection

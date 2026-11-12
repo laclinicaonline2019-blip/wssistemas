@@ -5,7 +5,7 @@
 
 <div class="card">
   <div class="top" style="margin-bottom:8px"><h2 style="margin:0">🏙️ Cidades atendidas ({{ $allCities->count() }})</h2>
-    <form class="toolbar" style="margin:0"><select name="uf" onchange="this.form.submit()"><option value="">Todos os estados</option>@foreach($allCities->pluck('uf')->unique()->filter() as $uf)<option @selected(request('uf') === $uf)>{{ $uf }}</option>@endforeach</select></form></div>
+    <form class="toolbar" style="margin:0"><select name="uf" data-autosubmit><option value="">Todos os estados</option>@foreach($allCities->pluck('uf')->unique()->filter() as $uf)<option @selected(request('uf') === $uf)>{{ $uf }}</option>@endforeach</select></form></div>
   <div class="table-wrap"><table>
     <tr><th>Cidade</th><th>UF</th><th>Latitude</th><th>Longitude</th><th class="num">Bairros</th><th class="num">Farmácias</th><th class="num">Clientes</th><th>Ativa</th><th></th></tr>
     @foreach($cities as $c)

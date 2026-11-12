@@ -30,6 +30,8 @@ class Setting extends Model
         'loyalty_enabled' => '1',
         'max_pharmacies' => '15',
         'company_name' => 'Pesquisa Farma',
+        'require_2fa_admin' => '1',   // administradores obrigatoriamente com verificação em duas etapas
+        'require_2fa_staff' => '0',   // televendas (opcional)
         'company_whatsapp' => '',
         'ai_enabled' => '1',
         'welcome_message' => 'Olá! 👋 Aqui é a *Pesquisa Farma*. Pesquisamos o preço do seu medicamento em várias farmácias e enviamos a *melhor cotação*!',

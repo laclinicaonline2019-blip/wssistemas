@@ -53,3 +53,7 @@ document.querySelectorAll('[data-location]').forEach((box) => {
   hood.addEventListener('change', () => { const o = hood.selectedOptions[0]; if (o?.dataset.city) { city.value = o.dataset.city; const c = city.selectedOptions[0]; if (c?.dataset.uf) uf.value = c.dataset.uf; apply(); } });
   apply();
 });
+
+// Sem JavaScript embutido no HTML (política de segurança CSP)
+document.addEventListener('click', (e) => { if (e.target.closest('[data-print]')) { e.preventDefault(); window.print(); } });
+document.addEventListener('change', (e) => { const el = e.target.closest('[data-autosubmit]'); if (el && el.form) el.form.submit(); });

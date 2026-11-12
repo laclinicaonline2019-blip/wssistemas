@@ -7,7 +7,7 @@
     @if($st->status === 'aberto')<form method="post" action="{{ route('commissions.status', $st) }}">@csrf<input type="hidden" name="status" value="emitido"><button class="btn">Marcar cobrança emitida</button></form>@endif
     @if(in_array($st->status, ['aberto','emitido']))<form method="post" action="{{ route('commissions.status', $st) }}">@csrf<input type="hidden" name="status" value="pago"><button class="btn g">Marcar como pago</button></form>
     <form method="post" action="{{ route('commissions.status', $st) }}">@csrf<input type="hidden" name="status" value="cancelado"><button class="btn r" data-confirm="Cancelar o fechamento? As vendas voltam para 'em aberto'.">Cancelar</button></form>@endif
-    <a class="btn" href="#" onclick="window.print();return false">🖨 Imprimir</a>
+    <a class="btn" href="#" data-print>🖨 Imprimir</a>
   </div>
 </div>
 <div class="grid g3" style="margin-bottom:16px">

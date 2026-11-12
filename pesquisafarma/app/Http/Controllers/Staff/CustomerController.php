@@ -10,6 +10,7 @@ use App\Services\LoyaltyService;
 use App\Support\Activity;
 use App\Support\Text;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
@@ -96,6 +97,54 @@ class CustomerController extends Controller
         Activity::log('cliente.editado', 'Cadastro de '.$customer->name.' atualizado', $customer);
 
         return redirect()->route('customers.show', $customer)->with('ok', 'Cadastro atualizado.');
+    }
+
+    /** LGPD: exporta todos os dados do cliente (direito de acesso/portabilidade). */
+    public function export(Customer $customer)
+    {
+        Activity::log('lgpd.exportacao', 'Dados exportados: '.$customer->displayName(), $customer);
+        $data = [
+            'cliente' => $customer->makeHidden(['portal_code', 'bot_data'])->toArray(),
+            'cotacoes' => $customer->quotes()->with('items')->get()->toArray(),
+            'pedidos' => $customer->orders()->with('items')->get()->toArray(),
+            'notas_fiscais' => $customer->receipts()->with('items')->get()->makeHidden(['ai_data', 'file_path'])->toArray(),
+            'pontos' => $customer->points()->get()->toArray(),
+            'trocas' => $customer->redemptions()->get()->toArray(),
+            'mensagens' => $customer->messages()->get(['direction', 'type', 'body', 'created_at'])->toArray(),
+            'gerado_em' => now()->toIso8601String(),
+        ];
+
+        return response()->streamDownload(fn () => print (json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)), 'dados-cliente-'.$customer->id.'.json', ['Content-Type' => 'application/json']);
+    }
+
+    /**
+     * LGPD: anonimiza o cliente (direito de eliminação). Apaga dados pessoais, conversas e arquivos;
+     * mantém só os valores de pedidos/notas, que são registros financeiros e fiscais da operação.
+     */
+    public function anonymize(Request $request, Customer $customer)
+    {
+        $request->validate(['confirm' => 'required|in:ANONIMIZAR']);
+        $disk = Storage::disk('local');
+        foreach ($customer->messages()->whereNotNull('media_path')->pluck('media_path') as $path) {
+            $disk->delete($path);
+        }
+        $customer->messages()->delete();
+        foreach ($customer->quotes()->whereNotNull('attachment_path')->get() as $q) {
+            $disk->delete($q->attachment_path);
+        }
+        $customer->quotes()->update(['raw_text' => null, 'attachment_path' => null, 'delivery_address' => null, 'feedback_comment' => null]);
+        foreach ($customer->receipts()->whereNotNull('file_path')->get() as $r) {
+            $disk->delete($r->file_path);
+        }
+        $customer->receipts()->update(['file_path' => null, 'ai_data' => null]);
+        $customer->update([
+            'name' => 'Cliente anonimizado #'.$customer->id, 'phone' => 'anon-'.$customer->id, 'cpf' => null, 'email' => null, 'birth_date' => null,
+            'cep' => null, 'address' => null, 'number' => null, 'complement' => null, 'lat' => null, 'lng' => null, 'notes' => null,
+            'accepts_marketing' => false, 'portal_code' => null, 'bot_state' => null, 'bot_data' => null, 'anonymized_at' => now(),
+        ]);
+        Activity::log('lgpd.anonimizacao', 'Cliente #'.$customer->id.' anonimizado a pedido', $customer);
+
+        return redirect()->route('customers.show', $customer)->with('ok', 'Cliente anonimizado. Dados pessoais, conversas e arquivos foram apagados.');
     }
 
     public function adjustPoints(Request $request, Customer $customer, LoyaltyService $loyalty)

@@ -28,7 +28,32 @@ class LoyaltyService
     /** Número do cartão fidelidade (fixo por cliente). */
     public static function cardNumber(Customer $c): string
     {
-        return 'PF '.str_pad((string) $c->id, 6, '0', STR_PAD_LEFT);
+        $base = str_pad((string) $c->id, 6, '0', STR_PAD_LEFT);
+
+        return 'PF '.$base.'-'.self::checkDigit($base);
+    }
+
+    /** Dígito verificador (Luhn): impede "chutar" números de cartão no balcão. */
+    public static function checkDigit(string $digits): int
+    {
+        $sum = 0;
+        foreach (array_reverse(str_split($digits)) as $i => $d) {
+            $n = (int) $d * ($i % 2 === 0 ? 2 : 1);
+            $sum += $n > 9 ? $n - 9 : $n;
+        }
+
+        return (10 - $sum % 10) % 10;
+    }
+
+    /** "PF 000123-4" → cliente (só com dígito verificador correto). */
+    public static function findByCard(string $text): ?Customer
+    {
+        $d = preg_replace('/\D+/', '', $text);
+        if (strlen($d) !== 7 || self::checkDigit(substr($d, 0, 6)) !== (int) $d[6]) {
+            return null;
+        }
+
+        return Customer::query()->whereKey((int) substr($d, 0, 6))->whereNull('anonymized_at')->first();
     }
 
     /**

@@ -97,6 +97,19 @@ class ReportController extends Controller
         return $rows->filter(fn ($r) => in_array($model($r)->city_id, $cities))->values();
     }
 
+    /** Célula segura para Excel: texto que começa com = + - @ vira texto (evita fórmula maliciosa). */
+    public static function cell(mixed $v): mixed
+    {
+        if (is_float($v)) {
+            return number_format($v, 2, ',', '');
+        }
+        if (is_string($v) && $v !== '' && in_array($v[0], ['=', '+', '-', '@', "\t", "\r"], true)) {
+            return "'".$v;
+        }
+
+        return $v;
+    }
+
     private function csv(string $name, array $head, $rows)
     {
         return response()->streamDownload(function () use ($head, $rows) {
@@ -104,7 +117,7 @@ class ReportController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
             fputcsv($out, $head, ';');
             foreach ($rows as $row) {
-                fputcsv($out, array_map(fn ($v) => is_float($v) ? number_format($v, 2, ',', '') : $v, $row), ';');
+                fputcsv($out, array_map(fn ($v) => self::cell($v), $row), ';');
             }
             fclose($out);
         }, 'relatorio-'.$name.'-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);

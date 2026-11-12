@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
-    public const BOOL = ['portal_enabled', 'loyalty_enabled', 'ai_enabled', 'auto_dispatch', 'prize_requires_quote'];
+    public const BOOL = ['portal_enabled', 'loyalty_enabled', 'ai_enabled', 'auto_dispatch', 'prize_requires_quote', 'require_2fa_admin', 'require_2fa_staff'];
 
     public function edit(AiAssistant $ai)
     {

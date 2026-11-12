@@ -11,7 +11,7 @@
   @if($report === 'clientes')<div><label>Cliente</label><input name="q" value="{{ request('q') }}" placeholder="Nome ou telefone"></div>@endif
   <button class="btn p">Aplicar</button>
   @if($report !== 'tempos')<a class="btn" href="{{ request()->fullUrlWithQuery(['csv' => 1]) }}">⬇ Excel (CSV)</a>@endif
-  <a class="btn" href="#" onclick="window.print();return false">🖨 Imprimir</a>
+  <a class="btn" href="#" data-print>🖨 Imprimir</a>
 </form>
 
 @if($report === 'farmacias')

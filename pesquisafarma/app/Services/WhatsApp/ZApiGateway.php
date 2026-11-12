@@ -2,6 +2,7 @@
 
 namespace App\Services\WhatsApp;
 
+use App\Support\Media;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -51,7 +52,7 @@ class ZApiGateway implements WhatsAppGateway
                 $text = $request->input($kind.'.caption', $text);
             }
         }
-        $bytes = $url ? Http::timeout(30)->get($url)->body() : null;
+        $bytes = $url ? Media::download((string) $url) : null;
 
         return [new InboundMessage((string) $request->input('phone'), $type, $text, $request->input('senderName'), $request->input('messageId'), $bytes, $mime)];
     }

@@ -67,7 +67,7 @@
     </details>
   </div>
   <div class="card">
-    <h2>Participantes de <form style="display:inline"><input type="month" name="mes" value="{{ $month }}" onchange="this.form.submit()" style="width:auto"></form></h2>
+    <h2>Participantes de <form style="display:inline"><input type="month" name="mes" value="{{ $month }}" data-autosubmit style="width:auto"></form></h2>
     <table><tr><th>Cliente</th><th class="num">Notas</th><th class="num">Total</th></tr>
       @forelse($participants as $p)<tr><td>{{ $p['customer']->displayName() }}</td><td class="num">{{ $p['receipts'] }}</td><td class="num">{{ money($p['total']) }}</td></tr>
       @empty<tr><td colspan="3" class="empty">Nenhum participante ainda.</td></tr>@endforelse</table>

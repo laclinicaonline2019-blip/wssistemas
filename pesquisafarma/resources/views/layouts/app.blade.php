@@ -45,7 +45,7 @@
     @endif
     </nav>
     <div class="who">{{ $u->name }}<br><span class="muted">{{ \App\Models\User::ROLES[$u->role] ?? $u->role }}</span>
-      <form method="post" action="{{ route('logout') }}" style="margin-top:6px">@csrf<button class="btn sm">Sair</button></form>
+      <div class="row auto" style="margin-top:6px;gap:6px"><a class="btn sm" href="{{ route('2fa.setup') }}">🔐 Segurança</a><form method="post" action="{{ route('logout') }}">@csrf<button class="btn sm">Sair</button></form></div>
     </div>
   </aside>
   <main class="main">
@@ -53,6 +53,6 @@
     @yield('content')
   </main>
 </div>
-<script src="{{ asset('js/app.js') }}?v=2"></script>
+<script src="{{ asset('js/app.js') }}?v=3"></script>
 </body>
 </html>

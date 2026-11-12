@@ -6,6 +6,7 @@ use App\Http\Controllers\Pharmacy\PanelController;
 use App\Http\Controllers\PharmacyResponseController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\Staff;
+use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,10 +17,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/verificacao', [TwoFactorController::class, 'challenge'])->name('2fa.challenge');
+Route::post('/verificacao', [TwoFactorController::class, 'verifyChallenge'])->middleware('throttle:10,1')->name('2fa.verify');
 
 // WhatsApp (Z-API / Evolution / Meta / mock)
 Route::get('/webhook/whatsapp/{secret}', [WebhookController::class, 'verify']);
-Route::post('/webhook/whatsapp/{secret}', [WebhookController::class, 'receive'])->name('webhook.whatsapp');
+Route::post('/webhook/whatsapp/{secret}', [WebhookController::class, 'receive'])->middleware('throttle:600,1')->name('webhook.whatsapp');
 
 // Resposta rápida da farmácia pelo link do WhatsApp (sem login)
 Route::get('/f/{token}', [PharmacyResponseController::class, 'form'])->name('pharmacy.respond');
@@ -40,7 +43,10 @@ Route::prefix('cliente')->name('portal.')->group(function () {
     });
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', '2fa'])->group(function () {
+    Route::get('/seguranca', [TwoFactorController::class, 'setup'])->name('2fa.setup');
+    Route::post('/seguranca/ativar', [TwoFactorController::class, 'enable'])->middleware('throttle:10,1')->name('2fa.enable');
+    Route::post('/seguranca/desativar', [TwoFactorController::class, 'disable'])->name('2fa.disable');
     Route::get('/arquivo/{type}/{id}', [FileController::class, 'show'])->name('file');
 
     // ---------------- Painel Pesquisa Farma (admin + televendas)
@@ -116,6 +122,8 @@ Route::middleware('auth')->group(function () {
             Route::delete('/farmacias/{pharmacy}/zonas/{zone}', [Staff\PharmacyController::class, 'deleteZone'])->name('pharmacies.zone.delete');
             Route::post('/farmacias/{pharmacy}/usuarios', [Staff\PharmacyController::class, 'addUser'])->name('pharmacies.user');
 
+            Route::get('/clientes/{customer}/lgpd/exportar', [Staff\CustomerController::class, 'export'])->name('customers.export');
+            Route::post('/clientes/{customer}/lgpd/anonimizar', [Staff\CustomerController::class, 'anonymize'])->name('customers.anonymize');
             Route::get('/bairros', [Staff\NeighborhoodController::class, 'index'])->name('neighborhoods.index');
             Route::post('/bairros', [Staff\NeighborhoodController::class, 'store'])->name('neighborhoods.store');
             Route::put('/bairros/{neighborhood}', [Staff\NeighborhoodController::class, 'update'])->name('neighborhoods.update');
@@ -141,7 +149,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pedidos', [PanelController::class, 'orders'])->name('orders');
         Route::post('/pedidos/{order}/entregue', [PanelController::class, 'completeOrder'])->name('orders.complete');
         Route::get('/vendas', [PanelController::class, 'sales'])->name('sales');
-        Route::get('/cartao', [PanelController::class, 'card'])->name('card');
+        Route::get('/cartao', [PanelController::class, 'card'])->middleware('throttle:30,1')->name('card');
         Route::post('/cartao/{customer}/venda', [PanelController::class, 'cardSale'])->middleware('throttle:30,1')->name('card.sale');
         Route::get('/promocoes', [PanelController::class, 'promotions'])->name('promotions');
         Route::post('/promocoes', [PanelController::class, 'storePromotion'])->name('promotions.store');
