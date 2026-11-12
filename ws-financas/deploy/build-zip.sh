@@ -20,6 +20,8 @@ tar --exclude='./vendor' --exclude='./dist' --exclude='./node_modules' --exclude
   && php artisan package:discover >/dev/null 2>&1 || true )
 # instalações "from source" trazem o histórico git de cada pacote — não vai para produção
 find "$OUT/vendor" -name .git -type d -prune -exec rm -rf {} +
+# testes e fixtures das bibliotecas não são usados em produção
+find "$OUT/vendor" -mindepth 3 -maxdepth 3 -type d \( -name tests -o -name Tests \) -prune -exec rm -rf {} +
 rm -f "$OUT/composer.lock.bak" "$OUT/.env.testing" "$OUT/phpunit.xml"
 echo "$VERSION" > "$OUT/VERSION"
 
