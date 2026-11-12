@@ -20,7 +20,7 @@ class SettingsController extends Controller
         }
 
         return view('staff.settings', ['s' => $values, 'aiConfigured' => filled(config('pesquisafarma.anthropic.api_key')), 'aiOn' => $ai->enabled(),
-            'driver' => config('pesquisafarma.whatsapp_driver'), 'webhook' => url('/webhook/whatsapp/'.config('pesquisafarma.webhook_secret'))]);
+            'driver' => config('pesquisafarma.whatsapp_driver'), 'lastAi' => \App\Models\AiRequest::query()->latest('id')->first(), 'webhook' => url('/webhook/whatsapp/'.config('pesquisafarma.webhook_secret'))]);
     }
 
     public function update(Request $request)

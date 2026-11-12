@@ -123,9 +123,10 @@ class AiAssistant
                 continue;
             }
             $qty = 1;
-            if (preg_match('/^(\d{1,2})\s*(x|cx|caixas?|un|unid\.?|unidades?)?\s+/iu', $line, $m)) {
-                $qty = (int) $m[1];
-                $line = trim(substr($line, strlen($m[0])));
+            $words = ['um' => 1, 'uma' => 1, 'dois' => 2, 'duas' => 2, 'tres' => 3, 'três' => 3, 'quatro' => 4, 'cinco' => 5];
+            if (preg_match('/^(\d{1,2}|um|uma|dois|duas|tr[eê]s|quatro|cinco)\s*(x|cxs?|caixas?|un|unid\.?|unidades?|frascos?|tubos?|cartelas?)?\s+(de\s+|do\s+|da\s+)?/iu', $line, $m)) {
+                $qty = ctype_digit($m[1]) ? (int) $m[1] : ($words[mb_strtolower($m[1])] ?? 1);
+                $line = trim(mb_substr($line, mb_strlen($m[0])));
             } elseif (preg_match('/\s+(\d{1,2})\s*(x|cx|caixas?|un|unidades?)$/iu', $line, $m)) {
                 $qty = (int) $m[1];
                 $line = trim(substr($line, 0, -strlen($m[0])));

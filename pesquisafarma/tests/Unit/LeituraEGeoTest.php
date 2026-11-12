@@ -29,6 +29,13 @@ class LeituraEGeoTest extends TestCase
         $this->assertSame([], (new AiAssistant)->parseText('Bom dia, tudo bem?'));
     }
 
+    public function test_quantidade_por_extenso_e_caixas(): void
+    {
+        $items = (new AiAssistant)->parseText('Boa tarde! Preciso de 2 caixas de losartana 50mg genérico, um dorflex e duas cx de dipirona');
+        $this->assertSame(['losartana', 'dorflex', 'dipirona'], array_column($items, 'description'));
+        $this->assertSame([2, 1, 2], array_column($items, 'quantity'));
+    }
+
     public function test_dinheiro_telefone_e_distancia(): void
     {
         $this->assertSame(1234.56, Text::money('R$ 1.234,56'));
