@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="csrf-token" content="{{ csrf_token() }}">
+@if (request()->hasSession())<meta name="csrf-token" content="{{ csrf_token() }}">@endif
 <meta name="robots" content="{{ request()->is('/') || request()->is('privacidade') || request()->is('termos') ? 'index,follow' : 'noindex,nofollow' }}">
 <title>@yield('title', 'WS Finanças em Dia')</title>
 <link rel="icon" href="/favicon.png" type="image/png">

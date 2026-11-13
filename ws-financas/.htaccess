@@ -1,0 +1,13 @@
+# WS Finanças em Dia — a raiz do domínio deve apontar para a pasta /public.
+# Estas regras são uma proteção extra caso algum arquivo da raiz do projeto fique acessível.
+# (Não use "Require all denied" aqui: esta pasta é "pai" de /public e bloquearia o site inteiro.)
+Options -Indexes
+<FilesMatch "^(\.env.*|\.git.*|composer\.(json|lock)|artisan|VERSION|wsf-update\.(json|sig)|CHECKSUMS\.sha256|phpunit\.xml|.*\.(md|log|sql|sqlite|wsfbak|zip|bak))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>

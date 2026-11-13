@@ -1,6 +1,16 @@
 @extends('layouts.admin')
 @section('title', 'Sistema e backups')
 @section('content')
+<div class="stats"><div class="stat"><label>Versão</label><b>{{ $version }}</b></div><div class="stat {{ $pending ? 'bad' : 'good' }}"><label>Migrações pendentes</label><b>{{ count($pending) }}</b></div></div>
+@if ($pending)
+<form class="card" method="post" action="{{ route('admin.system.migrate') }}" data-confirm="Aplicar as migrações pendentes agora?">@csrf
+  <h3>Aplicar migrações pendentes</h3>
+  <p class="small mt0">Use depois de uma atualização manual pelo Gerenciador de Arquivos. Um backup do banco é feito antes; o site fica em manutenção por alguns segundos.</p>
+  <ul class="small">@foreach ($pending as $m)<li><code>{{ $m }}</code></li>@endforeach</ul>
+  <div class="field"><label>Sua senha</label><input type="password" name="password" required autocomplete="current-password"></div>
+  <button class="btn primary" type="submit">Aplicar migrações pendentes</button>
+</form>
+@endif
 <div class="grid2">
   <div class="card"><h3>Prontidão</h3>
     <div class="table-wrap" style="border:0"><table class="t"><tbody>@foreach ($checks as $c)<tr><td><span class="pill {{ $c['ok'] ? 'ok' : 'warn' }}">{{ $c['ok'] ? 'OK' : 'Atenção' }}</span> {{ $c['item'] }}</td><td class="small muted">{{ $c['info'] }}</td></tr>@endforeach</tbody></table></div></div>

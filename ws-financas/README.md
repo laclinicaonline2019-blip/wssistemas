@@ -10,6 +10,7 @@ Gestão financeira por assinatura para pessoas físicas e empresas: o **painel W
 | | |
 |---|---|
 | [ARQUITETURA.md](docs/ARQUITETURA.md) | análise do sistema atual, arquitetura, recursos preservados e novos, planos, **serviços externos e custos** |
+| [INSTALACAO-CPANEL.md](docs/INSTALACAO-CPANEL.md) | **instalação e atualização só pelo cPanel e navegador** (sem terminal): instalador web, atualizações pelo painel com backup e reversão, proteções, limitações |
 | [HOSTGATOR.md](docs/HOSTGATOR.md) | compatibilidade do plano, instalação passo a passo, cron, homologação, atualização, migração para VPS |
 | [INTEGRACOES.md](docs/INTEGRACOES.md) | WhatsApp Business (Cloud API), Asaas, IA |
 | [MIGRACAO.md](docs/MIGRACAO.md) | importar os dados do armazenamento local do sistema antigo |
@@ -32,12 +33,21 @@ php artisan test                         # SQLite em memória
 DB_CONNECTION=mysql DB_DATABASE=wsf_test DB_USERNAME=... DB_PASSWORD=... php artisan test   # MySQL/MariaDB
 vendor/bin/pint --test
 ```
-42 testes cobrem: interpretação das mensagens (incluindo os exemplos do briefing), isolamento entre clientes e empresas (inclusive no banco), contador com empresas autorizadas, papéis, WhatsApp (assinatura do webhook, número não autorizado, confirmação, duplicidade, reentrega, desfazer/corrigir, plano e suspensão), cobrança (teste → atraso → suspensão → webhook Asaas → reativação, idempotência, baixa manual, limites, cancelamento + eliminação LGPD), recuperação de senha por e-mail, 2FA obrigatório, cabeçalhos/XSS, importação local sem duplicar, backup criptografado com restauração verificada, auditoria contra adulteração, relatórios CSV/PDF e carregamento de todas as telas.
+Os testes cobrem: instalador web (código, CSRF, APP_KEY, bloqueio, fluxo completo com MySQL), `.env` à prova de injeção, validação e assinatura de pacotes de atualização, interpretação das mensagens (incluindo os exemplos do briefing), isolamento entre clientes e empresas (inclusive no banco), contador com empresas autorizadas, papéis, WhatsApp (assinatura do webhook, número não autorizado, confirmação, duplicidade, reentrega, desfazer/corrigir, plano e suspensão), cobrança (teste → atraso → suspensão → webhook Asaas → reativação, idempotência, baixa manual, limites, cancelamento + eliminação LGPD), recuperação de senha por e-mail, 2FA obrigatório, cabeçalhos/XSS, importação local sem duplicar, backup criptografado com restauração verificada, auditoria contra adulteração, relatórios CSV/PDF e carregamento de todas as telas.
 
-## Pacote de instalação
+## Pacote de instalação e atualização
 ```bash
-deploy/build-zip.sh 1.0.0    # → dist/ws-financas-1.0.0.zip
+deploy/build-zip.sh 1.1.0 1.0.0    # → dist/ws-financas-1.1.0.zip (versão, versão mínima de origem)
+WSF_UPDATE_SIGNING_KEY=... deploy/build-zip.sh 1.1.0   # assinado (chaves: php deploy/assinar-pacote.php gerar-chaves)
 ```
+O mesmo ZIP serve para instalar (extrair no cPanel) e para atualizar pelo painel: arquivos na raiz, `vendor/` incluído,
+manifesto `wsf-update.json` e `CHECKSUMS.sha256`; nunca contém `.env`, dados de `storage`, testes ou caches.
+
+## Novidades da 1.1.0
+- Instalador web que funciona **sem APP_KEY e sem terminal** (a 1.0.0 parava com erro 500): código temporário lido no servidor, HTTPS obrigatório, requisitos, geração da APP_KEY e segredos, validação do MySQL (conexão, versão, privilégios), migrações controladas, administrador principal e bloqueio definitivo.
+- Atualizações pelo painel do proprietário com backup, conferência SHA-256, assinatura Ed25519 opcional, troca atômica de pastas, reversão automática e manual.
+- Proteção por `.htaccess` de todas as pastas internas e arquivos sensíveis; HTTPS forçado; aplicação de migrações pendentes pela tela.
+- Correção: `TRUSTED_PROXIES` (Cloudflare/proxy) agora é lido corretamente do `.env`.
 O GitHub Actions (`.github/workflows/ws-financas.yml`) roda os testes em SQLite e MariaDB e publica o ZIP como artefato.
 
 ## Licença

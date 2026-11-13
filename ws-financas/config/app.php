@@ -28,6 +28,9 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    // Versão instalada (arquivo VERSION na raiz do projeto — usado pelas atualizações pelo painel).
+    'version' => is_file(base_path('VERSION')) ? trim((string) file_get_contents(base_path('VERSION'))) : '0.0.0',
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

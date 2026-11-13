@@ -10,3 +10,6 @@
 /storage/app/backups/*
 /dist
 database/*.sqlite
+/storage/app/instalador
+/storage/app/updates/*
+!/storage/app/updates/.gitignore

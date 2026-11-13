@@ -33,7 +33,7 @@ class SecurityHeaders
         if ($request->isSecure()) {
             $h->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
-        if ($request->user()) {
+        if ($request->hasSession() && $request->user()) {
             $h->set('Cache-Control', 'no-store, private');
         }
         $h->remove('X-Powered-By');

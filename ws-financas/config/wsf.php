@@ -46,6 +46,12 @@ return [
         'keep' => (int) env('BACKUP_MANTER', 14),
     ],
 
+    'update' => [
+        // Chave pública Ed25519 (base64) para exigir pacotes de atualização assinados. Vazio = aceita pacote sem
+        // assinatura mediante confirmação do proprietário (conferindo o SHA-256 informado pelo fornecedor).
+        'public_key' => env('WSF_UPDATE_PUBLIC_KEY', ''),
+    ],
+
     'ai' => [
         // off | auto (só usa a IA quando as regras não entendem) — custo controlado por limite do plano.
         'mode' => env('WSF_IA', 'auto'),

@@ -15,16 +15,21 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: fn () => Route::group([], base_path('routes/install.php')),
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Antes de instalar, tudo (exceto /instalar e /up) vai para o instalador — antes de qualquer middleware que exija APP_KEY.
+        $middleware->prepend(EnsureInstalled::class);
         $middleware->append(SecurityHeaders::class);
-        $middleware->web(prepend: [EnsureInstalled::class]);
+        // Atualização pelo painel: só a tela de atualização continua acessível durante a manutenção.
+        $middleware->preventRequestsDuringMaintenance(except: ['admin/atualizacoes', 'admin/atualizacoes/*', 'up']);
 
         $middleware->alias([
             'tenant' => ResolveTenant::class,
@@ -44,10 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('app'));
 
-        $proxies = (string) env('TRUSTED_PROXIES', '');
-        if ($proxies !== '') {
-            $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
-        }
+        // Proxies confiáveis (TRUSTED_PROXIES): configurados no AppServiceProvider, depois que o .env é carregado.
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn (Request $r) => $r->is('app/api/*') || $r->expectsJson());

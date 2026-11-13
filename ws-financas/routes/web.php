@@ -6,7 +6,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ImportController;
-use App\Http\Controllers\InstallController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\ReportController;
@@ -21,9 +20,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/privacidade', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/termos', [PageController::class, 'terms'])->name('terms');
-
-Route::get('/instalar', [InstallController::class, 'show'])->name('install');
-Route::post('/instalar', [InstallController::class, 'run'])->middleware('throttle:10,1');
 
 Route::middleware('guest')->group(function () {
     Route::get('/entrar', [AuthController::class, 'showLogin'])->name('login');
@@ -138,6 +134,17 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('/uso', [Admin\DashboardController::class, 'usage'])->name('usage');
         Route::get('/sistema', [Admin\SystemController::class, 'index'])->name('system');
         Route::post('/sistema/backup', [Admin\SystemController::class, 'backup'])->name('system.backup');
+        Route::post('/sistema/migrar', [Admin\SystemController::class, 'migrate'])->middleware('throttle:5,1')->name('system.migrate');
         Route::post('/sistema/configuracoes', [Admin\SystemController::class, 'settings'])->name('system.settings');
+
+        // Atualizações pelo painel (permitidas durante o modo de manutenção — ver bootstrap/app.php)
+        Route::get('/atualizacoes', [Admin\UpdateController::class, 'index'])->name('updates');
+        Route::post('/atualizacoes/enviar', [Admin\UpdateController::class, 'upload'])->name('updates.upload');
+        Route::post('/atualizacoes/analisar', [Admin\UpdateController::class, 'analyze'])->name('updates.analyze');
+        Route::post('/atualizacoes/excluir', [Admin\UpdateController::class, 'destroy'])->name('updates.destroy');
+        Route::post('/atualizacoes/iniciar', [Admin\UpdateController::class, 'start'])->middleware('throttle:10,1')->name('updates.start');
+        Route::get('/atualizacoes/execucao/{id}', [Admin\UpdateController::class, 'run'])->where('id', '[0-9a-z]{26}')->name('updates.run');
+        Route::post('/atualizacoes/execucao/{id}/passo', [Admin\UpdateController::class, 'step'])->where('id', '[0-9a-z]{26}')->name('updates.step');
+        Route::post('/atualizacoes/execucao/{id}/reverter', [Admin\UpdateController::class, 'revert'])->where('id', '[0-9a-z]{26}')->middleware('throttle:5,1')->name('updates.revert');
     });
 });

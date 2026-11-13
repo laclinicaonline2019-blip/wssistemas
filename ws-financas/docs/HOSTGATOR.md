@@ -15,27 +15,21 @@
 
 Webhooks funcionam em hospedagem compartilhada: são requisições HTTPS normais. O sistema **não usa processos permanentes**. Planos muito antigos sem PHP 8.3 ou com cron limitado a 15 min não servem — o "Turbo"/"Negócios" atuais atendem.
 
-Depois de instalar, rode a verificação: **Proprietário → Sistema e backups** (ou `php artisan wsf:preflight`).
+Depois de instalar, confira: **Proprietário → Sistema e backups**.
 
 ## 2. Banco de dados
 
 cPanel → *Bancos de dados MySQL*: crie o banco (`conta_wsfin`), o usuário (`conta_wsfin`) com senha forte e dê **todos os privilégios** do usuário no banco. Para o ambiente de testes, repita com `conta_wsfin_hml`.
 
-## 3. Enviar os arquivos
+## 3. Enviar os arquivos e instalar
 
-1. Gere ou baixe o pacote `ws-financas-<versão>.zip` (`deploy/build-zip.sh` ou artefato do GitHub Actions).
-2. *Gerenciador de arquivos* → envie o ZIP para a **pasta inicial** (ex.: `/home/conta/`), **fora** do `public_html`, e extraia. Renomeie para `/home/conta/ws-financas`.
-3. **Opção A (recomendada):** crie o subdomínio `app.seudominio.com.br` com **raiz do documento** `/home/conta/ws-financas/public`.
-   **Opção B (se não puder mudar a raiz):** coloque a pasta inteira em `public_html/app` e renomeie `public/.htaccess.raiz-exemplo` para `.htaccess` na raiz da pasta `app` — ele bloqueia `.env`, `storage`, `vendor` etc. e serve só `/public`.
-4. Permissões: `storage/` e `bootstrap/cache/` com 755 (pastas) e 644 (arquivos).
+Passo a passo completo, só com Gerenciador de Arquivos e navegador (sem terminal), em **[INSTALACAO-CPANEL.md](INSTALACAO-CPANEL.md)**.
+Resumo: extraia o ZIP **dentro** da pasta do sistema, aponte a raiz do domínio para `/public`, copie `.env.example` para `.env`
+(sem preencher nada) e abra `https://seu-dominio/instalar`. O instalador pede um código gravado em
+`storage/app/instalador/CODIGO-DE-INSTALACAO.txt`, gera a `APP_KEY`, valida o MySQL, cria as tabelas e o administrador e se bloqueia.
 
-## 4. Instalar
-
-Abra `https://app.seudominio.com.br/instalar`, confira os requisitos e informe o banco e o proprietário da plataforma.
-O instalador grava o `.env` (com chaves geradas: `APP_KEY`, `AUDIT_HMAC_KEY`, `BACKUP_PASSWORD`, tokens dos webhooks), cria as tabelas e os planos e **trava** (não pode ser executado de novo).
-No primeiro acesso, o proprietário ativa a **verificação em duas etapas** (obrigatória).
-
-> Com SSH: `cp .env.example .env && php artisan key:generate && php artisan wsf:install`.
+**Opção B (se não puder mudar a raiz do domínio):** coloque a pasta em `public_html/app` e substitua o `.htaccess` da raiz
+do projeto pelo conteúdo de `public/.htaccess.raiz-exemplo` — ele bloqueia `.env`, `storage`, `vendor` etc. e serve só `/public`.
 
 ## 5. Cron (obrigatório)
 
@@ -62,7 +56,8 @@ Crie `hml.seudominio.com.br` → `/home/conta/ws-financas-hml/public`, com **out
 
 ## 8. Atualizar
 
-Gere backup (Proprietário → Sistema), envie o novo ZIP, substitua as pastas `app`, `bootstrap`, `config`, `database`, `public`, `resources`, `routes`, `vendor` (mantenha `.env` e `storage`) e rode **Proprietário → Sistema** ou, com SSH, `php artisan migrate --force`. Sem SSH, um cron único `php artisan migrate --force` resolve.
+Pelo painel: **Proprietário → Atualizações** (backup automático, conferência SHA-256 de cada arquivo, troca instantânea das pastas,
+reversão automática em caso de falha e botão para reverter depois). Detalhes e limitações em [INSTALACAO-CPANEL.md](INSTALACAO-CPANEL.md#5-atualizar-pelo-painel-sem-ssh).
 
 ## 9. Migração futura para VPS/nuvem
 

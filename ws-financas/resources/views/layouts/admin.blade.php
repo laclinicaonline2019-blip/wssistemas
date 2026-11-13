@@ -9,7 +9,7 @@
   </header>
   @php($cur = request()->route()?->getName())
   <nav class="menu" aria-label="Menu do proprietário">
-    @foreach (['admin.dashboard' => 'Visão geral', 'admin.accounts.index' => 'Clientes', 'admin.plans.index' => 'Planos e preços', 'admin.invoices.index' => 'Faturamento', 'admin.usage' => 'Uso WhatsApp/IA', 'admin.system' => 'Sistema e backups'] as $r => $l)
+    @foreach (['admin.dashboard' => 'Visão geral', 'admin.accounts.index' => 'Clientes', 'admin.plans.index' => 'Planos e preços', 'admin.invoices.index' => 'Faturamento', 'admin.usage' => 'Uso WhatsApp/IA', 'admin.system' => 'Sistema e backups', 'admin.updates' => 'Atualizações'] as $r => $l)
       <a href="{{ route($r) }}" @if($cur===$r) aria-current="page" @endif>{{ $l }}</a>
     @endforeach
     <a href="{{ route('security.show') }}">Segurança</a>
@@ -19,5 +19,6 @@
   @yield('content')
 </div>
 <script src="{{ asset('assets/js/ui.js') }}"></script>
+@stack('scripts')
 </body>
 </html>
