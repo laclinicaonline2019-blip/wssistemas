@@ -46,6 +46,19 @@ return [
         'keep' => (int) env('BACKUP_MANTER', 14),
     ],
 
+    'audit' => [
+        // Verificação em lotes, com limites de processamento (esgotado = "não verificável", nunca aceito).
+        'verify_batch' => (int) env('WSF_AUDIT_LOTE', 500),
+        'verify_time_limit' => (float) env('WSF_AUDIT_TEMPO_LIMITE', 60),
+        'max_attempts_per_record' => (int) env('WSF_AUDIT_TENTATIVAS_REGISTRO', 50000),
+        'max_attempts_per_run' => (int) env('WSF_AUDIT_TENTATIVAS_EXECUCAO', 2000000),
+        // Âncora diária por e-mail (destinatários: vazio = proprietários da plataforma).
+        'anchor_email' => (bool) env('WSF_AUDIT_ANCORA_EMAIL', true),
+        'anchor_recipients' => env('WSF_AUDIT_ANCORA_DESTINO', ''),
+        // Carimbo de tempo RFC 3161: desativado nesta versão.
+        'tsa' => env('WSF_AUDIT_TSA', 'off'),
+    ],
+
     'update' => [
         // Chave pública Ed25519 (base64) para exigir pacotes de atualização assinados. Vazio = aceita pacote sem
         // assinatura mediante confirmação do proprietário (conferindo o SHA-256 informado pelo fornecedor).

@@ -43,4 +43,16 @@ Ambiente separado (`hml.`), banco próprio, `APP_STAGE=homologation`, Asaas sand
 - [ ] Auditoria íntegra
 - [ ] Importação dos dados locais conferida com os dados reais do sistema antigo
 
+## Atualização 1.1.1 (auditoria) — homologação
+Fase 1 (atualização):
+- [ ] Antes: anotar o total de registros de auditoria e o hash do último (Sistema → Auditoria / `wsf:audit:verify` da 1.1.0 aponta "quebrada no #4")
+- [ ] Atualizar pelo painel (ZIP 1.1.1 em `storage/app/updates/pacotes`); todas as etapas ✓
+- [ ] *Sistema → Auditoria → Verificar*: **íntegra**; #4 `backup.criar` e #5 `backup.teste_restauracao` listados "por compatibilidade" com o método
+- [ ] Prontidão: "Auditoria: proteções no banco — 6 de 6 triggers"
+- [ ] Rotina normal por alguns dias (lançamentos web/WhatsApp, cron, backups); e-mail diário da âncora recebido e conferido no painel
+Fase 2 (somente após aprovar a fase 1):
+- [ ] `AUDIT_HMAC_KEY` presente no `.env` e guardada fora do servidor
+- [ ] *Ativar formato v2*; novos registros aparecem como "íntegro (v2)" na verificação
+- [ ] Verificação íntegra com a cadeia mista (v1 + compatibilidade + v2)
+
 Testes automatizados: `php artisan test` (SQLite) e em MariaDB/MySQL — ver README.

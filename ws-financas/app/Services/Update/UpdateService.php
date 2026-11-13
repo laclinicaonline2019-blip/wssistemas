@@ -206,8 +206,13 @@ class UpdateService
         $r = $this->backups->create();
         $s['db_backup'] = $r['file'];
         $s['tables_before'] = $this->tables();
+        $s['triggers_before'] = $this->triggers();
+        $v = $this->backups->verify($r['file']);   // backup verificado: restaurado num banco temporário e conferido
+        if (! $v['ok']) {
+            throw new BusinessRule('O backup feito antes da atualização não passou no teste de restauração: '.implode('; ', $v['problems']));
+        }
 
-        return 'Backup criptografado: '.basename($r['file']).' ('.number_format($r['bytes'] / 1024, 0, ',', '.').' KB).';
+        return 'Backup criptografado e testado (restauração conferida): '.basename($r['file']).' ('.number_format($r['bytes'] / 1024, 0, ',', '.').' KB).';
     }
 
     private function stepExtract(array &$s): string
@@ -321,11 +326,26 @@ class UpdateService
         Artisan::call('migrate', ['--force' => true]);
         $out = trim(Artisan::output());
         $s['batch_after'] = (int) (DB::table('migrations')->max('batch') ?? 0);
-        foreach (['config:clear', 'route:clear', 'view:clear'] as $c) {
-            Artisan::call($c);
-        }
+        $this->clearCaches();
 
         return $out !== '' ? mb_substr(preg_replace('/\s+/', ' ', $out), 0, 500) : 'Nenhuma alteração no banco.';
+    }
+
+    /** Caches compilados (views, rotas, config) da versão que sai: arquivos restaurados com data antiga não seriam recompilados. */
+    private function clearCaches(): void
+    {
+        foreach (glob(storage_path('framework/views/*.php')) ?: [] as $f) {
+            @unlink($f);
+        }
+        foreach (['config:clear', 'route:clear'] as $c) {
+            try {
+                Artisan::call($c);
+            } catch (Throwable) {
+            }
+        }
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
     }
 
     private function stepVerify(array &$s): string
@@ -368,13 +388,18 @@ class UpdateService
         try {
             if ($step === 'trocar') {
                 $this->undoSwap($s);
+                $this->clearCaches();
             } elseif (! $before && $step !== 'concluir') {
                 $this->rollbackMigrations($s);
                 $this->undoSwap($s);
+                $this->clearCaches();
                 if (! empty($s['db_backup']) && $step === 'migrar') {
-                    $this->dropNewTables($s);
+                    // migração interrompida: desfaz só o que ESTA execução criou (triggers e tabelas novas) e repõe,
+                    // sem sobrescrever nem apagar nada, registros que existiam no backup e faltem agora
+                    $this->dropNewTriggers($s);
+                    $this->dropNewTables($s, true);
                     $this->backups->restore($s['db_backup']);
-                    $s['log'][] = ['at' => date('H:i:s'), 'step' => 'reversao', 'ok' => true, 'msg' => 'Banco restaurado do backup feito antes da atualização.'];
+                    $s['log'][] = ['at' => date('H:i:s'), 'step' => 'reversao', 'ok' => true, 'msg' => 'Estruturas criadas pela migração interrompida removidas; nenhum registro apagado ou sobrescrito.'];
                 }
             }
             if (! empty($s['maintenance']) || is_file(storage_path('framework/down'))) {
@@ -395,8 +420,9 @@ class UpdateService
         return $s;
     }
 
-    /** Reverte uma atualização concluída. modo "codigo": desfaz as migrações dela e volta os arquivos (dados mantidos);
-     *  modo "banco": volta os arquivos e restaura o backup feito antes (dados lançados depois são perdidos). */
+    /** Reverte uma atualização concluída, SEM PERDA DE DADOS.
+     *  modo "codigo": desfaz as migrações dela (as estruturas de proteção da auditoria são mantidas) e volta os arquivos;
+     *  modo "banco": volta os arquivos e repõe, a partir do backup, registros que existiam e faltem — nunca apaga nem sobrescreve. */
     public function revert(string $id, string $mode, ?string $userId): array
     {
         $s = $this->load($id);
@@ -406,6 +432,10 @@ class UpdateService
         }
         if (! is_dir($this->runDir($id).'/anterior')) {
             throw new BusinessRule('Os arquivos da versão anterior não estão mais guardados.');
+        }
+        if (AuditLogger::headAvailable() && (int) DB::table('audit_chain_head')->where('id', 1)->value('write_version') >= 2
+            && version_compare((string) $s['from'], '1.1.1', '<')) {
+            throw new BusinessRule('O formato v2 da auditoria já foi ativado: não é possível voltar para a versão '.$s['from'].', que não o suporta (antirrebaixamento). Corrija "para frente" com uma nova versão.');
         }
         @set_time_limit(300);
         Artisan::call('down', ['--retry' => 60]);
@@ -419,16 +449,17 @@ class UpdateService
             }
             // guarda a versão nova e devolve a anterior
             $this->undoSwap($s, true);
+            $this->clearCaches();
             if ($mode === 'banco') {
-                $this->dropNewTables($s);
-                $this->backups->restore($s['db_backup']);
+                $this->dropNewTables($s, false);           // estruturas da auditoria nunca são removidas numa reversão
+                $this->backups->restore($s['db_backup']);  // repõe ausentes; não apaga nem sobrescreve
             }
             if (function_exists('opcache_reset')) {
                 @opcache_reset();
             }
             $s['status'] = 'reverted';
             $s['reverted_at'] = now()->toIso8601String();
-            $s['log'][] = ['at' => date('H:i:s'), 'step' => 'reverter', 'ok' => true, 'msg' => 'Revertido para '.$s['from'].($mode === 'banco' ? ' com restauração do banco.' : ' mantendo os dados.')];
+            $s['log'][] = ['at' => date('H:i:s'), 'step' => 'reverter', 'ok' => true, 'msg' => 'Revertido para '.$s['from'].($mode === 'banco' ? '; registros ausentes repostos do backup (nada apagado ou sobrescrito).' : ' mantendo os dados.')];
             $this->save($s);
         } finally {
             Artisan::call('up');
@@ -439,18 +470,51 @@ class UpdateService
     }
 
     /** @return list<string> */
+    private function triggers(): array
+    {
+        if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            return [];
+        }
+
+        return DB::table('information_schema.TRIGGERS')->whereRaw('TRIGGER_SCHEMA = DATABASE()')->pluck('TRIGGER_NAME')->all();
+    }
+
+    /** Triggers criados pela migração da auditoria 1.1.1 (dependem de audit_chain_head). */
+    public const AUDIT_TRIGGERS = ['audit_logs_no_update', 'audit_logs_no_delete', 'audit_logs_chain_guard', 'audit_logs_advance_head', 'audit_head_guard', 'audit_head_no_delete'];
+
+    private function dropNewTriggers(array $s): void
+    {
+        $before = $s['triggers_before'] ?? null;
+        if ($before === null) {
+            // execução iniciada por uma versão que não registrava os triggers (1.1.0): se ESTA execução criou
+            // audit_chain_head, os triggers da auditoria também são dela (e não podem ficar sem a tabela)
+            $headIsNew = isset($s['tables_before']) && ! in_array('audit_chain_head', $s['tables_before'], true);
+            $before = $headIsNew ? array_values(array_diff($this->triggers(), self::AUDIT_TRIGGERS)) : $this->triggers();
+        }
+        foreach (array_diff($this->triggers(), $before) as $t) {
+            if (preg_match('/^[A-Za-z0-9_]+$/', $t)) {
+                DB::unprepared('DROP TRIGGER IF EXISTS `'.$t.'`');
+            }
+        }
+        AuditLogger::resetHeadCache();
+    }
+
+    /** @return list<string> */
     private function tables(): array
     {
         return array_values(array_map(fn ($t) => (string) $t['name'], Schema::getTables()));
     }
 
     /** DDL do MySQL não é transacional: remove tabelas criadas por uma migração que falhou no meio. */
-    private function dropNewTables(array $s): void
+    /** Tabelas cuja remoção apagaria a proteção da auditoria: só saem se ESTA execução as criou e falhou na migração. */
+    private const PROTECTED_TABLES = ['audit_chain_head'];
+
+    private function dropNewTables(array $s, bool $includeProtected = false): void
     {
         if (empty($s['tables_before'])) {
             return;
         }
-        $new = array_diff($this->tables(), $s['tables_before']);
+        $new = array_diff($this->tables(), $s['tables_before'], $includeProtected ? [] : self::PROTECTED_TABLES);
         if (! $new) {
             return;
         }

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * LGPD: portabilidade (exportação completa dos dados do cliente) e retenção/eliminação.
  *  - Cancelado → dados guardados pelo prazo contratual (WSF_RETENCAO_APOS_CANCELAMENTO) e depois apagados.
  *  - Texto das mensagens do WhatsApp anonimizado após WSF_RETENCAO_MENSAGENS dias.
- *  - Auditoria mantida pelo prazo legal (WSF_RETENCAO_AUDITORIA), depois removida.
+ *  - Auditoria: mantida (append-only); poda após o prazo legal só por procedimento próprio com âncora.
  */
 class PrivacyService
 {
@@ -55,7 +55,9 @@ class PrivacyService
         $stats['mensagens_anonimizadas'] = WhatsappMessage::query()->whereNotNull('body')
             ->where('created_at', '<', now()->subDays((int) config('wsf.lgpd.whatsapp_body_days')))->update(['body' => null]);
 
-        $stats['auditoria_removida'] = DB::table('audit_logs')->where('created_at', '<', now()->subDays((int) config('wsf.lgpd.audit_days')))->delete();
+        // Auditoria: append-only e encadeada — não é apagada pela rotina automática (os triggers recusariam e a cadeia
+        // perderia o início). A poda após o prazo legal exigirá procedimento próprio com âncora (docs/AUDITORIA.md).
+        $stats['auditoria_removida'] = 0;
 
         return $stats;
     }

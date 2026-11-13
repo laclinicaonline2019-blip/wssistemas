@@ -16,11 +16,11 @@ rm -rf "$OUT" "$ZIP"
 mkdir -p "$OUT"
 
 tar --exclude='./vendor' --exclude='./dist' --exclude='./node_modules' --exclude='./.env' --exclude='./.env.testing' --exclude='./database/*.sqlite' \
-    --exclude='./storage/logs/*.log' --exclude='./storage/app/backups/*' --exclude='./storage/app/updates/*' --exclude='./storage/app/instalador' \
+    --exclude='./storage/logs/*.log' --exclude='./storage/app/backups/*' --exclude='./storage/app/updates/*' --exclude='./storage/app/auditoria' --exclude='./storage/app/instalador' \
     --exclude='./storage/app/installed' --exclude='./storage/framework/views/*.php' --exclude='./storage/framework/sessions/*' \
     --exclude='./storage/framework/cache/data/*' --exclude='./bootstrap/cache/*.php' --exclude='./tests' --exclude='./.phpunit.cache' \
     --exclude='./phpunit.xml' --exclude='./.phpunit.result.cache' -cf - . | tar -xf - -C "$OUT"
-for keep in storage/app/backups storage/app/updates storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs; do
+for keep in storage/app/backups storage/app/updates storage/app/auditoria storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs; do
   mkdir -p "$OUT/$keep"; printf '*\n!.gitignore\n' > "$OUT/$keep/.gitignore"
 done
 

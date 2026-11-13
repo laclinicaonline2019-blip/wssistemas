@@ -42,9 +42,42 @@ jobs:
         env: { DB_CONNECTION: mysql, DB_HOST: 127.0.0.1, DB_PORT: 3306, DB_DATABASE: wsf_testing, DB_USERNAME: wsf, DB_PASSWORD: wsf }
         run: php artisan test
 
+  databases:
+    name: Testes (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Mesmo motor da homologação/produção HostGator: Percona Server 5.7.44, usuário SEM SUPER (binlog desligado)
+          - { name: "Percona 5.7.44", image: "percona/percona-server:5.7.44", user: wsf, password: wsf }
+          # MySQL 8 (binlog ligado por padrão: usa root, que tem SUPER, para criar os triggers)
+          - { name: "MySQL 8.0", image: "mysql:8.0", user: root, password: root }
+    services:
+      db:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_DATABASE: wsf_testing
+          MYSQL_USER: wsf
+          MYSQL_PASSWORD: wsf
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot" --health-interval=5s --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql, pdo_sqlite, intl, gd, zip, sodium, mbstring
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - name: Testes (inclui auditoria v1/v2, triggers, adulteração, recuperação)
+        env: { DB_CONNECTION: mysql, DB_HOST: 127.0.0.1, DB_PORT: 3306, DB_DATABASE: wsf_testing, DB_USERNAME: "${{ matrix.user }}", DB_PASSWORD: "${{ matrix.password }}" }
+        run: php artisan test
+
   package:
     name: Pacote ZIP para a HostGator
-    needs: tests
+    needs: [tests, databases]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

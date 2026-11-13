@@ -15,7 +15,41 @@
   <div class="card"><h3>Prontidão</h3>
     <div class="table-wrap" style="border:0"><table class="t"><tbody>@foreach ($checks as $c)<tr><td><span class="pill {{ $c['ok'] ? 'ok' : 'warn' }}">{{ $c['ok'] ? 'OK' : 'Atenção' }}</span> {{ $c['item'] }}</td><td class="small muted">{{ $c['info'] }}</td></tr>@endforeach</tbody></table></div></div>
   <div style="display:flex;flex-direction:column;gap:14px">
-    <div class="card"><h3>Auditoria</h3><p class="mt0 small">{{ $audit['ok'] ? 'Cadeia íntegra — '.$audit['checked'].' registros conferidos.' : 'ATENÇÃO: cadeia quebrada no registro #'.$audit['broken_at'].'. Investigue alteração direta no banco.' }}</p></div>
+    <div class="card"><h3>Auditoria</h3>
+      @php($rep = $audit['report'])
+      @php($head = $audit['head'])
+      <p class="mt0 small">Registros: <b>{{ $audit['total'] }}</b> · Formato de gravação: <b>{{ $head ? 'v'.$head->write_version : 'v1 (estrutura 1.1.1 pendente)' }}</b>{{ $head && $head->write_version >= 2 ? ' desde '.$head->activated_v2_at : '' }}</p>
+      @if ($audit['pending'])
+        <p class="small mt0"><span class="pill warn">em andamento</span> {{ $audit['pending']['checked'] }} registros conferidos.</p>
+      @elseif ($rep)
+        @php($problems = count($rep['problemas'] ?? []))
+        <p class="small mt0"><span class="pill {{ $problems ? 'bad' : 'ok' }}">{{ $problems ? 'problemas' : 'íntegra' }}</span>
+          última verificação {{ \Carbon\Carbon::parse($rep['gerado_em'])->format('d/m/Y H:i') }} — {{ $rep['registros'] }} registros:
+          @foreach (($rep['resumo'] ?? []) as $st => $n){{ \App\Core\Audit\ChainVerifier::LABELS[$st] ?? $st }}: {{ $n }}@if(! $loop->last) · @endif @endforeach</p>
+        @if (!empty($rep['compatibilidade']))<details class="edit small"><summary>{{ count($rep['compatibilidade']) }} registro(s) v1 conferido(s) por compatibilidade</summary>
+          <ul style="margin:6px 0 0;padding-left:18px">@foreach ($rep['compatibilidade'] as $c)<li>#{{ $c['id'] }} {{ $c['action'] }} — {{ $c['method'] }} ({{ $c['attempts'] }} tentativas)</li>@endforeach</ul></details>@endif
+        @if ($problems)<ul class="small" style="margin:0;padding-left:18px">@foreach ($rep['problemas'] as $p)<li>#{{ $p['id'] }} {{ $p['action'] }} — <b>{{ \App\Core\Audit\ChainVerifier::LABELS[$p['status']] ?? $p['status'] }}</b> {{ $p['detail'] ?? '' }}</li>@endforeach</ul>@endif
+        <p class="small muted mt0">Relatório assinado: storage/app/auditoria/{{ $rep['arquivo'] }}</p>
+      @else
+        <p class="small muted mt0">Ainda não verificada nesta versão.</p>
+      @endif
+      <form method="post" action="{{ route('admin.system.audit.verify') }}">@csrf<button class="btn sm primary" type="submit">{{ $audit['pending'] ? 'Continuar verificação' : 'Verificar auditoria' }}</button></form>
+      <p class="small mt0 muted">Âncora diária por e-mail: {{ $audit['anchor'] ? 'última #'.$audit['anchor']['last_id'].' em '.$audit['anchor']['gerada_em'] : 'nenhuma ainda' }}.</p>
+      <form method="post" action="{{ route('admin.system.audit.anchor') }}">@csrf<button class="btn sm" type="submit">Gerar e enviar âncora agora</button></form>
+      <details class="edit"><summary>Conferir âncora recebida por e-mail</summary>
+        <form method="post" action="{{ route('admin.system.audit.anchor_check') }}" class="form" style="margin-top:8px">@csrf
+          <div class="field full"><label>Cole o bloco da âncora (entre BEGIN e END)</label><textarea name="ancora" required></textarea></div>
+          <div class="formacts full"><button class="btn sm" type="submit">Conferir</button></div></form></details>
+      @if ($head && $head->write_version < 2)
+        <details class="edit"><summary>Ativar formato v2 (irreversível)</summary>
+          <form method="post" action="{{ route('admin.system.audit.activate') }}" class="form" style="margin-top:8px">@csrf
+            <p class="full small mt0">Ative só depois de validar a fase 1 em homologação. Após ativar, nenhum processo grava no formato antigo e não é possível voltar o sistema para versões anteriores à 1.1.1. {{ $audit['hasKey'] ? '' : 'Defina AUDIT_HMAC_KEY no .env antes.' }}</p>
+            <div class="field"><label>Digite ATIVAR V2</label><input name="confirm" required autocomplete="off"></div>
+            <div class="field"><label>Sua senha</label><input type="password" name="password" required autocomplete="current-password"></div>
+            <div class="formacts full"><button class="btn danger" type="submit" @disabled(! $audit['hasKey'])>Ativar v2</button></div>
+          </form></details>
+      @endif
+    </div>
     <form class="card" method="post" action="{{ route('admin.system.settings') }}">@csrf<h3>Políticas comerciais</h3>
       <div class="form">
         <div class="field"><label>Teste grátis (dias)</label><input type="number" name="trial_days" min="0" max="90" value="{{ $settings['trial_days'] }}"></div>

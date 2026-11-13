@@ -50,8 +50,8 @@
       @if ($lastDone && $lastDone['id'] === $h['id'] && $h['to'] === $version)
         <details class="edit"><summary>Reverter para {{ $h['from'] }}</summary>
           <form method="post" action="{{ route('admin.updates.revert', $h['id']) }}" class="form" style="margin-top:8px" data-confirm="Reverter o sistema para a versão {{ $h['from'] }}?">@csrf
-            <label class="inline-check full"><input type="radio" name="modo" value="codigo" checked> Voltar os arquivos e desfazer as mudanças de banco desta atualização (mantém os lançamentos feitos depois)</label>
-            <label class="inline-check full"><input type="radio" name="modo" value="banco"> Voltar os arquivos e restaurar o backup do banco feito antes da atualização (lançamentos feitos depois serão perdidos)</label>
+            <label class="inline-check full"><input type="radio" name="modo" value="codigo" checked> Voltar os arquivos e desfazer as mudanças de banco desta atualização (mantém tudo o que foi lançado depois; as proteções da auditoria são mantidas)</label>
+            <label class="inline-check full"><input type="radio" name="modo" value="banco"> Voltar os arquivos e repor, a partir do backup feito antes da atualização, registros que estejam faltando (nada é apagado nem sobrescrito)</label>
             <div class="field full"><label>Sua senha</label><input type="password" name="password" required autocomplete="current-password"></div>
             <div class="formacts full"><button class="btn danger" type="submit">Reverter</button></div>
           </form></details>

@@ -58,6 +58,9 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Fuso SOMENTE desta conexão (SET time_zone na sessão): preserva o comportamento histórico (UTC−3)
+            // sem alterar configurações globais do servidor e sem horário de verão.
+            'timezone' => env('DB_TIMEZONE', '-03:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
@@ -78,6 +81,9 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
+            // Fuso SOMENTE desta conexão (SET time_zone na sessão): preserva o comportamento histórico (UTC−3)
+            // sem alterar configurações globais do servidor e sem horário de verão.
+            'timezone' => env('DB_TIMEZONE', '-03:00'),
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),

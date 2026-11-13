@@ -15,16 +15,16 @@
 | Permissões | papéis verificados no servidor (middleware `ability:` + serviços); o navegador só esconde botões |
 | Criptografia em repouso | CPF/CNPJ, telefones, segredos de 2FA e texto das mensagens do WhatsApp criptografados (AES-256, `APP_KEY`); telefone buscado por HMAC |
 | Credenciais de terceiros | só no `.env` fora da pasta pública; nunca registradas em log (auditoria mascara campos sensíveis) |
-| Auditoria | append-only, cadeia HMAC (`AUDIT_HMAC_KEY`), verificação diária (`wsf:audit:verify`) e na tela do proprietário |
+| Auditoria | append-only também no banco (triggers), cadeia HMAC (`AUDIT_HMAC_KEY`; formato v2 canônico RFC 8785), verificação diária em lotes com relatório assinado, âncora diária por e-mail — ver `AUDITORIA.md` |
 | Planilhas | exportação CSV neutraliza fórmulas (`=`, `+`, `-`, `@`) |
 | Backups | ver `BACKUP.md` |
 
-**Importante:** guarde `APP_KEY` e `BACKUP_PASSWORD` em local seguro fora do servidor. Sem a `APP_KEY` os dados criptografados não podem ser lidos; trocar a `AUDIT_HMAC_KEY` depois do uso invalida a verificação da cadeia antiga.
+**Importante:** guarde `APP_KEY` e `BACKUP_PASSWORD` em local seguro fora do servidor. Sem a `APP_KEY` os dados criptografados não podem ser lidos; trocar a `AUDIT_HMAC_KEY` depois do uso invalida a verificação da cadeia antiga e, com o v2 ativo, faz a gravação da auditoria ser recusada até a chave original voltar.
 
 ## LGPD
 * **Base legal:** execução de contrato (serviço), obrigação legal (cobrança), legítimo interesse (segurança).
 * **Portabilidade:** *Privacidade → Baixar meus dados* (JSON completo do cliente).
-* **Retenção:** cancelado → dados disponíveis por `WSF_RETENCAO_APOS_CANCELAMENTO` dias (padrão 90) → eliminação definitiva automática (`wsf:retention:run`); usuários que pertencem a outros clientes (ex.: contador) são mantidos; faturas permanecem por obrigação fiscal.
+* **Retenção:** cancelado → dados disponíveis por `WSF_RETENCAO_APOS_CANCELAMENTO` dias (padrão 90) → eliminação definitiva automática (`wsf:retention:run`); usuários que pertencem a outros clientes (ex.: contador) são mantidos; faturas permanecem por obrigação fiscal; a trilha de auditoria é mantida (prova de integridade — telefones, documentos e segredos já são mascarados na gravação).
 * **Minimização:** texto das mensagens do WhatsApp anonimizado após 180 dias; o proprietário não vê lançamentos dos clientes; a IA recebe só o texto da mensagem.
 * **Operadores:** hospedagem, Meta, Asaas, Anthropic (opcional). Liste-os no contrato.
 * Modelos de política de privacidade e termos em `/privacidade` e `/termos` — revise com um advogado.

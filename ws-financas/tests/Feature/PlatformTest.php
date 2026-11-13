@@ -10,6 +10,7 @@ use App\Models\Subscription;
 use App\Models\User;
 use App\Services\BackupService;
 use App\Services\FinanceService;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -96,6 +97,10 @@ class PlatformTest extends TestCase
         [$a, $u, [$c]] = $this->makeClient();
         $this->actingAs($u)->postJson('/app/api/lancamentos', ['empresa' => $c->id, 'tipo' => 'despesa', 'desc' => 'Luz', 'valor' => 100, 'data' => '2026-11-01'])->assertCreated();
         $this->assertTrue(AuditLogger::verify()['ok']);
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            // 1.1.1: no MySQL/MariaDB a auditoria é append-only também no banco (detalhes em AuditChainTest)
+            $this->expectException(QueryException::class);
+        }
         DB::table('audit_logs')->where('action', 'lancamento.criar')->update(['data' => json_encode(['valor' => 1])]);
         $this->assertFalse(AuditLogger::verify()['ok']);
     }

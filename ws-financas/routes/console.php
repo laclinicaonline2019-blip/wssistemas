@@ -1,6 +1,7 @@
 <?php
 
-use App\Core\Audit\AuditLogger;
+use App\Core\Audit\AuditAnchor;
+use App\Core\Audit\ChainVerifier;
 use App\Core\Tenancy\TenantContext;
 use App\Services\BackupService;
 use App\Services\Billing\BillingService;
@@ -54,20 +55,52 @@ Artisan::command('wsf:backup:verify {arquivo?}', function (BackupService $backup
     return $v['ok'] ? 0 : 1;
 })->purpose('Teste de restauração de um backup em banco temporário');
 
-Artisan::command('wsf:backup:restore {arquivo} {--force}', function (BackupService $backups, TenantContext $ctx) {
-    if (! $this->option('force') && ! $this->confirm('Isto SUBSTITUI todos os dados atuais pelos do backup. Continuar?')) {
+Artisan::command('wsf:backup:restore {arquivo : nome do arquivo em storage/app/backups ou caminho} {--force}', function (BackupService $backups, TenantContext $ctx) {
+    $file = (string) $this->argument('arquivo');
+    if (! is_file($file)) {
+        $file = $backups->dir().'/'.basename($file);
+    }
+    if (! $this->option('force') && ! $this->confirm('Repor, a partir do backup, os registros que estiverem faltando? Nada é apagado nem sobrescrito.')) {
         return 1;
     }
-    $counts = $ctx->runAsSystem(fn () => $backups->restore($this->argument('arquivo')));
-    $this->info('Restaurado: '.array_sum($counts).' registros.');
-})->purpose('Restaura um backup (substitui os dados)');
+    $report = $ctx->runAsSystem(fn () => $backups->restore($file));
+    $ins = array_sum(array_column($report, 'inseridos'));
+    $conf = array_sum(array_column($report, 'conflitos'));
+    foreach ($report as $t => $r) {
+        if ($r['inseridos'] || $r['conflitos']) {
+            $this->line(str_pad($t, 28).'inseridos '.$r['inseridos'].' · já existentes '.$r['existentes'].' · diferentes do backup (mantidos como estão) '.$r['conflitos']);
+        }
+    }
+    $this->info('Restauração sem perda: '.$ins.' registros repostos; '.$conf.' diferenças mantidas como estão (nada apagado ou sobrescrito).');
+})->purpose('Repõe registros ausentes a partir de um backup (nunca apaga nem sobrescreve)');
 
-Artisan::command('wsf:audit:verify', function (TenantContext $ctx) {
-    $r = $ctx->runAsSystem(fn () => AuditLogger::verify());
-    $r['ok'] ? $this->info('Auditoria íntegra ('.$r['checked'].' registros).') : $this->error('Cadeia de auditoria quebrada no registro #'.$r['broken_at']);
+Artisan::command('wsf:audit:verify {--sem-evento : não grava o evento-resumo na cadeia}', function (TenantContext $ctx) {
+    $r = $ctx->runAsSystem(function () {
+        $v = app(ChainVerifier::class);
+        do {
+            $r = $v->run(null, null, true, ! $this->option('sem-evento'));
+        } while (! $r['done']);
+
+        return $r;
+    });
+    foreach ($r['summary'] as $st => $n) {
+        $this->line(str_pad(ChainVerifier::LABELS[$st] ?? $st, 40).$n);
+    }
+    foreach ($r['compat'] as $c) {
+        $this->line('  compatibilidade #'.$c['id'].' '.$c['action'].' — '.$c['method']);
+    }
+    foreach ($r['problems'] as $p) {
+        $this->error('  #'.$p['id'].' '.$p['action'].' — '.(ChainVerifier::LABELS[$p['status']] ?? $p['status']).' '.($p['detail'] ?? ''));
+    }
+    $r['ok'] ? $this->info('Auditoria íntegra ('.$r['checked'].' registros). Relatório: '.basename((string) $r['report'])) : $this->error('Auditoria com problemas. Relatório: '.basename((string) $r['report']));
 
     return $r['ok'] ? 0 : 1;
-})->purpose('Confere a cadeia de hash da auditoria');
+})->purpose('Verifica a cadeia de auditoria em lotes, com status separados e relatório assinado');
+
+Artisan::command('wsf:audit:anchor', function (TenantContext $ctx) {
+    $r = $ctx->runAsSystem(fn () => app(AuditAnchor::class)->create());
+    $this->info('Âncora #'.$r['anchor']['last_id'].' gerada'.($r['emailed'] ? ' e enviada para '.implode(', ', $r['emailed']) : '').'.');
+})->purpose('Âncora diária da auditoria (cópia em storage e por e-mail)');
 
 Artisan::command('wsf:reminders', function (Reminders $reminders, TenantContext $ctx) {
     $n = $ctx->runAsSystem(fn () => $reminders->send());
@@ -92,3 +125,4 @@ Schedule::command('wsf:retention:run')->dailyAt('03:20');
 Schedule::command('wsf:backup')->dailyAt('02:10');
 Schedule::command('wsf:backup --verificar')->weeklyOn(0, '04:15');
 Schedule::command('wsf:audit:verify')->dailyAt('05:30');
+Schedule::command('wsf:audit:anchor')->dailyAt('05:50');

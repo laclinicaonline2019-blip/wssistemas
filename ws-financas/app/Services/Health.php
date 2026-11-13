@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Core\Audit\AuditAnchor;
+use App\Core\Audit\AuditLogger;
+use App\Core\Audit\ChainVerifier;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +39,22 @@ class Health
         $c[] = ['item' => 'HTTPS', 'ok' => str_starts_with((string) config('app.url'), 'https://'), 'info' => (string) config('app.url')];
         $c[] = ['item' => 'Senha dos backups (BACKUP_PASSWORD)', 'ok' => (string) config('wsf.backup.password') !== '', 'info' => config('wsf.backup.password') ? 'definida' : 'não definida'];
         $c[] = ['item' => 'Chave da auditoria (AUDIT_HMAC_KEY)', 'ok' => (string) config('wsf.security.audit_hmac_key') !== '', 'info' => config('wsf.security.audit_hmac_key') ? 'definida' : 'usando APP_KEY'];
+        try {
+            if (AuditLogger::headAvailable()) {
+                $h = DB::table('audit_chain_head')->where('id', 1)->first();
+                $trg = DB::getDriverName() === 'sqlite' ? 6
+                    : DB::table('information_schema.TRIGGERS')->where('TRIGGER_SCHEMA', DB::getDatabaseName())->where('TRIGGER_NAME', 'like', 'audit\\_%')->count();
+                $rep = app(ChainVerifier::class)->latestReport();
+                $c[] = ['item' => 'Auditoria: proteções no banco', 'ok' => $trg >= 6, 'info' => $trg.' de 6 triggers · gravação v'.($h->write_version ?? 1)];
+                $c[] = ['item' => 'Auditoria: última verificação', 'ok' => $rep && empty($rep['problemas']), 'info' => $rep ? Carbon::parse($rep['gerado_em'])->diffForHumans().(empty($rep['problemas']) ? ' — íntegra' : ' — com problemas') : 'nunca verificada'];
+                $anc = app(AuditAnchor::class)->latestValid();
+                $c[] = ['item' => 'Auditoria: âncora diária', 'ok' => $anc && now()->diffInHours(Carbon::parse($anc['gerada_em'])) <= 48, 'info' => $anc ? 'última '.Carbon::parse($anc['gerada_em'])->diffForHumans() : 'nenhuma'];
+            } else {
+                $c[] = ['item' => 'Auditoria: estrutura 1.1.1', 'ok' => false, 'info' => 'migração pendente'];
+            }
+        } catch (\Throwable $e) {
+            $c[] = ['item' => 'Auditoria', 'ok' => false, 'info' => 'erro ao consultar'];
+        }
         $c[] = ['item' => 'WhatsApp', 'ok' => config('services.whatsapp.mode') === 'cloud' && config('services.whatsapp.app_secret') && config('services.whatsapp.access_token'),
             'info' => config('services.whatsapp.mode') === 'cloud' ? 'API oficial (Cloud API)' : 'simulado (mock)'];
         $c[] = ['item' => 'Cobrança Asaas', 'ok' => config('services.asaas.mode') === 'asaas' && config('services.asaas.api_key') && config('services.asaas.webhook_token'),

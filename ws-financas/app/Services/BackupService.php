@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRule;
+use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -17,7 +18,10 @@ class BackupService
 {
     public const TABLES = ['plans', 'accounts', 'users', 'memberships', 'companies', 'company_access', 'subscriptions', 'invoices', 'subscription_events', 'webhook_events',
         'platform_settings', 'bank_accounts', 'entries', 'debts', 'company_settings', 'local_imports', 'whatsapp_contacts', 'whatsapp_messages', 'whatsapp_pendings',
-        'usage_counters', 'audit_logs', 'password_reset_tokens'];
+        'usage_counters', 'audit_logs', 'audit_chain_head', 'password_reset_tokens'];
+
+    /** Chave primária de cada tabela (para repor só o que falta, sem sobrescrever). */
+    private const PK = ['company_settings' => 'company_id', 'platform_settings' => 'key', 'whatsapp_pendings' => 'phone_hash', 'password_reset_tokens' => 'email'];
 
     private const MAGIC = 'WSFB1';
 
@@ -39,6 +43,9 @@ class BackupService
         $data = ['format' => 1, 'created_at' => now()->toIso8601String(), 'app_version' => config('app.version', '1.0.0'), 'tables' => []];
         $counts = [];
         foreach (self::TABLES as $t) {
+            if (! Schema::hasTable($t)) {
+                continue;
+            }
             $rows = [];
             foreach (DB::table($t)->orderBy(Schema::getColumnListing($t)[0])->cursor() as $r) {
                 $rows[] = (array) $r;
@@ -71,39 +78,121 @@ class BackupService
         return $data;
     }
 
-    /** Restaura (substitui TODOS os dados da conexão). */
+    /**
+     * Restauração SEM PERDA (1.1.1): nunca apaga, nunca sobrescreve.
+     *  - tabela vazia no destino: recebe todos os registros do backup (banco novo, teste de restauração);
+     *  - tabela com dados: recebe só os registros cuja chave primária não existe; registros existentes e
+     *    diferentes do backup são PRESERVADOS e informados como conflito;
+     *  - auditoria: só é preenchida em destino vazio; com dados, apenas confere se o backup é um trecho inicial
+     *    idêntico da cadeia atual (nunca insere no meio da cadeia nem apaga).
+     *
+     * @return array<string, array{inseridos:int, existentes:int, conflitos:int}>
+     */
     public function restore(string $file, ?string $connection = null): array
     {
         $data = $this->read($file);
         $db = DB::connection($connection);
         $driver = $db->getDriverName();
-        $counts = [];
+        $report = [];
 
         $fk = fn (bool $on) => match ($driver) {
             'mysql', 'mariadb' => $db->statement('SET FOREIGN_KEY_CHECKS='.($on ? 1 : 0)),
             'sqlite' => $db->statement('PRAGMA foreign_keys = '.($on ? 'ON' : 'OFF')),
-            'pgsql' => $db->statement("SET session_replication_role = '".($on ? 'origin' : 'replica')."'"),
             default => null,
         };
         $fk(false);
         try {
-            $db->transaction(function () use ($db, $data, &$counts) {
-                foreach (array_reverse(self::TABLES) as $t) {
-                    $db->table($t)->delete();
+            foreach (self::TABLES as $t) {
+                if ($t === 'audit_chain_head' || ! $db->getSchemaBuilder()->hasTable($t)) {
+                    continue;
                 }
-                foreach (self::TABLES as $t) {
-                    $rows = $data['tables'][$t] ?? [];
-                    foreach (array_chunk($rows, 300) as $chunk) {
-                        $db->table($t)->insert($chunk);
+                $rows = $data['tables'][$t] ?? [];
+                $pk = self::PK[$t] ?? 'id';
+                $r = ['inseridos' => 0, 'existentes' => 0, 'conflitos' => 0];
+
+                if ($t === 'audit_logs') {
+                    $report[$t] = $this->restoreAudit($db, $rows, $data['tables']['audit_chain_head'] ?? []);
+
+                    continue;
+                }
+                $existing = $db->table($t)->pluck($pk)->map(fn ($v) => (string) $v)->flip();
+                $toInsert = [];
+                foreach ($rows as $row) {
+                    $key = (string) ($row[$pk] ?? '');
+                    if (! isset($existing[$key])) {
+                        $toInsert[] = $row;
+
+                        continue;
                     }
-                    $counts[$t] = count($rows);
+                    $r['existentes']++;
+                    $current = (array) $db->table($t)->where($pk, $row[$pk])->first();
+                    if ($this->differs($current, $row)) {
+                        $r['conflitos']++;
+                    }
                 }
-            });
+                foreach (array_chunk($toInsert, 300) as $chunk) {
+                    $db->table($t)->insert($chunk);
+                }
+                $r['inseridos'] = count($toInsert);
+                $report[$t] = $r;
+            }
         } finally {
             $fk(true);
         }
 
-        return $counts;
+        return $report;
+    }
+
+    /** Auditoria append-only: preenche só destino vazio (em ordem, respeitando os triggers); senão, só confere. */
+    private function restoreAudit(Connection $db, array $rows, array $headRows): array
+    {
+        $r = ['inseridos' => 0, 'existentes' => 0, 'conflitos' => 0];
+        $currentCount = $db->table('audit_logs')->count();
+        if ($currentCount === 0) {
+            usort($rows, fn ($a, $b) => $a['id'] <=> $b['id']);
+            foreach ($rows as $row) {
+                $db->table('audit_logs')->insert($row);
+                $r['inseridos']++;
+            }
+            if ($db->getSchemaBuilder()->hasTable('audit_chain_head') && $rows) {
+                $last = end($rows);
+                $bh = $headRows[0] ?? [];
+                $head = (array) $db->table('audit_chain_head')->where('id', 1)->first();
+                $db->table('audit_chain_head')->where('id', 1)->update(array_filter([
+                    'last_id' => $last['id'], 'last_hash' => $last['hash'],
+                    'write_version' => max((int) ($head['write_version'] ?? 1), (int) ($bh['write_version'] ?? 1)),
+                    'key_id' => $head['key_id'] ?? ($bh['key_id'] ?? null),
+                    'activated_v2_at' => $head['activated_v2_at'] ?? ($bh['activated_v2_at'] ?? null),
+                    'activated_v2_from_id' => $head['activated_v2_from_id'] ?? ($bh['activated_v2_from_id'] ?? null),
+                ], fn ($v) => $v !== null));
+            }
+
+            return $r;
+        }
+        $current = $db->table('audit_logs')->pluck('hash', 'id');
+        foreach ($rows as $row) {
+            if (isset($current[$row['id']])) {
+                $r['existentes']++;
+                if (! hash_equals((string) $current[$row['id']], (string) $row['hash'])) {
+                    $r['conflitos']++;
+                }
+            } else {
+                $r['conflitos']++;   // registro do backup ausente na cadeia atual: informado, nunca reinserido no meio
+            }
+        }
+
+        return $r;
+    }
+
+    private function differs(array $current, array $backup): bool
+    {
+        foreach ($backup as $k => $v) {
+            if (array_key_exists($k, $current) && (string) $current[$k] !== (string) $v) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /** Teste de restauração: restaura num SQLite em memória e compara as contagens com as do arquivo. */
@@ -113,11 +202,19 @@ class BackupService
         config(['database.connections.wsf_verify' => ['driver' => 'sqlite', 'database' => ':memory:', 'prefix' => '', 'foreign_key_constraints' => true]]);
         DB::purge('wsf_verify');
         Artisan::call('migrate', ['--database' => 'wsf_verify', '--force' => true]);
-        $restored = $this->restore($file, 'wsf_verify');
+        $this->restore($file, 'wsf_verify');
+        $restored = [];
         $problems = [];
         foreach (self::TABLES as $t) {
-            $expected = count($data['tables'][$t] ?? []);
-            $actual = DB::connection('wsf_verify')->table($t)->count();
+            if (! isset($data['tables'][$t])) {
+                continue;
+            }
+            $restored[$t] = DB::connection('wsf_verify')->table($t)->count();
+            $expected = count($data['tables'][$t]);
+            $actual = $restored[$t];
+            if ($t === 'audit_chain_head') {
+                continue; // criada pela migração no banco temporário
+            }
             if ($expected !== $actual) {
                 $problems[] = "$t: esperado $expected, restaurado $actual";
             }

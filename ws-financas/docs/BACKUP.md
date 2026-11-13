@@ -9,8 +9,10 @@ Comandos:
 ```bash
 php artisan wsf:backup --verificar        # gera e testa
 php artisan wsf:backup:verify [arquivo]   # testa um arquivo
-php artisan wsf:backup:restore arquivo.wsfbak --force   # SUBSTITUI os dados atuais
+php artisan wsf:backup:restore arquivo.wsfbak --force   # repõe registros ausentes (não apaga nem sobrescreve)
 ```
+**Restauração sem perda (1.1.1):** só são inseridos registros que não existem no banco atual; registros existentes e diferentes do backup são mantidos como estão e informados no resultado. A auditoria só é preenchida a partir do backup se estiver vazia (banco novo), em ordem, respeitando os triggers — detalhes em `AUDITORIA.md`.
+
 A restauração exige a mesma `BACKUP_PASSWORD` e, para ler documentos/telefones criptografados, a mesma `APP_KEY`.
 
 **Ensaio recomendado (mensal):** restaure o backup mais recente no ambiente de homologação e confira login, painel e relatórios.
