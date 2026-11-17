@@ -50,6 +50,25 @@
           </form></details>
       @endif
     </div>
+    <div class="card"><h3>WhatsApp — diagnóstico</h3>
+      <p class="small mt0">Webhook: <code>{{ $wa['webhook'] }}</code> (exatamente assim na Meta, sem barra no final). Os valores das chaves nunca são exibidos.</p>
+      <div class="table-wrap"><table class="t small"><tbody>
+        @foreach ($wa['config'] as $c)<tr><td><span class="pill {{ $c['ok'] ? 'ok' : 'warn' }}">{{ $c['ok'] ? 'OK' : 'conferir' }}</span> {{ $c['item'] }}</td><td>{{ $c['info'] }}</td></tr>@endforeach
+      </tbody></table></div>
+      <details class="edit" @if($wa['events']) open @endif><summary>Últimos eventos do webhook ({{ count($wa['events']) }})</summary>
+        @if ($wa['events'])
+          <div class="table-wrap"><table class="t small"><thead><tr><th>Quando</th><th>Etapa</th><th>Detalhes (sem conteúdo)</th></tr></thead><tbody>
+          @foreach ($wa['events'] as $e)<tr><td class="num">{{ $e['quando'] }}</td><td><span class="pill {{ $e['nivel'] === 'error' ? 'bad' : ($e['nivel'] === 'warning' ? 'warn' : 'ok') }}">{{ $e['etapa'] }}</span></td><td style="word-break:break-all">{{ \Illuminate\Support\Str::limit($e['dados'], 220) }}</td></tr>@endforeach
+          </tbody></table></div>
+        @else
+          <p class="small muted">Nenhuma chamada da Meta chegou ao sistema ainda. Se a Meta mostra envio com sucesso, confira a URL acima, a inscrição do campo <b>messages</b> e se a mensagem foi enviada <b>para</b> o número da plataforma (mensagens enviadas pela Meta para o seu celular não passam pelo webhook).</p>
+        @endif
+      </details>
+      <details class="edit"><summary>Últimas mensagens gravadas ({{ $wa['last']->count() }})</summary>
+        <div class="table-wrap"><table class="t small"><thead><tr><th>Quando</th><th>Direção</th><th>Status</th><th>Intenção</th></tr></thead><tbody>
+        @forelse ($wa['last'] as $m)<tr><td class="num">{{ $m->created_at?->format('d/m H:i:s') }}</td><td>{{ $m->direction === 'in' ? 'recebida' : 'enviada' }}</td><td>{{ $m->status }}</td><td>{{ $m->intent }}</td></tr>@empty<tr><td colspan="4" class="muted">nenhuma</td></tr>@endforelse
+        </tbody></table></div></details>
+    </div>
     <form class="card" method="post" action="{{ route('admin.system.settings') }}">@csrf<h3>Políticas comerciais</h3>
       <div class="form">
         <div class="field"><label>Teste grátis (dias)</label><input type="number" name="trial_days" min="0" max="90" value="{{ $settings['trial_days'] }}"></div>

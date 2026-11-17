@@ -6,6 +6,7 @@ use App\Core\Tenancy\TenantContext;
 use App\Models\WebhookEvent;
 use App\Services\Billing\BillingService;
 use App\Services\WhatsApp\InboundProcessor;
+use App\Services\WhatsApp\WebhookDiagnostics;
 use App\Services\WhatsApp\WhatsAppClient;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -26,26 +27,56 @@ class WebhookController extends Controller
     }
 
     /**
-     * Mensagens recebidas. Respondemos 200 rápido; o processamento (regras, sem processo permanente) cabe no tempo da requisição.
-     * Se a hospedagem tiver PHP-FPM, a resposta à Meta sai antes do processamento (fastcgi_finish_request).
+     * Mensagens recebidas (Cloud API). Cada etapa fica no diagnóstico (storage/logs/whatsapp-AAAA-MM-DD.log), sem conteúdo privado.
+     * A Meta recebe 200 assim que a assinatura confere; o processamento roda em seguida, na mesma requisição
+     * (com PHP-FPM/LiteSpeed a conexão já foi liberada; em CGI a resposta só fecha ao final — os dois funcionam na HostGator).
      */
     public function whatsapp(Request $request, WhatsAppClient $wa, InboundProcessor $inbound, TenantContext $ctx): Response
     {
-        if (! $wa->verifySignature($request)) {
-            Log::warning('Webhook WhatsApp com assinatura inválida', ['ip' => $request->ip()]);
+        $rid = WebhookDiagnostics::begin();
+        WebhookDiagnostics::info('recebido', ['ip' => $request->ip(), 'bytes' => strlen($request->getContent()),
+            'assinatura_presente' => $request->headers->has('X-Hub-Signature-256'), 'tipo' => (string) $request->header('Content-Type')]);
+
+        $sig = $wa->signatureStatus($request);
+        if (! in_array($sig, ['ok', 'dispensada_dev'], true)) {
+            WebhookDiagnostics::warning('assinatura_recusada', ['motivo' => $sig, 'tamanho_segredo' => strlen((string) config('services.whatsapp.app_secret'))]);
+            Log::warning('Webhook WhatsApp com assinatura inválida', ['ip' => $request->ip(), 'motivo' => $sig, 'req' => $rid]);
 
             return response('Invalid signature', 401);
         }
-        $messages = $wa->parse($request->json()->all());
-        app()->terminating(function () use ($messages, $inbound, $ctx) {
+        WebhookDiagnostics::info('assinatura_ok', ['resultado' => $sig]);
+
+        $payload = $request->json()->all();
+        $messages = $wa->parse($payload);
+        $statuses = $wa->parseStatuses($payload);
+        WebhookDiagnostics::info('conteudo', ['objeto' => $payload['object'] ?? null, 'mensagens' => count($messages), 'status' => count($statuses),
+            'campos' => array_values(array_unique(array_map(fn ($c) => (string) ($c['field'] ?? '?'), array_merge(...array_map(fn ($e) => (array) ($e['changes'] ?? []), (array) ($payload['entry'] ?? [])))))) ?: null]);
+        if (! $messages && ! $statuses) {
+            WebhookDiagnostics::warning('sem_mensagens', ['observacao' => 'corpo sem entry/changes/value.messages ou statuses — nada a processar']);
+        }
+
+        // continua mesmo se a Meta encerrar a conexão após o 200
+        ignore_user_abort(true);
+        app()->terminating(function () use ($messages, $statuses, $inbound, $ctx, $rid) {
+            @set_time_limit(120);
             foreach ($messages as $m) {
                 try {
                     $ctx->clear();
                     $inbound->process($m);
                 } catch (\Throwable $e) {
+                    WebhookDiagnostics::error('erro_processamento', WebhookDiagnostics::exception($e) + ['mensagem' => WebhookDiagnostics::ref($m['wamid'] ?? null)]);
                     report($e);
                 }
             }
+            foreach ($statuses as $st) {
+                try {
+                    $inbound->status($st);
+                } catch (\Throwable $e) {
+                    WebhookDiagnostics::error('erro_status', WebhookDiagnostics::exception($e));
+                    report($e);
+                }
+            }
+            WebhookDiagnostics::info('concluido', ['req' => $rid]);
         });
 
         return response('OK', 200);

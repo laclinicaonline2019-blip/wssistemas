@@ -73,6 +73,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Diagnóstico do webhook do WhatsApp (sem conteúdo de mensagens, telefones ou credenciais) — storage/logs/whatsapp-AAAA-MM-DD.log
+        'whatsapp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/whatsapp.log'),
+            'level' => env('WHATSAPP_LOG_LEVEL', 'info'),
+            'days' => 14,
+            'replace_placeholders' => true,
+        ],
+
         'monthly' => [
             'driver' => 'monthly',
             'path' => storage_path('logs/laravel.log'),

@@ -31,6 +31,20 @@ Em homologação use os modos simulados (`WHATSAPP_MODE=mock`, `BILLING_MODE=moc
 
 Tudo aparece no painel na hora (o painel aberto se atualiza ao voltar para a aba e a cada minuto) e nos relatórios, gráficos e saldos, que leem a mesma tabela de lançamentos.
 
+**Diagnóstico do webhook (sem terminal):** *Proprietário → Sistema e backups → WhatsApp — diagnóstico* mostra a configuração conferida (App Secret com 32 caracteres, sem espaços; Phone Number ID numérico; token presente — os valores nunca aparecem), os **últimos eventos do webhook** e as últimas mensagens gravadas. Os mesmos eventos ficam em `storage/logs/whatsapp-AAAA-MM-DD.log` (Gerenciador de Arquivos), uma linha por etapa:
+
+| Etapa | Significa |
+|---|---|
+| `recebido` | a chamada da Meta chegou ao Laravel (se não aparece: URL diferente, barra no final, `http`, bloqueio do servidor, ou nenhuma mensagem foi enviada **para** o número da plataforma) |
+| `assinatura_recusada` + `motivo` | `segredo_vazio`, `sem_cabecalho`, `formato_invalido` ou `nao_confere` (App Secret de outro app, outro valor colado, espaços) — HTTP 401 |
+| `assinatura_ok` → `conteudo` | quantas mensagens e status vieram no corpo; `sem_mensagens` = corpo sem `entry/changes/value.messages` |
+| `mensagem` + `resultado` | `processed`, `unknown_number` (número não cadastrado), `verification`, `plan_blocked`, `limit`, `rate_limited`, `duplicada` |
+| `erro_banco` / `erro_processamento` | falha ao gravar/processar, com SQLSTATE e local do código (sem dados) |
+| `resposta` | `aceita` pela Meta ou `falhou` com `http`, `codigo` e título do erro (ex.: 190 token vencido, 131030 número fora da lista de teste) |
+| `status_meta` | entregue / lida / falhou (com código), informado depois pela Meta |
+
+Nada de texto de mensagem, telefone, `wamid` (contém o telefone), token ou App Secret é registrado. Nível: `WHATSAPP_LOG_LEVEL` (padrão `info`); mantém 14 dias.
+
 **Regras da Meta respeitadas:** respostas em texto livre só dentro da janela de 24 h aberta pela mensagem do cliente; todo webhook tem a assinatura `X-Hub-Signature-256` conferida; mensagens marcadas como lidas.
 **Lembretes de contas** (mensagem iniciada pela plataforma) só com **modelo aprovado** e para números com "Aceita lembretes" marcado. Crie no WhatsApp Manager um modelo de categoria *Utilidade*, idioma pt_BR, por exemplo:
 > `Olá! Você tem {{1}} conta(s) vencendo hoje, total de {{2}}. Responda "contas hoje" para ver a lista.`

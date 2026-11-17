@@ -13,6 +13,7 @@ use App\Services\Assistant\Assistant;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 
 /**
@@ -23,16 +24,62 @@ class InboundProcessor
 {
     public function __construct(private readonly WhatsAppClient $wa, private readonly Assistant $assistant, private readonly AuditLogger $audit, private readonly TenantContext $ctx) {}
 
+    private ?WhatsappMessage $current = null;
+
+    private const STATUS_RANK = ['sent' => 1, 'delivered' => 2, 'read' => 3];
+
     public function process(array $msg): ?string
+    {
+        $t0 = microtime(true);
+        $this->current = null;
+        $out = $this->handle($msg);
+        $log = $this->current;
+        WebhookDiagnostics::info('mensagem', ['mensagem' => WebhookDiagnostics::ref($msg['wamid'] ?? null), 'tipo' => $msg['type'] ?? null,
+            'resultado' => $log?->status ?? 'duplicada', 'intencao' => $log?->intent, 'cliente' => $log?->account_id, 'lancamento' => (bool) $log?->entry_id,
+            'ia' => (bool) $log?->used_ai, 'ms' => (int) round((microtime(true) - $t0) * 1000)]);
+
+        return $out;
+    }
+
+    /** Status das mensagens enviadas (Meta → sent/delivered/read/failed): atualiza a resposta registrada e guarda o motivo de falha. */
+    public function status(array $st): void
+    {
+        $row = $st['wamid'] !== '' ? WhatsappMessage::query()->where('wamid', $st['wamid'])->where('direction', 'out')->first() : null;
+        $new = $st['status'];
+        $ctx = ['mensagem' => WebhookDiagnostics::ref($st['wamid']), 'status' => $new, 'registrada' => (bool) $row, 'erros' => $st['errors'] ?: null];
+        if ($new === 'failed') {
+            WebhookDiagnostics::warning('status_meta', $ctx);
+            Log::warning('WhatsApp: a Meta informou falha na entrega', ['erros' => $st['errors']]);
+        } else {
+            WebhookDiagnostics::info('status_meta', $ctx);
+        }
+        if (! $row || ! in_array($new, ['sent', 'delivered', 'read', 'failed'], true)) {
+            return;
+        }
+        // não regride (delivered depois de read) e "failed" sempre prevalece
+        if ($new === 'failed' || (self::STATUS_RANK[$new] ?? 0) > (self::STATUS_RANK[$row->status] ?? 0)) {
+            $row->update(['status' => $new]);
+        }
+    }
+
+    private function handle(array $msg): ?string
     {
         $hash = WhatsappContact::hashPhone($msg['from']);
 
-        // Idempotência: a Meta reentrega webhooks; o wamid é único na tabela.
+        // Idempotência: a Meta reentrega webhooks; o wamid é único na tabela. Só a DUPLICIDADE é silenciosa —
+        // qualquer outro erro de banco vai para o diagnóstico e para o log (antes era engolido sem rastro).
         try {
             $log = WhatsappMessage::query()->create(['direction' => 'in', 'wamid' => $msg['wamid'] ?: null, 'phone_hash' => $hash, 'body' => $msg['text'], 'status' => 'received']);
-        } catch (QueryException) {
-            return null;
+        } catch (QueryException $e) {
+            if (! empty($msg['wamid']) && WhatsappMessage::query()->where('wamid', $msg['wamid'])->exists()) {
+                WebhookDiagnostics::info('duplicada', ['mensagem' => WebhookDiagnostics::ref($msg['wamid'])]);
+
+                return null;
+            }
+            WebhookDiagnostics::error('erro_banco', WebhookDiagnostics::exception($e) + ['tabela' => 'whatsapp_messages', 'mensagem' => WebhookDiagnostics::ref($msg['wamid'] ?? null)]);
+            throw $e;
         }
+        $this->current = $log;
 
         // Limite por número (proteção contra rajadas/abuso e custo): excedente é registrado e ignorado, sem resposta.
         $rateKey = 'wsf:wa:rate:'.$hash;
@@ -130,6 +177,10 @@ class InboundProcessor
     private function reply(string $to, ?string $accountId, string $text): ?string
     {
         $id = $this->wa->sendText($to, $text);
+        $r = $this->wa->lastResult ?? [];
+        $ctx = ['resultado' => $id ? 'aceita' : 'falhou', 'modo' => $this->wa->mock() ? 'mock' : 'cloud', 'http' => $r['http'] ?? null]
+            + array_filter(['codigo' => $r['codigo'] ?? null, 'subcodigo' => $r['subcodigo'] ?? null, 'titulo' => $id ? null : ($r['titulo'] ?? ($r['erro'] ?? null))]);
+        $id ? WebhookDiagnostics::info('resposta', $ctx) : WebhookDiagnostics::error('resposta', $ctx);
         WhatsappMessage::query()->create(['account_id' => $accountId, 'direction' => 'out', 'wamid' => $id, 'phone_hash' => WhatsappContact::hashPhone($to), 'body' => $text, 'status' => $id ? 'sent' : 'failed']);
         if ($accountId) {
             UsageCounter::bump($accountId, ['whatsapp_out' => 1]);

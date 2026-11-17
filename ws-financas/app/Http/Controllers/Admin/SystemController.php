@@ -8,8 +8,11 @@ use App\Core\Audit\ChainVerifier;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
+use App\Models\WhatsappMessage;
 use App\Services\BackupService;
 use App\Services\Health;
+use App\Services\WhatsApp\WebhookDiagnostics;
+use App\Services\WhatsApp\WhatsAppClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -31,7 +34,10 @@ class SystemController extends Controller
         return view('admin.system', ['checks' => $health->checks(), 'files' => $files, 'pending' => $pending, 'version' => config('app.version'),
             'audit' => ['report' => $verifier->latestReport(), 'pending' => $verifier->pendingState(), 'head' => AuditLogger::headAvailable() ? DB::table('audit_chain_head')->where('id', 1)->first() : null,
                 'anchor' => app(AuditAnchor::class)->latestValid(), 'hasKey' => (string) config('wsf.security.audit_hmac_key') !== '', 'total' => AuditLog::query()->count()],
-            'settings' => ['trial_days' => config('wsf.billing.trial_days'), 'grace_days' => config('wsf.billing.grace_days'), 'retention' => config('wsf.lgpd.retention_days_after_cancel')]]);
+            'settings' => ['trial_days' => config('wsf.billing.trial_days'), 'grace_days' => config('wsf.billing.grace_days'), 'retention' => config('wsf.lgpd.retention_days_after_cancel')],
+            'wa' => ['config' => app(WhatsAppClient::class)->configReport(), 'events' => WebhookDiagnostics::recent(40),
+                'webhook' => rtrim((string) config('app.url'), '/').'/webhooks/whatsapp',
+                'last' => WhatsappMessage::query()->orderByDesc('created_at')->orderByDesc('id')->limit(15)->get(['created_at', 'direction', 'status', 'intent'])]]);
     }
 
     /** Verificação da cadeia em lotes (retoma de onde parou; limite de tempo por clique). */
