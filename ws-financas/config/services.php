@@ -21,6 +21,8 @@ return [
         // Modelo (template) aprovado pela Meta para lembretes fora da janela de 24 h. Vazio = sem lembretes ativos.
         'reminder_template' => env('WHATSAPP_REMINDER_TEMPLATE'),
         'reminder_template_lang' => env('WHATSAPP_REMINDER_TEMPLATE_LANG', 'pt_BR'),
+        // mensagens por número a cada 5 minutos (excedente é ignorado)
+        'rate_per_5min' => (int) env('WHATSAPP_LIMITE_5MIN', 30),
     ],
 
     // Asaas — cobrança das assinaturas da plataforma.

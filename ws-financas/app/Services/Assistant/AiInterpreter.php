@@ -31,9 +31,13 @@ class AiInterpreter
         $schema = [
             'type' => 'object',
             'additionalProperties' => false,
-            'required' => ['intent', 'amount', 'date', 'paid', 'description', 'company', 'installments', 'recurring'],
+            'required' => ['intent', 'amount', 'date', 'paid', 'description', 'company', 'installments', 'recurring', 'category', 'period', 'ambiguous'],
             'properties' => [
-                'intent' => ['type' => 'string', 'enum' => ['despesa', 'receita', 'pagar', 'consulta_pagar', 'consulta_receber', 'resumo', 'desconhecido']],
+                'intent' => ['type' => 'string', 'enum' => ['despesa', 'receita', 'pagar', 'consulta_pagar', 'consulta_receber', 'consulta_gastos', 'consulta_recebido', 'saldo', 'por_categoria', 'resumo', 'desconhecido']],
+                'category' => ['anyOf' => [['type' => 'string', 'enum' => array_values(array_merge((array) config('wsf.categories.despesa'), (array) config('wsf.categories.receita')))], ['type' => 'null']],
+                    'description' => 'Categoria do lançamento ou filtro da consulta (ex.: "quanto gastei de combustível" → Combustível), ou null'],
+                'period' => ['anyOf' => [['type' => 'string', 'enum' => ['hoje', 'ontem', 'semana', 'semana_passada', 'mes', 'mes_passado', 'ano']], ['type' => 'null']], 'description' => 'Período das consultas'],
+                'ambiguous' => ['type' => 'boolean', 'description' => 'true se valor, tipo (receita/despesa) ou data não estiverem claros'],
                 'amount' => ['type' => ['number', 'null'], 'description' => 'Valor em reais (ex.: 1200.5)'],
                 'date' => ['type' => ['string', 'null'], 'description' => 'AAAA-MM-DD (vencimento ou data do pagamento/recebimento)'],
                 'paid' => ['type' => 'boolean'],
@@ -45,7 +49,9 @@ class AiInterpreter
         ];
         $system = "Você interpreta mensagens curtas de WhatsApp de brasileiros sobre finanças e devolve só os campos pedidos.\n"
             ."despesa = conta/gasto; receita = dinheiro recebido; pagar = marcar como paga uma conta já cadastrada (sem valor novo);\n"
-            .'consulta_pagar/consulta_receber/resumo = perguntas. Se não for sobre finanças, use desconhecido. Não invente valores.';
+            ."consulta_pagar = contas em aberto/a vencer; consulta_receber = a receber; consulta_gastos = quanto gastou; consulta_recebido = quanto recebeu;\n"
+            ."saldo = saldo; por_categoria = despesas por categoria; resumo = resumo do mês. Se não for sobre finanças, use desconhecido.\n"
+            .'Nunca invente valores nem responda números: só extraia os campos. Na dúvida sobre valor, tipo ou data, marque ambiguous=true.';
         $user = 'Hoje é '.$today->toDateString().'. Empresas do cliente: '.($companyNames ? implode('; ', $companyNames) : 'nenhuma')."\nMensagem: ".$text;
 
         $data = $this->call($accountId, $system, $user, 1024, $schema);
@@ -53,8 +59,17 @@ class AiInterpreter
             return null;
         }
 
+        $today_ = $today;
+        $periodWord = ['hoje' => 'hoje', 'ontem' => 'ontem', 'semana' => 'semana', 'semana_passada' => 'semana passada', 'mes' => '', 'mes_passado' => 'mes passado', 'ano' => 'este ano'][$data['period'] ?? 'mes'] ?? '';
+        $cat = isset($data['category']) && is_string($data['category']) ? $data['category'] : null;
+        $queryIntents = ['consulta_gastos', 'consulta_recebido', 'saldo', 'por_categoria'];
+
         return [
             'intent' => $data['intent'],
+            'category' => $cat,
+            'term' => null,
+            'ai_ambiguous' => (bool) ($data['ambiguous'] ?? false),
+            'period_q' => in_array($data['intent'], $queryIntents, true) ? (new MessageInterpreter)->pastPeriod($periodWord, $today_) : null,
             'amount_cents' => isset($data['amount']) && $data['amount'] > 0 ? (int) round($data['amount'] * 100) : null,
             'date' => $data['date'] && preg_match('/^\d{4}-\d{2}-\d{2}$/', $data['date']) ? $data['date'] : $today->toDateString(),
             'date_explicit' => true,
@@ -69,17 +84,49 @@ class AiInterpreter
         ];
     }
 
+    /** Classifica a categoria de um lançamento quando as regras não reconhecem a descrição (resposta restrita à lista). */
+    public function categorize(string $accountId, string $description, string $type, array $categories): ?string
+    {
+        $schema = ['type' => 'object', 'additionalProperties' => false, 'required' => ['category'],
+            'properties' => ['category' => ['type' => 'string', 'enum' => array_values($categories)]]];
+        $data = $this->call($accountId, 'Classifique o lançamento financeiro de um brasileiro em uma das categorias da lista. Responda só o campo pedido.',
+            'Tipo: '.$type."\nDescrição: ".mb_substr($description, 0, 200), 200, $schema);
+        $cat = is_array($data) ? ($data['category'] ?? null) : null;
+
+        return is_string($cat) && in_array($cat, $categories, true) ? $cat : null;
+    }
+
     /** Análise do fechamento em linguagem simples (substitui o "Pedir análise ao Claude" do painel original). */
     public function analysis(string $accountId, string $prompt): ?string
     {
         return $this->call($accountId, null, $prompt, 2000, null);
     }
 
-    private function call(string $accountId, ?string $system, string $user, int $maxTokens, ?array $schema): mixed
+    protected function call(string $accountId, ?string $system, string $user, int $maxTokens, ?array $schema): mixed
     {
         if (! $this->available()) {
             return null;
         }
+        $r = $this->send($system, $user, $maxTokens, $schema);
+        if ($r === null) {
+            return null;
+        }
+        UsageCounter::bump($accountId, ['ai_calls' => 1, 'ai_input_tokens' => $r['input_tokens'], 'ai_output_tokens' => $r['output_tokens']]);
+        if (in_array($r['stop_reason'], ['refusal', 'max_tokens'], true)) {
+            return null;
+        }
+        $text = $r['text'];
+
+        return $schema ? json_decode($text, true) : trim($text);
+    }
+
+    /**
+     * Envio à API da Anthropic (único ponto com rede; substituível em testes).
+     *
+     * @return array{text: string, input_tokens: int, output_tokens: int, stop_reason: ?string}|null
+     */
+    protected function send(?string $system, string $user, int $maxTokens, ?array $schema): ?array
+    {
         $model = (string) config('services.anthropic.model');
         $fallback = in_array($model, self::FALLBACK_MODELS, true);
         $client = $this->client ?? new Client(apiKey: (string) config('services.anthropic.key'), authToken: '', baseUrl: (string) config('services.anthropic.base_url'),
@@ -104,12 +151,6 @@ class AiInterpreter
 
             return null;
         }
-
-        UsageCounter::bump($accountId, ['ai_calls' => 1, 'ai_input_tokens' => (int) $response->usage->inputTokens, 'ai_output_tokens' => (int) $response->usage->outputTokens]);
-
-        if ($response->stopReason === 'refusal' || $response->stopReason === 'max_tokens') {
-            return null;
-        }
         $text = '';
         foreach ($response->content as $block) {
             if ($block->type === 'text') {
@@ -117,6 +158,6 @@ class AiInterpreter
             }
         }
 
-        return $schema ? json_decode($text, true) : trim($text);
+        return ['text' => $text, 'input_tokens' => (int) $response->usage->inputTokens, 'output_tokens' => (int) $response->usage->outputTokens, 'stop_reason' => $response->stopReason];
     }
 }

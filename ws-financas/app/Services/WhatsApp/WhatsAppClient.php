@@ -59,7 +59,7 @@ class WhatsAppClient
             && hash_equals('sha256='.hash_hmac('sha256', $request->getContent(), $secret), $header);
     }
 
-    /** @return list<array{wamid:string, from:string, text:?string, type:string}> */
+    /** @return list<array{wamid:string, from:string, text:?string, type:string, timestamp:?int}> */
     public function parse(array $payload): array
     {
         $out = [];
@@ -73,7 +73,7 @@ class WhatsAppClient
                         'interactive' => $m['interactive']['button_reply']['title'] ?? ($m['interactive']['list_reply']['title'] ?? null),
                         default => null,
                     };
-                    $out[] = ['wamid' => (string) ($m['id'] ?? ''), 'from' => (string) ($m['from'] ?? ''), 'text' => $text, 'type' => $type];
+                    $out[] = ['wamid' => (string) ($m['id'] ?? ''), 'from' => (string) ($m['from'] ?? ''), 'text' => $text, 'type' => $type, 'timestamp' => isset($m['timestamp']) ? (int) $m['timestamp'] : null];
                 }
             }
         }

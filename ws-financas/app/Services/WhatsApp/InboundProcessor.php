@@ -10,7 +10,10 @@ use App\Models\UsageCounter;
 use App\Models\WhatsappContact;
 use App\Models\WhatsappMessage;
 use App\Services\Assistant\Assistant;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Processa uma mensagem recebida: identifica o cliente pelo telefone autorizado, evita processar duas vezes
@@ -18,7 +21,7 @@ use Illuminate\Database\QueryException;
  */
 class InboundProcessor
 {
-    public function __construct(private readonly WhatsAppClient $wa, private readonly Assistant $assistant, private readonly AuditLogger $audit) {}
+    public function __construct(private readonly WhatsAppClient $wa, private readonly Assistant $assistant, private readonly AuditLogger $audit, private readonly TenantContext $ctx) {}
 
     public function process(array $msg): ?string
     {
@@ -31,11 +34,40 @@ class InboundProcessor
             return null;
         }
 
+        // Limite por número (proteção contra rajadas/abuso e custo): excedente é registrado e ignorado, sem resposta.
+        $rateKey = 'wsf:wa:rate:'.$hash;
+        if (RateLimiter::tooManyAttempts($rateKey, (int) config('services.whatsapp.rate_per_5min', 30))) {
+            $log->update(['status' => 'rate_limited']);
+
+            return null;
+        }
+        RateLimiter::hit($rateKey, 300);
+
         $contact = WhatsappContact::query()->withoutGlobalScopes()->where('phone_hash', $hash)->where('active', true)->first();
         if (! $contact) {
             $log->update(['status' => 'unknown_number']);
+            if (! Cache::add('wsf:wa:unknown:'.$hash, 1, now()->addDay())) {
+                return null;   // número desconhecido: responde no máximo uma vez por dia
+            }
 
             return $this->reply($msg['from'], null, "Olá! Este é o assistente do *WS Finanças em Dia*. Seu número ainda não está autorizado.\nPeça ao administrador da sua conta para cadastrá-lo em Configurações → WhatsApp.");
+        }
+
+        // Validação do número: só depois que o próprio celular envia o código mostrado no painel
+        if (! $contact->verified()) {
+            $log->update(['account_id' => $contact->account_id, 'status' => 'verification']);
+            $result = $contact->checkCode((string) $msg['text']);
+            if ($result === 'ok') {
+                $this->ctx->runFor($contact->account_id, fn () => $this->audit->log('whatsapp.validar', $contact, ['final' => $contact->phone_last4], accountId: $contact->account_id, channel: 'whatsapp'));
+
+                return $this->reply($msg['from'], $contact->account_id, "✅ Número validado! Agora você já pode lançar e consultar pelo WhatsApp.\n\n".$this->assistant->help());
+            }
+
+            return $this->reply($msg['from'], $contact->account_id, match ($result) {
+                'locked' => '🔒 Muitas tentativas com código errado. Peça ao administrador para gerar um novo código no painel (Configurações → WhatsApp).',
+                'expired' => '⌛ O código de validação expirou. Peça ao administrador para gerar um novo no painel (Configurações → WhatsApp).',
+                default => "🔐 Este número está aguardando validação.\nEnvie aqui o código de 6 dígitos mostrado no painel do WS Finanças (Configurações → WhatsApp).",
+            });
         }
 
         $account = Account::query()->with('subscription.plan')->find($contact->account_id);
@@ -63,9 +95,14 @@ class InboundProcessor
         }
 
         [$role, $companyIds, $userId] = $this->permissions($contact);
+        // data da mensagem (a Meta pode reentregar com atraso): "ontem", "hoje" e a data do lançamento seguem o envio
+        $sentAt = ! empty($msg['timestamp']) ? CarbonImmutable::createFromTimestamp((int) $msg['timestamp'])->setTimezone(config('app.timezone')) : null;
+        $baseDate = $sentAt && $sentAt->toDateString() !== today()->toDateString() && $sentAt->gte(now()->subDays(7)) && $sentAt->lte(now()) ? $sentAt->toDateString() : null;
+
         $result = $this->assistant->handle([
             'account_id' => $account->id, 'key' => $hash, 'channel' => 'whatsapp', 'role' => $role, 'company_ids' => $companyIds,
             'default_company_id' => $contact->default_company_id, 'can_write' => $account->canWrite() && $contact->can_write, 'user_id' => $userId,
+            'base_date' => $baseDate,
         ], $msg['text']);
 
         $log->update(['status' => 'processed', 'intent' => $result['intent'], 'entry_id' => $result['entry_ids'][0] ?? null, 'used_ai' => $result['used_ai']]);

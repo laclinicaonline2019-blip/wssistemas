@@ -46,9 +46,23 @@ class WhatsappController extends Controller
             return back()->withInput()->with('error', 'Este número já está vinculado a uma conta do WS Finanças. Cada número atende um único cliente.');
         }
         $c = WhatsappContact::query()->create($d + ['phone' => $phone, 'phone_hash' => $hash, 'phone_last4' => substr($phone, -4), 'active' => true]);
+        $code = $c->issueCode();
         $this->audit->log('whatsapp.autorizar', $c, ['final' => $c->phone_last4]);
 
-        return back()->with('ok', 'Número autorizado. Mande "ajuda" para o WhatsApp do WS Finanças para começar.');
+        return back()->with('ok', 'Número cadastrado. Falta validar: envie o código abaixo do celular final '.$c->phone_last4.' para o WhatsApp do WS Finanças.')
+            ->with('wa_code', ['id' => $c->id, 'code' => $code]);
+    }
+
+    /** Novo código de validação (o anterior deixa de valer). */
+    public function code(WhatsappContact $contact): RedirectResponse
+    {
+        if ($contact->verified()) {
+            return back()->with('ok', 'Este número já está validado.');
+        }
+        $code = $contact->issueCode();
+        $this->audit->log('whatsapp.novo_codigo', $contact, ['final' => $contact->phone_last4]);
+
+        return back()->with('ok', 'Novo código gerado para o final '.$contact->phone_last4.'.')->with('wa_code', ['id' => $contact->id, 'code' => $code]);
     }
 
     public function update(Request $request, WhatsappContact $contact): RedirectResponse
@@ -75,8 +89,8 @@ class WhatsappController extends Controller
             'label' => ['required', 'string', 'max:80'], 'default_company_id' => ['nullable', 'string'], 'user_id' => ['nullable', 'string'],
             'can_write' => ['boolean'], 'reminders_opt_in' => ['boolean'],
         ]));
-        $d['default_company_id'] = $d['default_company_id'] ? Company::query()->whereKey($d['default_company_id'])->value('id') : null;
-        $d['user_id'] = $d['user_id'] ? Membership::query()->where('user_id', $d['user_id'])->value('user_id') : null;
+        $d['default_company_id'] = ! empty($d['default_company_id']) ? Company::query()->whereKey($d['default_company_id'])->value('id') : null;
+        $d['user_id'] = ! empty($d['user_id']) ? Membership::query()->where('user_id', $d['user_id'])->value('user_id') : null;
         $d['can_write'] = $request->boolean('can_write');
         $d['reminders_opt_in'] = $request->boolean('reminders_opt_in');
 

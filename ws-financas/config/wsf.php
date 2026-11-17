@@ -72,7 +72,7 @@ return [
     ],
 
     'categories' => [
-        'despesa' => ['Moradia', 'Contas da casa', 'Alimentação', 'Delivery e lanches', 'Transporte', 'Saúde', 'Educação', 'Assinaturas', 'Lazer', 'Compras',
+        'despesa' => ['Moradia', 'Contas da casa', 'Alimentação', 'Refeições', 'Delivery e lanches', 'Transporte', 'Combustível', 'Saúde', 'Educação', 'Assinaturas', 'Lazer', 'Compras',
             'Dívidas', 'Fornecedores', 'Folha de pagamento', 'Impostos e taxas', 'Aluguel comercial', 'Serviços e manutenção', 'Marketing', 'Tarifas bancárias', 'Outros'],
         'receita' => ['Salário', 'Vendas', 'Serviços prestados', 'Recebimento de clientes', 'Rendimentos', 'Outras entradas'],
     ],

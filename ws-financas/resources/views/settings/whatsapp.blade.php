@@ -10,9 +10,19 @@
   <p class="mt0">Somente os números abaixo conseguem lançar ou consultar pelo WhatsApp oficial do WS Finanças{{ config('services.whatsapp.display_number') ? ' ('.config('services.whatsapp.display_number').')' : '' }}.
   Um número ligado a um usuário segue as permissões dele (por exemplo, o contador só consulta as empresas autorizadas). Lembretes automáticos só são enviados a quem marcar a opção (regra da Meta).</p>
 </div>
+@if (session('wa_code'))
+  <div class="card" style="border:2px solid var(--brand,#0f6b4f)">
+    <h3 class="mt0">Código de validação</h3>
+    <p class="mt0">Do celular que acabou de ser cadastrado, envie esta mensagem para o WhatsApp do WS Finanças{{ config('services.whatsapp.display_number') ? ' ('.config('services.whatsapp.display_number').')' : '' }}:</p>
+    <p style="font-size:2rem;font-weight:800;letter-spacing:.2em;margin:.2em 0" class="num">{{ substr(session('wa_code')['code'], 0, 3) }} {{ substr(session('wa_code')['code'], 3) }}</p>
+    <p class="small muted mt0">Válido por 24 horas e mostrado só agora. Enquanto o número não for validado, ele não consegue lançar nem consultar.</p>
+  </div>
+@endif
 <div class="table-wrap"><table class="t"><thead><tr><th>Número</th><th>Configuração</th></tr></thead><tbody>
 @forelse ($list as $c)
-  <tr><td><b>{{ $c->label }}</b><br><span class="small muted">final {{ $c->phone_last4 }}</span> @unless($c->active)<span class="pill bad">inativo</span>@endunless</td>
+  <tr><td><b>{{ $c->label }}</b><br><span class="small muted">final {{ $c->phone_last4 }}</span> @unless($c->active)<span class="pill bad">inativo</span>@endunless
+    @if ($c->verified())<span class="pill ok">validado</span>@else<span class="pill warn">aguardando validação</span>
+      <form method="post" action="{{ route('whatsapp.code', $c) }}" style="display:inline">@csrf<button class="icon" type="submit">gerar novo código</button></form>@endif</td>
   <td><details class="edit"><summary>Empresa padrão: {{ $c->defaultCompany?->name ?? 'perguntar' }} · {{ $c->can_write ? 'lança e consulta' : 'só consulta' }}{{ $c->user ? ' · usuário '.$c->user->name : '' }}</summary>
     <form method="post" action="{{ route('whatsapp.update', $c) }}" class="form" style="margin-top:8px">@csrf @method('PUT')
       <div class="field"><label>Identificação</label><input name="label" required value="{{ $c->label }}"></div>

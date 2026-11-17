@@ -20,14 +20,23 @@ Em homologação use os modos simulados (`WHATSAPP_MODE=mock`, `BILLING_MODE=moc
    WHATSAPP_DISPLAY_NUMBER="(11) 9xxxx-xxxx"
    ```
 5. Webhook do app → URL `https://app.seudominio.com.br/webhooks/whatsapp`, token de verificação = `WHATSAPP_VERIFY_TOKEN`; assine o campo **messages**.
-6. Teste: autorize seu celular no painel e mande `ajuda`.
+6. Teste: cadastre seu celular em *Painel → WhatsApp*, envie do próprio celular o **código de validação** mostrado na tela e depois mande `ajuda`.
+
+**Validação do número (1.1.2):** cadastrar um número não basta — ele só lança e consulta depois que o **próprio celular** envia o código de 6 dígitos exibido ao administrador (válido 24 h, 5 tentativas, "gerar novo código" no painel; só o hash fica no banco). Isso prova a posse do número e evita que um erro de digitação entregue dados financeiros a um estranho. Números cadastrados antes da 1.1.2 continuam validados.
+
+**O que o cliente faz pelo WhatsApp (mesmos dados do painel):**
+* Lançar: `100 de combustível`, `gastei 50 no almoço`, `recebi 3.000 de salário`, `paguei 120 de energia`, `gastei 80 de gasolina ontem`, `conta de 1.200 para pagar dia 20`, `aluguel 1.100 dia 5 fixa`, `geladeira 3.000 em 10x`, `paguei internet` (marca a conta em aberto). Resposta: tipo, categoria, valor, data e empresa; `DESFAZER` e `CORRIGIR PARA 90` valem para o último lançamento.
+* Consultar (somas feitas no banco, nunca pela IA): `quanto gastei hoje?`, `quanto gastei de combustível este mês?`, `qual foi minha despesa total?`, `quanto recebi este mês?`, `qual meu saldo?`, `despesas por categoria`, `contas vencidas?`, `quanto tenho para pagar amanhã?`, `resumo do mês` — com hoje/ontem/semana/semana passada/mês passado/nome do mês/este ano.
+* Dúvida = pergunta antes de lançar: dois valores na mesma mensagem, receita ou despesa sem verbo ("500 de salário"), data futura em pagamento ou "dia 20" que ainda não chegou, sem descrição, possível repetição, valor acima de R$ 100 mil e tudo que veio da IA.
+
+Tudo aparece no painel na hora (o painel aberto se atualiza ao voltar para a aba e a cada minuto) e nos relatórios, gráficos e saldos, que leem a mesma tabela de lançamentos.
 
 **Regras da Meta respeitadas:** respostas em texto livre só dentro da janela de 24 h aberta pela mensagem do cliente; todo webhook tem a assinatura `X-Hub-Signature-256` conferida; mensagens marcadas como lidas.
 **Lembretes de contas** (mensagem iniciada pela plataforma) só com **modelo aprovado** e para números com "Aceita lembretes" marcado. Crie no WhatsApp Manager um modelo de categoria *Utilidade*, idioma pt_BR, por exemplo:
 > `Olá! Você tem {{1}} conta(s) vencendo hoje, total de {{2}}. Responda "contas hoje" para ver a lista.`
 e informe o nome em `WHATSAPP_REMINDER_TEMPLATE`. Sem modelo, nenhum lembrete é enviado.
 
-**Segurança:** número não autorizado recebe só uma mensagem de orientação; números ligados a um usuário herdam o papel dele (contador só consulta as empresas autorizadas); a mesma mensagem reentregue pela Meta é processada uma única vez (`wamid` único); conta suspensa só consulta.
+**Segurança:** assinatura `X-Hub-Signature-256` obrigatória (sem `WHATSAPP_APP_SECRET` o webhook recusa tudo em produção); número não autorizado recebe no máximo uma orientação por dia e nunca lança; limite de mensagens por número (`WHATSAPP_LIMITE_5MIN`, padrão 30 a cada 5 min — o excedente é registrado e ignorado) além do limite mensal do plano; a data do lançamento segue o horário de envio da mensagem (reentregas atrasadas não mudam o dia); todo lançamento grava auditoria com canal `whatsapp`; números ligados a um usuário herdam o papel dele (contador só consulta as empresas autorizadas); a mesma mensagem reentregue pela Meta é processada uma única vez (`wamid` único); conta suspensa só consulta.
 
 ## Asaas (assinaturas)
 
@@ -42,4 +51,4 @@ Régua: teste grátis → cobrança no fim do teste → vencida = *em atraso* (a
 
 ## IA (Claude) — opcional
 
-`ANTHROPIC_API_KEY` + `WSF_IA=auto`. Usada **só** quando o interpretador por regras não entende a mensagem (e na "Análise do Claude" do fechamento). Recebe apenas o texto da mensagem e os nomes das empresas; o resultado sempre passa por confirmação do usuário. Modelo padrão `claude-opus-5-5` com esforço baixo e fallback de recusa no servidor; para reduzir custo use `WSF_AI_MODEL=claude-haiku-5-5`. O uso por cliente é contado e limitado pelo plano. `WSF_IA=off` desliga.
+`ANTHROPIC_API_KEY` + `WSF_IA=auto`. As mensagens comuns são entendidas por regras (sem custo, sem IA). A IA entra **só** quando: (1) as regras não entendem a mensagem — ela apenas extrai os campos (tipo, valor, data, categoria, período da consulta) em JSON com esquema fechado; lançamentos vindos da IA **sempre pedem confirmação** e, nas consultas, os números são calculados no banco (a IA nunca informa valores); (2) a descrição não se encaixa em nenhuma categoria — a IA escolhe uma da lista (fora da lista é descartada); (3) a "Análise do Claude" do fechamento. Recebe apenas o texto da mensagem e os nomes das empresas. Modelo padrão `claude-opus-5-5` com esforço baixo e fallback de recusa no servidor; para reduzir custo use `WSF_AI_MODEL=claude-haiku-5-5`. Chamadas e tokens (entrada/saída) são contados por cliente e por mês (`usage_counters`) e limitados pelo plano (`ai_calls_month`); atingido o limite, o assistente segue só com as regras. `WSF_IA=off` desliga.

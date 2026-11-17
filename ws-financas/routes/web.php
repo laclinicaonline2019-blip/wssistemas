@@ -97,6 +97,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
             Route::post('/whatsapp', [WhatsappController::class, 'store'])->name('whatsapp.store');
             Route::put('/whatsapp/{contact}', [WhatsappController::class, 'update'])->name('whatsapp.update');
             Route::delete('/whatsapp/{contact}', [WhatsappController::class, 'destroy'])->name('whatsapp.destroy');
+            Route::post('/whatsapp/{contact}/codigo', [WhatsappController::class, 'code'])->middleware('throttle:10,1')->name('whatsapp.code');
         });
 
         Route::middleware('ability:dados.importar')->group(function () {

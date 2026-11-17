@@ -30,13 +30,15 @@ function parseValor(s){
 const CATS = (BOOT.categorias && BOOT.categorias.despesa) || ["Outros"];
 const CATS_R = (BOOT.categorias && BOOT.categorias.receita) || ["Outras entradas"];
 // limite sugerido de cada categoria, em % da renda do mês
-const REF = {"Moradia":30,"Contas da casa":10,"Alimentação":15,"Delivery e lanches":4,"Transporte":10,"Saúde":8,"Educação":6,"Assinaturas":2,"Lazer":5,"Compras":5,"Outros":5,
+const REF = {"Moradia":30,"Contas da casa":10,"Alimentação":15,"Refeições":5,"Delivery e lanches":4,"Transporte":6,"Combustível":6,"Saúde":8,"Educação":6,"Assinaturas":2,"Lazer":5,"Compras":5,"Outros":5,
   "Fornecedores":40,"Folha de pagamento":35,"Impostos e taxas":12,"Aluguel comercial":12,"Serviços e manutenção":6,"Marketing":6,"Tarifas bancárias":2};
 const DICAS = {
   "Moradia":"Moradia acima de 30% da renda aperta todo o resto. Vale conversar com o proprietário sobre o reajuste ou avaliar um imóvel mais barato quando o contrato vencer.",
   "Contas da casa":"Revise o plano de internet e celular (muitas vezes dá para baixar a franquia), desligue aparelhos em stand-by e confira se a família tem direito à Tarifa Social de energia.",
   "Alimentação":"Faça lista antes do mercado, compre em atacarejo os itens de maior volume e prefira feira no fim do horário, quando o preço cai.",
   "Delivery e lanches":"Delivery é o corte mais rápido. Cozinhar em casa três vezes por semana costuma reduzir esse gasto pela metade.",
+  "Combustível":"Calibre os pneus, evite arrancadas fortes e compare o preço entre postos pelo aplicativo — e confira se o etanol compensa (até 70% do preço da gasolina).",
+  "Refeições":"Levar marmita duas ou três vezes por semana reduz bastante o gasto com almoço fora; o vale-refeição, quando houver, deve cobrir primeiro esse gasto.",
   "Transporte":"Combine caronas, compare o aplicativo com ônibus/metrô nos trajetos fixos e mantenha a calibragem dos pneus para gastar menos combustível.",
   "Saúde":"Pergunte pelo genérico na farmácia e use programas de desconto como o Farmácia Popular quando o remédio estiver na lista.",
   "Educação":"Procure bolsas, descontos por pontualidade e material usado antes de comprar novo.",
@@ -580,4 +582,15 @@ document.addEventListener("submit", async ev => {
 const sel = $("#empresa"); if (sel) sel.value = S.empresa;
 render();
 carregar();
+
+// Lançamentos feitos pelo WhatsApp aparecem sozinhos: recarrega ao voltar para a aba e a cada 60 s com a aba visível
+// (nunca enquanto um formulário/edição/confirmação está aberto, para não atrapalhar quem está digitando).
+let ultimaAtualizacao = Date.now();
+const atualizarSilencioso = () => {
+  if (document.hidden || S.form || S.divForm || S.confirm || S.carregando) return;
+  if (document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  ultimaAtualizacao = Date.now(); S.fluxo = null; S.rel = null; carregar();
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden && Date.now() - ultimaAtualizacao > 5000) atualizarSilencioso(); });
+setInterval(() => { if (Date.now() - ultimaAtualizacao >= 60000) atualizarSilencioso(); }, 15000);
 })();

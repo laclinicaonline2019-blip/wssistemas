@@ -14,7 +14,7 @@ class WhatsAppAssistantTest extends TestCase
     private function authorize($account, string $phone = '5511987654321', ?string $defaultCompany = null): WhatsappContact
     {
         return $this->inAccount($account, fn () => WhatsappContact::query()->create(['label' => 'Dono', 'phone' => $phone, 'phone_hash' => WhatsappContact::hashPhone($phone),
-            'phone_last4' => substr($phone, -4), 'default_company_id' => $defaultCompany, 'can_write' => true, 'active' => true]));
+            'phone_last4' => substr($phone, -4), 'default_company_id' => $defaultCompany, 'can_write' => true, 'active' => true, 'verified_at' => now()]));
     }
 
     private function send(string $text, string $from = '5511987654321', ?string $wamid = null, bool $sign = true)
@@ -56,7 +56,7 @@ class WhatsAppAssistantTest extends TestCase
         $this->assertTrue($e->paid);
         $this->assertSame(35000, $e->amount_cents);
         $this->assertSame('whatsapp', $e->source);
-        $this->assertStringContainsString('Despesa lançada', $this->lastReply());
+        $this->assertStringContainsString('Despesa registrada com sucesso', $this->lastReply());
 
         // sem empresa e sem padrão → pergunta qual
         $this->send('Recebi R$ 5.000 de um cliente.');

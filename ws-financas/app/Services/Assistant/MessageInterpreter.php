@@ -3,6 +3,8 @@
 namespace App\Services\Assistant;
 
 use App\Core\Support\Money;
+use App\Core\Support\Months;
+use App\Services\CategoryGuesser;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Str;
 
@@ -55,18 +57,25 @@ class MessageInterpreter
             return ['intent' => 'corrigir', 'amount_cents' => $v[0]] + $r;
         }
 
-        // --- consultas
-        $isQuestion = str_contains($raw, '?') || preg_match('/^(quanto|quantos|quantas|quais|qual|o que|oque|tenho|mostra|mostrar|lista|listar|ver|resumo|saldo|extrato|relatorio|como estou|como esta|como estamos|contas)\b/u', $n);
+        // --- consultas (somente leitura; os números vêm sempre do banco)
+        $isQuestion = str_contains($raw, '?') || preg_match('/^(quanto|quantos|quantas|quais|qual|o que|oque|tenho|mostra|mostre|mostrar|me mostra|me mostre|me manda|me envie|me diga|me fala|me passa|lista|liste|listar|ver|resumo|saldo|extrato|relatorio|como estou|como esta|como estamos|contas|minhas|meus|quero (ver|saber)|despesas|gastos|receitas|entradas|recebimentos|lancamentos)\b/u', $n);
         if ($isQuestion && $this->amount($raw) === null) {
-            $r['period'] = $this->period($n, $today);
-            if (preg_match('/\b(receber|recebo|entrar|entra|entradas|recebimentos)\b/u', $n)) {
-                $r['intent'] = 'consulta_receber';
-            } elseif (preg_match('/\b(saldo|resumo|como estou|como esta|como estamos|sobra|fechamento|extrato|balanco)\b/u', $n)) {
-                $r['intent'] = 'resumo';
-            } else {
-                $r['intent'] = 'consulta_pagar';
-            }
             $r['company_hint'] = $this->companyHint($raw, $n);
+            $r['intent'] = match (true) {
+                (bool) preg_match('/\b(por categoria|categorias|cada categoria|por tipo)\b/u', $n) => 'por_categoria',
+                (bool) preg_match('/\b(saldo|sobrou|sobra|quanto (me )?resta|quanto (eu )?tenho (em caixa|na conta|disponivel|sobrando))\b/u', $n) => 'saldo',
+                (bool) preg_match('/\b(resumo|como estou|como esta|como estamos|fechamento|extrato|balanco)\b/u', $n) => 'resumo',
+                (bool) preg_match('/\b(a receber|para receber|pra receber|vou receber|tenho (para|pra) receber|falta receber)\b/u', $n) => 'consulta_receber',
+                (bool) preg_match('/\b(recebi|recebemos|recebido|recebidos|recebida|recebidas|entrou|entraram|entradas?|receitas?|ganhei|ganhamos|faturei|faturamos|faturamento|vendi|vendemos|vendas)\b/u', $n) => 'consulta_recebido',
+                (bool) preg_match('/\b(para pagar|pra pagar|a pagar|vence|vencem|vencendo|vencid\w*|atrasad\w*|em aberto|tenho que pagar|contas)\b/u', $n) => 'consulta_pagar',
+                (bool) preg_match('/\b(gastei|gastamos|gasto|gastos|despesas?|paguei|pagamos|pago|saiu|sairam|saidas?|custou|torrei)\b/u', $n) => 'consulta_gastos',
+                (bool) preg_match('/\b(receber|recebo|entrar|entra|recebimentos)\b/u', $n) => 'consulta_receber',
+                default => 'consulta_pagar',
+            };
+            $r['period'] = in_array($r['intent'], ['consulta_pagar', 'consulta_receber'], true) ? $this->period($n, $today) : $this->pastPeriod($n, $today);
+            if (in_array($r['intent'], ['consulta_gastos', 'consulta_recebido'], true)) {
+                [$r['category'], $r['term']] = $this->queryFilter($n, $r['intent'] === 'consulta_recebido' ? 'receita' : 'despesa');
+            }
 
             return $r;
         }
@@ -91,6 +100,18 @@ class MessageInterpreter
         if (($v = $this->amount($work)) !== null) {
             [$r['amount_cents'], $matched] = $v;
             $work = preg_replace('/'.preg_quote($matched, '/').'/u', ' ', $work, 1) ?? $work;
+            // outro número com cara de valor na mesma mensagem ("gastei 50 e 30") → ambíguo
+            $others = [];
+            $rest = $work;
+            while (($o = $this->amount($rest)) !== null) {
+                $rest = preg_replace('/'.preg_quote($o[1], '/').'/u', ' ', $rest, 1) ?? '';
+                if ($o[0] !== $r['amount_cents'] && $o[0] >= 100) {
+                    $others[] = $o[0];
+                }
+            }
+            if ($others) {
+                $r['amount_options'] = array_values(array_unique(array_merge([$r['amount_cents']], $others)));
+            }
         }
 
         $income = (bool) preg_match('/\b(recebi|recebemos|recebido|recebida|recebimento|entrou|entraram|ganhei|vendi|vendemos|faturei|salario caiu|pix recebido|receita|entrada)\b/u', $n);
@@ -99,11 +120,14 @@ class MessageInterpreter
 
         $r['intent'] = $income ? 'receita' : 'despesa';
         $r['paid'] = ! $income && $paidVerb && ! preg_match('/\b(para pagar|pra pagar|a pagar|vence)\b/u', $n);
+        // sem verbo nenhum ("100 de combustível"): gasto já feito, salvo marcas de conta futura (vence, dia N, fixa, parcelas)
+        $r['no_verb'] = ! $income && ! $paidVerb && ! $toPay;
+        $r['implicit'] = $r['no_verb'] && ! $r['recurring'] && ! $r['installments'] && ($date === null || ($explicit && $date->lte($today)));
         if (! $income && ! $paidVerb && ! $toPay && $r['amount_cents'] === null) {
             return ['intent' => 'desconhecido'] + $r;
         }
-        if (! $income && $paidVerb && $r['amount_cents'] === null) {
-            $r['intent'] = 'pagar'; // "paguei a luz" → marca a conta em aberto
+        if (! $income && $paidVerb && $r['amount_cents'] === null && preg_match('/\b(paguei|pagamos|pago|paga|quitei|quitamos)\b/u', $n)) {
+            $r['intent'] = 'pagar'; // "paguei a luz" → marca a conta em aberto ("gastei no mercado" sem valor → pede o valor)
         }
 
         if ($date === null) {
@@ -175,6 +199,56 @@ class MessageInterpreter
         }
 
         return [null, false, $work];
+    }
+
+    /** Período de consultas sobre o que já aconteceu (gastos, recebimentos, saldo). */
+    public function pastPeriod(string $n, CarbonImmutable $today): array
+    {
+        foreach (Months::NAMES as $i => $name) {
+            if (preg_match('/\b(em|de|no mes de|do mes de|mes de)\s+'.Str::ascii($name).'\b/u', $n)) {
+                $d = CarbonImmutable::create((int) $today->format('Y'), $i + 1, 1);
+                if ($d->gt($today)) {
+                    $d = $d->subYear();
+                }
+
+                return ['from' => $d->toDateString(), 'to' => $d->endOfMonth()->toDateString(), 'label' => 'em '.$name.'/'.$d->format('Y'), 'month' => $d->format('Y-m')];
+            }
+        }
+        $mon = $today->startOfWeek(CarbonImmutable::MONDAY);
+
+        return match (true) {
+            (bool) preg_match('/\banteontem\b/u', $n) => ['from' => $today->subDays(2)->toDateString(), 'to' => $today->subDays(2)->toDateString(), 'label' => 'anteontem'],
+            (bool) preg_match('/\bontem\b/u', $n) => ['from' => $today->subDay()->toDateString(), 'to' => $today->subDay()->toDateString(), 'label' => 'ontem'],
+            (bool) preg_match('/\bhoje\b/u', $n) => ['from' => $today->toDateString(), 'to' => $today->toDateString(), 'label' => 'hoje'],
+            (bool) preg_match('/\bsemana passada\b/u', $n) => ['from' => $mon->subWeek()->toDateString(), 'to' => $mon->subDay()->toDateString(), 'label' => 'na semana passada'],
+            (bool) preg_match('/\b(semana|7 dias|sete dias)\b/u', $n) => ['from' => $mon->toDateString(), 'to' => $today->toDateString(), 'label' => 'nesta semana'],
+            (bool) preg_match('/\b(mes passado|ultimo mes|mes anterior)\b/u', $n) => ['from' => $today->subMonthNoOverflow()->startOfMonth()->toDateString(), 'to' => $today->subMonthNoOverflow()->endOfMonth()->toDateString(),
+                'label' => 'no mês passado', 'month' => $today->subMonthNoOverflow()->format('Y-m')],
+            (bool) preg_match('/\b(este ano|esse ano|neste ano|nesse ano|no ano|ano todo)\b/u', $n) => ['from' => $today->startOfYear()->toDateString(), 'to' => $today->endOfYear()->toDateString(), 'label' => 'em '.$today->format('Y')],
+            default => ['from' => $today->startOfMonth()->toDateString(), 'to' => $today->endOfMonth()->toDateString(), 'label' => 'neste mês', 'month' => $today->format('Y-m')],
+        };
+    }
+
+    /**
+     * Filtro de consulta: "de combustível", "com mercado", "no ifood" → categoria (nome ou palavra-chave) ou termo da descrição.
+     *
+     * @return array{0:?string,1:?string}
+     */
+    private function queryFilter(string $n, string $type): array
+    {
+        $strip = '/\b(hoje|ontem|anteontem|(n?esta|n?essa|na) semana|semana passada|(n?este|n?esse|no) mes|mes passado|ultimo mes|mes anterior|(n?este|n?esse|no) ano|ano todo|ate agora|ate hoje|total|no total|ao todo|por favor|'
+            .'(em|de|no mes de|do mes de|mes de) ('.implode('|', array_map(fn ($m) => Str::ascii($m), Months::NAMES)).'))\b/u';
+        $q = trim(preg_replace('/\s+/', ' ', preg_replace($strip, ' ', $n) ?? '') ?? '');
+        if (! preg_match('/\b(?:de|com|em|no|na|nos|nas|pra|para|do|da)\s+([a-z0-9][a-z0-9 ]{1,40})$/u', $q, $m)) {
+            return [null, null];
+        }
+        $term = trim(preg_replace('/^(o|a|os|as|um|uma|meu|minha|meus|minhas)\s+/u', '', $m[1]) ?? '');
+        if ($term === '' || preg_match('/^(despesas?|gastos?|receitas?|entradas?|dinheiro|reais|tudo|mim|voce)$/u', $term)) {
+            return [null, null];
+        }
+        $cat = CategoryGuesser::find($term, $type);
+
+        return [$cat, $cat ? null : $term];
     }
 
     private function period(string $n, CarbonImmutable $today): array

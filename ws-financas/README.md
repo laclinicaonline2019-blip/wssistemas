@@ -38,11 +38,20 @@ Os testes cobrem: instalador web (código, CSRF, APP_KEY, bloqueio, fluxo comple
 
 ## Pacote de instalação e atualização
 ```bash
-deploy/build-zip.sh 1.1.1 1.1.0    # → dist/ws-financas-1.1.1.zip (versão, versão mínima de origem)
+deploy/build-zip.sh 1.1.2 1.1.1    # → dist/ws-financas-1.1.2.zip (versão, versão mínima de origem)
 WSF_UPDATE_SIGNING_KEY=... deploy/build-zip.sh 1.1.0   # assinado (chaves: php deploy/assinar-pacote.php gerar-chaves)
 ```
 O mesmo ZIP serve para instalar (extrair no cPanel) e para atualizar pelo painel: arquivos na raiz, `vendor/` incluído,
 manifesto `wsf-update.json` e `CHECKSUMS.sha256`; nunca contém `.env`, dados de `storage`, testes ou caches.
+
+## Novidades da 1.1.2 (WhatsApp como ferramenta principal)
+- Gasto direto pelo WhatsApp: "100 de combustível" vira despesa paga com a data do dia, categoria e resposta completa (categoria, valor, data).
+- Categorias novas **Combustível** e **Refeições**; a IA classifica descrições que as regras não reconhecem (só categorias da lista).
+- Consultas com dados reais: gastos por período e categoria, quanto recebeu, saldo (com a mesma conta do painel), despesas por categoria.
+- Pergunta antes de lançar quando há ambiguidade (dois valores, receita × despesa, data futura/“dia 20”, sem descrição, repetição).
+- Validação do número pelo próprio celular (código de 6 dígitos), limite de mensagens por número, data da mensagem respeitada, resposta a número desconhecido 1×/dia.
+- Painel se atualiza sozinho ao voltar para a aba e a cada minuto.
+- Detalhes: [docs/INTEGRACOES.md](docs/INTEGRACOES.md) · relatório: [docs/RELATORIO-WHATSAPP-1.1.2.md](docs/RELATORIO-WHATSAPP-1.1.2.md).
 
 ## Novidades da 1.1.1 (auditoria)
 - Corrige o falso alarme "cadeia quebrada" causado pela reordenação de chaves do JSON no MySQL: os registros antigos são conferidos por compatibilidade, sem alterar nada (método registrado no relatório).
