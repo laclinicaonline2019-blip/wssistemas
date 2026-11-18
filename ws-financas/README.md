@@ -38,11 +38,16 @@ Os testes cobrem: instalador web (código, CSRF, APP_KEY, bloqueio, fluxo comple
 
 ## Pacote de instalação e atualização
 ```bash
-deploy/build-zip.sh 1.1.2 1.1.1    # → dist/ws-financas-1.1.2.zip (versão, versão mínima de origem)
+deploy/build-zip.sh 1.1.3 1.1.1    # → dist/ws-financas-1.1.3.zip (versão, versão mínima de origem)
 WSF_UPDATE_SIGNING_KEY=... deploy/build-zip.sh 1.1.0   # assinado (chaves: php deploy/assinar-pacote.php gerar-chaves)
 ```
 O mesmo ZIP serve para instalar (extrair no cPanel) e para atualizar pelo painel: arquivos na raiz, `vendor/` incluído,
 manifesto `wsf-update.json` e `CHECKSUMS.sha256`; nunca contém `.env`, dados de `storage`, testes ou caches.
+
+## Novidades da 1.1.3 (diagnóstico do webhook do WhatsApp)
+- Diagnóstico seguro do webhook (`storage/logs/whatsapp-AAAA-MM-DD.log` e cartão em *Sistema e backups*): chegada, assinatura (com motivo), conteúdo, processamento, resposta e status da Meta — sem conteúdo privado nem credenciais.
+- Erro de banco ao gravar mensagem deixa de ser silencioso; status entregue/lida/falhou da Meta passam a ser registrados.
+- Relatório: [docs/RELATORIO-WEBHOOK-WHATSAPP-1.1.3.md](docs/RELATORIO-WEBHOOK-WHATSAPP-1.1.3.md).
 
 ## Novidades da 1.1.2 (WhatsApp como ferramenta principal)
 - Gasto direto pelo WhatsApp: "100 de combustível" vira despesa paga com a data do dia, categoria e resposta completa (categoria, valor, data).

@@ -1,4 +1,4 @@
-# Relatório — Webhook do WhatsApp na homologação · WS Finanças em Dia 1.1.2 (corrigida)
+# Relatório — Webhook do WhatsApp na homologação · WS Finanças em Dia 1.1.3
 
 **Data:** 17/11/2026 · Trabalho feito só em cópia isolada (Percona 5.7.44-48, Apache, HTTPS local). Homologação e produção **não** foram alteradas.
 
@@ -21,7 +21,9 @@
 ### Sem problema (verificado)
 Rota fora do CSRF; assinatura HMAC-SHA256 correta (corpo bruto, comparação em tempo constante); configuração lida do `.env` a cada requisição (não há cache de configuração); processamento após o 200 funciona na HostGator (PHP-FPM, LiteSpeed ou CGI); campo `v27.0` usa o mesmo formato.
 
-## 2. Correções na 1.1.2 (mesma versão)
+## 2. Correções na 1.1.3
+
+A 1.1.3 contém **exatamente** a 1.1.2 já instalada na homologação mais as correções abaixo (numeração nova porque o atualizador só aceita versão maior que a instalada).
 
 | Correção | Efeito |
 |---|---|
@@ -37,11 +39,11 @@ Nenhuma mudança na validação de assinatura (continua obrigatória), na audito
 ## 3. Testes
 
 * **Automatizados:** 109 testes por banco — SQLite 105 aprovados/4 pulados; MariaDB 10.11, MySQL 8.0 e **Percona 5.7.44-48** 108 aprovados/1 pulado (os pulados dependem de recursos de outro banco). Novos: `WhatsAppWebhookDiagnosticsTest` (10) — etapas registradas sem conteúdo privado; quatro motivos de assinatura recusada; erro de banco visível (antes silencioso); duplicidade; corpo sem mensagens; status da Meta (entregue, lida, fora de ordem, falha 131047); envio recusado (190) sem vazar token; painel sem revelar chaves; configuração com espaço/valor errado apontada.
-* **Ponta a ponta (Apache + Percona 5.7):** instalação limpa 1.1.1 → exemplo da Meta gravado → atualização pelo painel para a 1.1.2 corrigida → barra final **301** (nada no diagnóstico) · segredo errado **401** `nao_confere` · sem cabeçalho **401** `sem_cabecalho` · exemplo repetido `duplicada` · exemplo novo `unknown_number` · "100 reais de combustível" **processed** → despesa R$ 100, Combustível, paga · status `delivered` gravado · modo cloud sem acesso à Meta → `resposta falhou` registrada · diagnóstico sem texto, telefone, segredo ou token · auditoria íntegra. Log completo: `e2e-1.1.2-diagnostico-webhook.log`.
+* **Ponta a ponta (Apache + Percona 5.7):** instalação limpa 1.1.1 → exemplo da Meta gravado → atualização pelo painel para a 1.1.2 antiga → atualização para a 1.1.3 → barra final **301** (nada no diagnóstico) · segredo errado **401** `nao_confere` · sem cabeçalho **401** `sem_cabecalho` · exemplo repetido `duplicada` · exemplo novo `unknown_number` · "100 reais de combustível" **processed** → despesa R$ 100, Combustível, paga · status `delivered` gravado · modo cloud sem acesso à Meta → `resposta falhou` registrada · diagnóstico sem texto, telefone, segredo ou token · auditoria íntegra. Log completo: `e2e-1.1.2-diagnostico-webhook.log`.
 
 ## 4. O que instalar e configurar (após sua autorização)
 
-1. **Atualização:** enviar o `ws-financas-1.1.2.zip` **corrigido** (SHA-256 em `ws-financas-1.1.2.zip.sha256`; **substitui** o pacote 1.1.2 anterior, que deve ser excluído de `storage/app/updates/pacotes`) → *Atualizações → Analisar → Iniciar*. A homologação está na 1.1.1, então o atualizador aceita.
+1. **Atualização:** enviar o `ws-financas-1.1.3.zip` (SHA-256 em `ws-financas-1.1.3.zip.sha256`) para `storage/app/updates/pacotes` → *Atualizações → Analisar → Iniciar*. Origem aceita: 1.1.2 (instalada) ou 1.1.1. Sem migração nova.
 2. **Abrir** *Proprietário → Sistema e backups → WhatsApp — diagnóstico* e conferir a configuração (todas as linhas "OK").
 3. **Na Meta:** URL exatamente `https://teste.wsfinancasemdia.com.br/webhooks/whatsapp`; campo `messages` assinado; clicar **Testar** → no painel deve aparecer `recebido` → `assinatura_ok` → `mensagem … unknown_number`.
    * Se aparecer `assinatura_recusada nao_confere`: recopiar **Configurações do app → Básico → Chave secreta do app** (do mesmo app) para `WHATSAPP_APP_SECRET`, sem espaços — **alteração de credencial: só com sua autorização**.
