@@ -11,11 +11,13 @@ use App\Models\PlatformSetting;
 use App\Models\WhatsappMessage;
 use App\Services\BackupService;
 use App\Services\Health;
+use App\Services\MailDelivery;
 use App\Services\WhatsApp\WebhookDiagnostics;
 use App\Services\WhatsApp\WhatsAppClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -35,6 +37,7 @@ class SystemController extends Controller
             'audit' => ['report' => $verifier->latestReport(), 'pending' => $verifier->pendingState(), 'head' => AuditLogger::headAvailable() ? DB::table('audit_chain_head')->where('id', 1)->first() : null,
                 'anchor' => app(AuditAnchor::class)->latestValid(), 'hasKey' => (string) config('wsf.security.audit_hmac_key') !== '', 'total' => AuditLog::query()->count()],
             'settings' => ['trial_days' => config('wsf.billing.trial_days'), 'grace_days' => config('wsf.billing.grace_days'), 'retention' => config('wsf.lgpd.retention_days_after_cancel')],
+            'mail' => ['config' => self::mailReport(), 'last' => Cache::get(MailDelivery::LAST_KEY)],
             'wa' => ['config' => app(WhatsAppClient::class)->configReport(), 'events' => WebhookDiagnostics::recent(40),
                 'webhook' => rtrim((string) config('app.url'), '/').'/webhooks/whatsapp',
                 'last' => WhatsappMessage::query()->orderByDesc('created_at')->orderByDesc('id')->limit(15)->get(['created_at', 'direction', 'status', 'intent'])]]);
@@ -82,6 +85,40 @@ class SystemController extends Controller
         $r = $anchors->create();
 
         return back()->with('ok', 'Âncora gerada (registro #'.$r['anchor']['last_id'].')'.($r['emailed'] ? ' e enviada para '.implode(', ', $r['emailed']) : '').'.');
+    }
+
+    /** Envia um e-mail de teste ao proprietário logado (valida o SMTP sem terminal). */
+    public function mailTest(Request $request, MailDelivery $mail): RedirectResponse
+    {
+        $r = $mail->sendTest($request->user()->email);
+
+        return back()->with($r['ok'] ? 'ok' : 'error', $r['ok']
+            ? 'E-mail de teste enviado para '.$request->user()->email.' em '.$r['ms'].' ms. Confira a caixa de entrada (e o spam).'
+            : 'Falha no envio: '.$r['erro'].' — '.$r['dica']);
+    }
+
+    /** Configuração de e-mail conferida, sem revelar a senha. @return list<array{item:string, ok:bool, info:string}> */
+    public static function mailReport(): array
+    {
+        $c = config('mail.mailers.smtp');
+        $mailer = (string) config('mail.default');
+        $user = (string) ($c['username'] ?? '');
+        $from = (string) config('mail.from.address');
+        $pw = (string) ($c['password'] ?? '');
+        $scheme = (string) ($c['scheme'] ?? '');
+        $port = (int) ($c['port'] ?? 0);
+        $comboOk = ($port === 465 && in_array($scheme, ['smtps', ''], true)) || (in_array($port, [587, 25, 2525], true) && in_array($scheme, ['smtp', ''], true));
+
+        return [
+            ['item' => 'Envio (MAIL_MAILER)', 'ok' => $mailer === 'smtp', 'info' => $mailer === 'smtp' ? 'smtp' : $mailer.' — e-mails NÃO saem do servidor'],
+            ['item' => 'Servidor (MAIL_HOST / MAIL_PORT / MAIL_SCHEME)', 'ok' => ($c['host'] ?? '') !== '' && $comboOk, 'info' => ($c['host'] ?? '—').' · porta '.$port.' · '.($scheme ?: 'automático')
+                .($comboOk ? '' : ' — use 465 com smtps, ou 587 com smtp')],
+            ['item' => 'Usuário (MAIL_USERNAME)', 'ok' => filter_var($user, FILTER_VALIDATE_EMAIL) !== false, 'info' => $user === '' ? 'vazio' : $user],
+            ['item' => 'Senha (MAIL_PASSWORD)', 'ok' => $pw !== '' && $pw === trim($pw), 'info' => $pw === '' ? 'vazia' : strlen($pw).' caracteres'.($pw === trim($pw) ? '' : ', com espaço nas pontas')
+                .(preg_match('/[\s#$"\'\\\\]/', $pw) ? ' — contém caractere especial: no .env use aspas simples' : '')],
+            ['item' => 'Remetente (MAIL_FROM_ADDRESS)', 'ok' => $from !== '' && strcasecmp($from, $user) === 0, 'info' => $from === '' ? 'vazio' : $from.(strcasecmp($from, $user) === 0 ? '' : ' — deve ser igual ao usuário')],
+            ['item' => 'Tempo limite (MAIL_TIMEOUT)', 'ok' => (int) ($c['timeout'] ?? 0) > 0 && (int) $c['timeout'] <= 25, 'info' => ((int) ($c['timeout'] ?? 0)).' s'],
+        ];
     }
 
     public function backup(BackupService $backups): RedirectResponse

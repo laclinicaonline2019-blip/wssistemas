@@ -135,6 +135,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('/uso', [Admin\DashboardController::class, 'usage'])->name('usage');
         Route::get('/sistema', [Admin\SystemController::class, 'index'])->name('system');
         Route::post('/sistema/backup', [Admin\SystemController::class, 'backup'])->name('system.backup');
+        Route::post('/sistema/email-teste', [Admin\SystemController::class, 'mailTest'])->middleware('throttle:5,1')->name('system.mail_test');
         Route::post('/sistema/auditoria/verificar', [Admin\SystemController::class, 'auditVerify'])->middleware('throttle:20,1')->name('system.audit.verify');
         Route::post('/sistema/auditoria/ativar-v2', [Admin\SystemController::class, 'auditActivate'])->middleware('throttle:5,1')->name('system.audit.activate');
         Route::post('/sistema/auditoria/ancora', [Admin\SystemController::class, 'auditAnchorNow'])->middleware('throttle:5,1')->name('system.audit.anchor');

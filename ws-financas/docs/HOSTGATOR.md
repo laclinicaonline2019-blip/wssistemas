@@ -45,7 +45,20 @@ cPanel → *Trabalhos Cron* → "Uma vez por minuto":
 
 Edite `/home/conta/ws-financas/.env` (fica fora da pasta pública):
 
-* **E-mail (recuperação de senha):** crie a conta `nao-responda@seudominio.com.br` em *Contas de e-mail* e preencha `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD` (porta 465, `MAIL_SCHEME=smtps`). O link de "Esqueci minha senha" é enviado ao **e-mail cadastrado** do usuário e usa o endereço de `APP_URL` — confira se está com `https://`.
+* **E-mail (convites e recuperação de senha):** crie a conta `nao-responda@seudominio.com.br` (cPanel *Contas de e-mail* ou Titan) e preencha no `.env`:
+  ```
+  MAIL_MAILER=smtp
+  MAIL_HOST=smtp.titan.email        # Titan; e-mail do cPanel: mail.seudominio.com.br
+  MAIL_PORT=465
+  MAIL_SCHEME=smtps                 # ou MAIL_PORT=587 com MAIL_SCHEME=smtp
+  MAIL_USERNAME=nao-responda@seudominio.com.br
+  MAIL_PASSWORD='senha entre aspas simples'
+  MAIL_FROM_ADDRESS=nao-responda@seudominio.com.br   # igual ao usuário
+  MAIL_TIMEOUT=15
+  ```
+  **Senha com espaço, `#`, `$`, aspas ou barra precisa de aspas simples** — sem aspas, o trecho depois de ` #` é lido como comentário e a autenticação falha sem aviso.
+  Confira em *Proprietário → Sistema e backups → E-mail* (configuração conferida sem mostrar a senha + botão **Enviar e-mail de teste** + último resultado com a dica do erro).
+  O envio é feito na hora (não depende de fila nem do cron). Uma falha de SMTP não interrompe a tela: o cliente/usuário é criado, o aviso aparece e o convite pode ser reenviado em *Clientes → cliente → reenviar convite*.
 * **WhatsApp e Asaas:** ver `docs/INTEGRACOES.md`.
 * **IA (opcional):** `ANTHROPIC_API_KEY`.
 * Depois de editar: *Proprietário → Sistema* mostra o que falta.

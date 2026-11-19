@@ -50,6 +50,16 @@
           </form></details>
       @endif
     </div>
+    <div class="card"><h3>E-mail — convites e recuperação de senha</h3>
+      <div class="table-wrap"><table class="t small"><tbody>
+        @foreach ($mail['config'] as $c)<tr><td><span class="pill {{ $c['ok'] ? 'ok' : 'warn' }}">{{ $c['ok'] ? 'OK' : 'conferir' }}</span> {{ $c['item'] }}</td><td>{{ $c['info'] }}</td></tr>@endforeach
+      </tbody></table></div>
+      @if ($mail['last'])
+        <p class="small mt0">Último envio ({{ str_replace('_', ' ', $mail['last']['contexto']) }}, {{ \Carbon\Carbon::parse($mail['last']['quando'])->format('d/m H:i') }}):
+          @if ($mail['last']['ok'])<span class="pill ok">enviado</span>@else<span class="pill bad">falhou</span> {{ $mail['last']['erro'] }}<br><b>{{ $mail['last']['dica'] }}</b>@endif</p>
+      @endif
+      <form method="post" action="{{ route('admin.system.mail_test') }}">@csrf<button class="btn sm" type="submit">Enviar e-mail de teste para {{ auth()->user()->email }}</button></form>
+    </div>
     <div class="card"><h3>WhatsApp — diagnóstico</h3>
       <p class="small mt0">Webhook: <code>{{ $wa['webhook'] }}</code> (exatamente assim na Meta, sem barra no final). Os valores das chaves nunca são exibidos.</p>
       <div class="table-wrap"><table class="t small"><tbody>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Core\Audit\AuditLogger;
 use App\Core\Tenancy\TenantContext;
 use App\Core\Validation\Document;
 use App\Http\Controllers\Controller;
@@ -14,9 +15,9 @@ use App\Models\SubscriptionEvent;
 use App\Models\UsageCounter;
 use App\Services\AccountService;
 use App\Services\Billing\BillingService;
+use App\Services\MailDelivery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 /** Proprietário: clientes, assinaturas, suspensão/ativação/cancelamento. Não exibe lançamentos financeiros dos clientes. */
@@ -46,9 +47,12 @@ class AccountController extends Controller
         [$account, $user] = $accounts->register(['name' => $d['name'], 'person_type' => $d['person_type'], 'document' => ! empty($d['document']) ? preg_replace('/\D/', '', $d['document']) : null,
             'email' => $d['email'], 'company_name' => $d['name'], 'admin_name' => $d['admin_name'], 'admin_email' => $d['email'], 'password' => bin2hex(random_bytes(24))],
             $plan, $d['cycle'], (int) $d['trial_days']);
-        Password::sendResetLink(['email' => $user->email]);
+        $mail = app(MailDelivery::class)->sendPasswordLink($user->email, 'convite_cliente');
+        $redirect = redirect()->route('admin.accounts.show', $account);
 
-        return redirect()->route('admin.accounts.show', $account)->with('ok', 'Cliente criado. O administrador recebeu um e-mail para definir a senha.');
+        return $mail['ok']
+            ? $redirect->with('ok', 'Cliente criado. Enviamos ao administrador ('.$user->email.') o e-mail para definir a senha.')
+            : $redirect->with('error', 'Cliente criado, mas o e-mail de convite NÃO foi enviado — '.$mail['dica'].' Depois de corrigir (Sistema e backups → E-mail), use "Reenviar convite".');
     }
 
     public function show(Account $account, TenantContext $ctx): View
@@ -68,6 +72,15 @@ class AccountController extends Controller
 
     public function action(Request $request, Account $account): RedirectResponse
     {
+        if ($request->input('action') === 'resend_invite') {
+            $email = $request->validate(['email' => ['required', 'email']])['email'];
+            $isMember = Membership::query()->withoutGlobalScopes()->where('account_id', $account->id)->whereHas('user', fn ($q) => $q->where('email', $email))->exists();
+            abort_unless($isMember, 404);
+            $mail = app(MailDelivery::class)->sendPasswordLink($email, 'reenvio_convite');
+            app(AuditLogger::class)->log('cliente.reenviar_convite', $account, ['enviado' => $mail['ok']], accountId: $account->id);
+
+            return back()->with($mail['ok'] ? 'ok' : 'error', $mail['ok'] ? 'Convite reenviado para '.$email.'.' : 'E-mail não enviado — '.$mail['dica']);
+        }
         $d = $request->validate(['action' => ['required', 'in:suspend,reactivate,cancel,extend_trial,change_plan'], 'reason' => ['nullable', 'string', 'max:200'],
             'days' => ['nullable', 'integer', 'min:1', 'max:365'], 'plan' => ['nullable', 'exists:plans,code'], 'cycle' => ['nullable', 'in:monthly,yearly']]);
         $uid = $request->user()->id;

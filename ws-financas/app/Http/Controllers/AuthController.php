@@ -7,6 +7,7 @@ use App\Core\Security\LoginService;
 use App\Core\Security\PasswordRules;
 use App\Core\Security\TwoFactorService;
 use App\Models\User;
+use App\Services\MailDelivery;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -87,7 +88,8 @@ class AuthController extends Controller
     public function forgot(Request $request): RedirectResponse
     {
         $request->validate(['email' => ['required', 'email', 'max:190']]);
-        Password::sendResetLink(['email' => mb_strtolower($request->input('email'))]);
+        // falha de SMTP é registrada no log e no painel, mas não vira erro 500 (e a resposta continua neutra)
+        app(MailDelivery::class)->sendPasswordLink((string) $request->input('email'), 'esqueci_senha');
 
         // resposta neutra: não revela se o e-mail existe
         return back()->with('ok', 'Pronto! Se este e-mail estiver cadastrado, enviamos para ele um link para criar uma nova senha (válido por 60 minutos). Confira também a caixa de spam.');

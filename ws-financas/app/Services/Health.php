@@ -60,7 +60,9 @@ class Health
         $c[] = ['item' => 'Cobrança Asaas', 'ok' => config('services.asaas.mode') === 'asaas' && config('services.asaas.api_key') && config('services.asaas.webhook_token'),
             'info' => config('services.asaas.mode') === 'asaas' ? (config('services.asaas.sandbox') ? 'sandbox' : 'produção') : 'simulada (mock)'];
         $c[] = ['item' => 'Inteligência artificial', 'ok' => (string) config('services.anthropic.key') !== '', 'info' => config('services.anthropic.key') ? config('services.anthropic.model') : 'sem chave (só regras)'];
-        $c[] = ['item' => 'E-mail (recuperação de senha)', 'ok' => ! in_array(config('mail.default'), ['log', 'array'], true), 'info' => (string) config('mail.default')];
+        $lastMail = Cache::get(MailDelivery::LAST_KEY);
+        $c[] = ['item' => 'E-mail (convites e recuperação de senha)', 'ok' => ! in_array(config('mail.default'), ['log', 'array'], true) && (! $lastMail || $lastMail['ok']),
+            'info' => (string) config('mail.default').($lastMail ? ' · último envio '.($lastMail['ok'] ? 'ok' : 'FALHOU — veja o cartão E-mail') : ' · nenhum envio registrado')];
         $c[] = ['item' => 'Pasta storage gravável', 'ok' => is_writable(storage_path()), 'info' => storage_path()];
 
         return $c;

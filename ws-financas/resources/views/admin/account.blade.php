@@ -25,7 +25,8 @@
   </form>
   <div class="card"><h3>Empresas e usuários</h3>
     <p class="small mt0"><b>Empresas:</b> {{ $companies->pluck('name')->implode(', ') ?: '—' }}</p>
-    <ul class="small" style="margin:0;padding-left:18px">@foreach ($members as $m)<li>{{ $m->user->name }} — {{ \App\Models\Membership::ROLES[$m->role] }} {{ $m->status !== 'active' ? '(inativo)' : '' }}</li>@endforeach</ul>
+    <ul class="small" style="margin:0;padding-left:18px">@foreach ($members as $m)<li>{{ $m->user->name }} ({{ $m->user->email }}) — {{ \App\Models\Membership::ROLES[$m->role] }} {{ $m->status !== 'active' ? '(inativo)' : '' }}
+      <form method="post" action="{{ route('admin.accounts.action', $a) }}" style="display:inline">@csrf<input type="hidden" name="action" value="resend_invite"><input type="hidden" name="email" value="{{ $m->user->email }}"><button class="icon" type="submit">reenviar convite</button></form></li>@endforeach</ul>
     <h3>Uso (últimos meses)</h3>
     <ul class="small" style="margin:0;padding-left:18px">@forelse ($usage as $u)<li>{{ $u->period }}: WhatsApp {{ $u->whatsapp_in }}/{{ $u->whatsapp_out }} · IA {{ $u->ai_calls }}</li>@empty<li class="muted">Sem uso.</li>@endforelse</ul>
     <p class="small muted">Por privacidade, o painel do proprietário não mostra os lançamentos financeiros do cliente.</p></div>
