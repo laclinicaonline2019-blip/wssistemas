@@ -56,6 +56,7 @@ Edite `/home/conta/ws-financas/.env` (fica fora da pasta pública):
   MAIL_FROM_ADDRESS=nao-responda@seudominio.com.br   # igual ao usuário
   MAIL_TIMEOUT=15
   ```
+  **Nunca coloque a senha em `MAIL_FROM_NAME`, `APP_NAME` ou `WSF_BRAND_NAME`** — esses campos aparecem para quem recebe o e-mail (desde a 1.1.5 o sistema troca por "WS Finanças em Dia", bloqueia qualquer e-mail com credencial e avisa no painel).
   **Senha com espaço, `#`, `$`, aspas ou barra precisa de aspas simples** — sem aspas, o trecho depois de ` #` é lido como comentário e a autenticação falha sem aviso.
   Confira em *Proprietário → Sistema e backups → E-mail* (configuração conferida sem mostrar a senha + botão **Enviar e-mail de teste** + último resultado com a dica do erro).
   O envio é feito na hora (não depende de fila nem do cron). Uma falha de SMTP não interrompe a tela: o cliente/usuário é criado, o aviso aparece e o convite pode ser reenviado em *Clientes → cliente → reenviar convite*.

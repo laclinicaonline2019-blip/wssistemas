@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Core\Audit\AuditAnchor;
 use App\Core\Audit\AuditLogger;
 use App\Core\Audit\ChainVerifier;
+use App\Core\Security\SecretGuard;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
@@ -117,6 +118,9 @@ class SystemController extends Controller
             ['item' => 'Senha (MAIL_PASSWORD)', 'ok' => $pw !== '' && $pw === trim($pw), 'info' => $pw === '' ? 'vazia' : strlen($pw).' caracteres'.($pw === trim($pw) ? '' : ', com espaço nas pontas')
                 .(preg_match('/[\s#$"\'\\\\]/', $pw) ? ' — contém caractere especial: no .env use aspas simples' : '')],
             ['item' => 'Remetente (MAIL_FROM_ADDRESS)', 'ok' => $from !== '' && strcasecmp($from, $user) === 0, 'info' => $from === '' ? 'vazio' : $from.(strcasecmp($from, $user) === 0 ? '' : ' — deve ser igual ao usuário')],
+            ['item' => 'Nomes exibidos no e-mail (APP_NAME, MAIL_FROM_NAME, WSF_BRAND_NAME)', 'ok' => SecretGuard::issues() === [],
+                'info' => SecretGuard::issues() === [] ? 'sem credenciais · remetente: '.config('mail.from.name')
+                    : 'CREDENCIAL ENCONTRADA — '.implode('; ', SecretGuard::issues()).'. O sistema está usando "'.SecretGuard::SAFE_NAME.'" no lugar; corrija o .env e troque a senha exposta.'],
             ['item' => 'Tempo limite (MAIL_TIMEOUT)', 'ok' => (int) ($c['timeout'] ?? 0) > 0 && (int) $c['timeout'] <= 25, 'info' => ((int) ($c['timeout'] ?? 0)).' s'],
         ];
     }

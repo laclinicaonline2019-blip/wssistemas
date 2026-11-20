@@ -88,6 +88,7 @@ class MailDelivery
         $m = mb_strtolower($message);
 
         return match (true) {
+            str_contains($m, 'envio bloqueado por segurança') => 'O e-mail continha uma credencial e NÃO foi enviado. Confira em Sistema e backups → E-mail quais campos do .env (APP_NAME, MAIL_FROM_NAME, WSF_BRAND_NAME) contêm senha ou chave e corrija; depois troque a senha exposta.',
             str_contains($m, 'authenticat') || str_contains($m, '535') || str_contains($m, 'username and password') || str_contains($m, 'credentials') => 'Usuário ou senha do e-mail recusados. Confira MAIL_USERNAME (e-mail completo) e MAIL_PASSWORD; se a senha tiver espaço, #, $, aspas ou barra, coloque-a entre aspas simples no .env.',
             str_contains($m, 'certificate') || str_contains($m, 'ssl operation failed') || str_contains($m, 'tls handshake') => 'Falha de segurança na conexão (SSL/TLS). Use o host do provedor exatamente como informado (smtp.titan.email) e a combinação porta/esquema correta.',
             str_contains($m, 'timed out') || str_contains($m, 'timeout') => 'Sem resposta do servidor de e-mail (porta bloqueada ou host errado). Tente MAIL_PORT=587 com MAIL_SCHEME=smtp, ou confirme com a hospedagem se a saída SMTP está liberada.',

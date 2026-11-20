@@ -16,6 +16,7 @@
 | Criptografia em repouso | CPF/CNPJ, telefones, segredos de 2FA e texto das mensagens do WhatsApp criptografados (AES-256, `APP_KEY`); telefone buscado por HMAC |
 | Credenciais de terceiros | só no `.env` fora da pasta pública; nunca registradas em log (auditoria mascara campos sensíveis) |
 | Auditoria | append-only também no banco (triggers), cadeia HMAC (`AUDIT_HMAC_KEY`; formato v2 canônico RFC 8785), verificação diária em lotes com relatório assinado, âncora diária por e-mail — ver `AUDITORIA.md` |
+| E-mails | nenhuma credencial do `.env` sai em e-mail: nomes exibidos conferidos na inicialização e cada mensagem inspecionada antes do envio (com credencial, o envio é bloqueado e o painel aponta o campo, sem mostrar o valor) |
 | Planilhas | exportação CSV neutraliza fórmulas (`=`, `+`, `-`, `@`) |
 | Backups | ver `BACKUP.md` |
 

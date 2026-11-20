@@ -38,11 +38,16 @@ Os testes cobrem: instalador web (código, CSRF, APP_KEY, bloqueio, fluxo comple
 
 ## Pacote de instalação e atualização
 ```bash
-deploy/build-zip.sh 1.1.4 1.1.1    # → dist/ws-financas-1.1.4.zip (versão, versão mínima de origem)
+deploy/build-zip.sh 1.1.5 1.1.1    # → dist/ws-financas-1.1.5.zip (versão, versão mínima de origem)
 WSF_UPDATE_SIGNING_KEY=... deploy/build-zip.sh 1.1.0   # assinado (chaves: php deploy/assinar-pacote.php gerar-chaves)
 ```
 O mesmo ZIP serve para instalar (extrair no cPanel) e para atualizar pelo painel: arquivos na raiz, `vendor/` incluído,
 manifesto `wsf-update.json` e `CHECKSUMS.sha256`; nunca contém `.env`, dados de `storage`, testes ou caches.
+
+## Novidades da 1.1.5 (segurança dos e-mails)
+- Nenhuma credencial do `.env` (senha do e-mail, do banco, APP_KEY, chaves e tokens) sai em e-mail: o nome do sistema, do remetente e a marca são conferidos na inicialização e cada mensagem é inspecionada antes do envio — com credencial, o envio é bloqueado.
+- *Sistema e backups → E-mail* e *Prontidão* apontam o campo do `.env` que contém credencial, sem mostrar o valor.
+- Relatório: [docs/RELATORIO-SEGURANCA-EMAIL-1.1.5.md](docs/RELATORIO-SEGURANCA-EMAIL-1.1.5.md).
 
 ## Novidades da 1.1.4 (e-mail)
 - Falha de SMTP não gera mais erro 500 em "Esqueci minha senha", no convite de cliente nem no cadastro de usuário: o registro é feito, o aviso aparece e o erro vai para o log com uma dica (sem a senha).
