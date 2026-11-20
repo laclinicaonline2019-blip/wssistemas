@@ -9,5 +9,9 @@
   <div class="field"><label for="code">Código de 6 dígitos</label><input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="10" autofocus></div>
   <button class="btn primary" type="submit">Ativar</button>
 </form>
+@if (auth()->user()->requiresTwoFactor())
 <form method="post" action="{{ route('logout') }}" class="auth" style="margin-top:10px">@csrf<button class="btn sm" type="submit">Sair</button></form>
+@else
+<p class="auth small" style="margin-top:10px"><a href="{{ auth()->user()->is_platform_admin ? route('admin.dashboard') : route('app') }}">Agora não — ativar depois em Segurança</a></p>
+@endif
 @endsection

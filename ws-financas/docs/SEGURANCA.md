@@ -5,7 +5,7 @@
 | Senhas | Argon2id (bcrypt se indisponível), mínimo 10 caracteres com maiúsculas/minúsculas/números/símbolos, checagem opcional em vazamentos (HIBP) |
 | Força bruta | limite por e-mail+IP, bloqueio progressivo após 5 falhas, mensagens neutras, custo de hash igual para e-mail inexistente |
 | Recuperação | link de uso único enviado ao **e-mail cadastrado**, válido por 60 min, resposta neutra (não revela se o e-mail existe) |
-| 2FA | TOTP + 8 códigos de recuperação; **obrigatório** para o proprietário e para administradores de clientes; proteção contra reutilização do código |
+| 2FA | TOTP + 8 códigos de recuperação; **obrigatório** para o proprietário da plataforma; **opcional** para clientes (escolhido no cadastro; ativar/desativar em *Segurança* com senha + código; `WSF_2FA_CLIENTE_OBRIGATORIO=true` torna obrigatório para administradores de cliente); proteção contra reutilização do código |
 | Sessão | cookie HttpOnly, SameSite=Lax, Secure em HTTPS, sessão criptografada, ID regenerado no login |
 | CSRF | token em todo formulário e chamada da API do painel; webhooks usam assinatura/token próprios |
 | SQL Injection | somente Eloquent/Query Builder com parâmetros; nenhum SQL montado com entrada do usuário |

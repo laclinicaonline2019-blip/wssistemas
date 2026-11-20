@@ -35,6 +35,7 @@ class SignupController extends Controller
             'plan' => ['required', 'exists:plans,code'],
             'cycle' => ['required', 'in:monthly,yearly'],
             'accept' => ['accepted'],
+            'two_factor' => ['nullable', 'boolean'],
         ], ['accept.accepted' => 'É preciso aceitar os termos de uso e a política de privacidade.']);
 
         $plan = Plan::query()->where('code', $d['plan'])->where('active', true)->firstOrFail();
@@ -47,7 +48,12 @@ class SignupController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route($user->requiresTwoFactor() ? 'security.2fa' : 'app')
-            ->with('ok', 'Conta criada! Você tem '.config('wsf.billing.trial_days').' dias de teste grátis.');
+        $welcome = 'Conta criada! Você tem '.config('wsf.billing.trial_days').' dias de teste grátis.';
+        // verificação em duas etapas: obrigatória só se a plataforma exigir; para o cliente é escolha dele
+        if ($user->requiresTwoFactor() || $request->boolean('two_factor')) {
+            return redirect()->route('security.2fa')->with('ok', $welcome.' Agora ative a verificação em duas etapas.');
+        }
+
+        return redirect()->route('app')->with('ok', $welcome.' Você pode ativar a verificação em duas etapas quando quiser, em Segurança.');
     }
 }

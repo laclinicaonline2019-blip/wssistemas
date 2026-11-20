@@ -46,10 +46,21 @@ class SecurityController extends Controller
 
     public function disableTwoFactor(Request $request): RedirectResponse
     {
-        $request->validate(['password' => ['required', 'current_password']]);
+        $request->validate(['password' => ['required', 'current_password'], 'code' => ['required', 'string', 'max:20']],
+            ['password.current_password' => 'Senha incorreta.', 'code.required' => 'Informe o código do aplicativo autenticador (ou um código de recuperação).']);
         $user = $request->user();
         if ($user->requiresTwoFactor()) {
-            return back()->with('error', 'Para administradores a verificação em duas etapas é obrigatória.');
+            return back()->with('error', 'Para administradores da plataforma a verificação em duas etapas é obrigatória.');
+        }
+        // confirmação segura: além da senha, um código válido do aplicativo ou um código de recuperação
+        $code = trim((string) $request->input('code'));
+        $valid = preg_match('/^\d{6}$/', preg_replace('/\s+/', '', $code) ?? '')
+            ? $this->tf->verify($user, (string) $user->two_factor_secret, $code)
+            : $this->tf->useRecoveryCode($user, $code);
+        if (! $valid) {
+            $this->audit->log('seguranca.2fa_desativar_recusado', $user);
+
+            return back()->withErrors(['code' => 'Código inválido ou expirado. Use o código atual do aplicativo autenticador.']);
         }
         $user->forceFill(['two_factor_secret' => null, 'two_factor_recovery_codes' => null, 'two_factor_confirmed_at' => null])->save();
         $this->audit->log('seguranca.2fa_desativar', $user);

@@ -20,7 +20,9 @@ return [
     'security' => [
         // 2FA obrigatório para o proprietário da plataforma (sempre) e para administradores de clientes.
         'platform_admin_2fa' => (bool) env('WSF_2FA_PLATAFORMA', true),
-        'account_admin_2fa' => (bool) env('WSF_2FA_ADMIN_CLIENTE', true),
+        // 2FA: obrigatório para o proprietário da plataforma; para clientes é OPCIONAL (escolhido no cadastro ou em Segurança).
+        // 1.1.6: variável nova — a antiga WSF_2FA_ADMIN_CLIENTE (que vinha "true" no modelo do .env) não é mais lida.
+        'account_admin_2fa' => (bool) env('WSF_2FA_CLIENTE_OBRIGATORIO', false),
         'max_login_attempts' => 5,
         'lockout_minutes' => 15,
         'audit_hmac_key' => env('AUDIT_HMAC_KEY'),

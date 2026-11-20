@@ -5,7 +5,7 @@ Ambiente separado (`hml.`), banco próprio, `APP_STAGE=homologation`, Asaas sand
 ## Cadastro e acesso
 - [ ] Cadastro self-service cria cliente, empresa, administrador e teste grátis
 - [ ] Login, bloqueio após 5 senhas erradas, "Esqueci minha senha" chega no e-mail cadastrado e o link funciona uma única vez
-- [ ] 2FA obrigatório para proprietário e administradores; códigos de recuperação funcionam
+- [ ] 2FA obrigatório para o proprietário; opcional para clientes (cadastro com e sem 2FA; desativar exige senha + código); códigos de recuperação funcionam
 
 ## Painel (funções do sistema original)
 - [ ] Contas do mês, marcar paga, editar, excluir (só esta / esta e as próximas)

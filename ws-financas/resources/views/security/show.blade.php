@@ -7,13 +7,16 @@
       <p class="mt0"><span class="pill ok">Ativa</span> desde {{ $user->two_factor_confirmed_at->format('d/m/Y') }}.</p>
       @unless ($user->requiresTwoFactor())
         <form method="post" action="{{ route('security.2fa.disable') }}" class="form">@csrf @method('DELETE')
-          <div class="field full"><label for="pw2">Senha atual para desativar</label><input id="pw2" type="password" name="password" required></div>
+          <p class="full small mt0">Para desativar, confirme com a senha atual e com o código do aplicativo autenticador (ou um código de recuperação).</p>
+          <div class="field"><label for="pw2">Senha atual</label><input id="pw2" type="password" name="password" required autocomplete="current-password"></div>
+          <div class="field"><label for="cd2">Código do aplicativo</label><input id="cd2" name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="20"></div>
           <div class="formacts full"><button class="btn danger" type="submit">Desativar</button></div></form>
       @else
-        <p class="small muted">Obrigatória para administradores.</p>
+        <p class="small muted">Obrigatória para administradores da plataforma.</p>
       @endunless
     @else
-      <p class="mt0 muted">Proteja sua conta com um código do celular além da senha.</p>
+      <p class="mt0"><span class="pill warn">Desativada</span> Você entra só com e-mail e senha.</p>
+      <p class="mt0 muted">Recomendado: proteja sua conta com um código do aplicativo autenticador do celular, além da senha.</p>
       <a class="btn primary" href="{{ route('security.2fa') }}">Ativar agora</a>
     @endif
   </div>
