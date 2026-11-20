@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\Schema;
 class BackupService
 {
     public const TABLES = ['plans', 'accounts', 'users', 'memberships', 'companies', 'company_access', 'subscriptions', 'invoices', 'subscription_events', 'webhook_events',
-        'platform_settings', 'bank_accounts', 'entries', 'debts', 'company_settings', 'local_imports', 'whatsapp_contacts', 'whatsapp_messages', 'whatsapp_pendings',
+        'platform_settings', 'bank_accounts', 'entries', 'debts', 'company_settings', 'local_imports',
+        'cost_centers', 'company_categories', 'budgets', 'report_preferences', 'report_runs', 'plan_change_requests', 'import_batches', 'whatsapp_contacts', 'whatsapp_messages', 'whatsapp_pendings',
         'usage_counters', 'audit_logs', 'audit_chain_head', 'password_reset_tokens'];
 
     /** Chave primária de cada tabela (para repor só o que falta, sem sobrescrever). */

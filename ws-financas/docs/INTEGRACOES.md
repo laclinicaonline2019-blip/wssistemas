@@ -52,6 +52,16 @@ e informe o nome em `WHATSAPP_REMINDER_TEMPLATE`. Sem modelo, nenhum lembrete é
 
 **Segurança:** assinatura `X-Hub-Signature-256` obrigatória (sem `WHATSAPP_APP_SECRET` o webhook recusa tudo em produção); número não autorizado recebe no máximo uma orientação por dia e nunca lança; limite de mensagens por número (`WHATSAPP_LIMITE_5MIN`, padrão 30 a cada 5 min — o excedente é registrado e ignorado) além do limite mensal do plano; a data do lançamento segue o horário de envio da mensagem (reentregas atrasadas não mudam o dia); todo lançamento grava auditoria com canal `whatsapp`; números ligados a um usuário herdam o papel dele (contador só consulta as empresas autorizadas); a mesma mensagem reentregue pela Meta é processada uma única vez (`wamid` único); conta suspensa só consulta.
 
+**1.1.7 — controle de gastos por entidade:**
+* Com mais de uma entidade (CPF + empresas), o assistente pergunta qual é (só as autorizadas para o número) e, se a empresa tiver **centros de custo**, pergunta o centro — ou identifica pelo nome na mensagem (`250 combustível veículos`). Nunca mistura entidades.
+* **Funcionário com o próprio número:** vinculado a um usuário (vale a regra do usuário) ou avulso, com empresas, centros de custo, permissão de lançar e **aprovação** (todas as despesas ou só acima de um valor). Despesa pendente responde "⏳ enviada para aprovação" e não entra em saldo, consultas, metas ou relatórios até ser aprovada. Administrador/gestor: `PENDENTES`, `APROVAR 1`, `REJEITAR 1`, `APROVAR TODOS`.
+* **Metas** mensais/semanais (total e por categoria): o lançamento avisa "⚠️ Meta mensal: 90% usada" ou "🚨 Meta estourada".
+* `relatório` / `relatório mensal` / `relatório deste mês empresa X`: o mesmo texto dos envios automáticos.
+
+**Relatórios automáticos (custo e consentimento da Meta):** saem segunda-feira (semana anterior) e dia 1º (mês anterior), um por entidade, só para quem optou (cadastro ou *Relatórios automáticos*). Se a pessoa conversou com o assistente nas últimas 24 h, vai o texto completo (sem modelo). Fora da janela, a Meta exige **modelo aprovado** (`WHATSAPP_RELATORIO_TEMPLATE`, categoria *Utility*, cobrado por conversa). Sugestão de modelo (pt_BR, 4 variáveis):
+`Seu relatório {{1}} de {{2}} está pronto: despesas {{3}}, saldo {{4}}. Responda RELATÓRIO para ver o detalhe e as sugestões de economia.`
+Sem o modelo configurado, o envio por WhatsApp fora da janela é registrado como "ignorado" (o e-mail, se marcado, segue). Cada envio é registrado uma única vez por entidade + período + canal (o cron pode repetir sem duplicar).
+
 ## Asaas (assinaturas)
 
 1. Crie a conta em asaas.com (e uma no **sandbox**: sandbox.asaas.com).

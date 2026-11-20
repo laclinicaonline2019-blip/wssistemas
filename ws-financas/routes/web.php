@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CompanyController;
@@ -9,6 +10,8 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ReportPreferenceController;
+use App\Http\Controllers\SummaryController;
 use App\Http\Controllers\SecurityController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\UserController;
@@ -76,6 +79,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
             });
         });
 
+        Route::get('/resumo', [SummaryController::class, 'show'])->middleware('ability:financeiro.ver')->name('summary');
+        Route::middleware('ability:relatorios.automaticos')->group(function () {
+            Route::get('/relatorios-automaticos', [ReportPreferenceController::class, 'show'])->name('report_prefs.show');
+            Route::put('/relatorios-automaticos', [ReportPreferenceController::class, 'update'])->name('report_prefs.update');
+        });
+
         Route::get('/relatorios/exportar', [ReportController::class, 'export'])->middleware('ability:relatorios.exportar')->name('reports.export');
 
         Route::middleware('ability:empresas.gerenciar')->group(function () {
@@ -84,6 +93,16 @@ Route::middleware(['auth', '2fa'])->group(function () {
             Route::put('/empresas/{company}', [CompanyController::class, 'update'])->name('companies.update');
             Route::post('/empresas/{company}/contas', [CompanyController::class, 'storeBank'])->name('banks.store');
             Route::put('/contas-bancarias/{bankAccount}', [CompanyController::class, 'updateBank'])->name('banks.update');
+            Route::post('/empresas/{company}/centros-de-custo', [CompanyController::class, 'storeCostCenter'])->name('cost_centers.store');
+            Route::put('/centros-de-custo/{costCenter}', [CompanyController::class, 'updateCostCenter'])->name('cost_centers.update');
+            Route::post('/empresas/{company}/categorias', [CompanyController::class, 'storeCategory'])->name('categories.store');
+            Route::put('/categorias/{category}', [CompanyController::class, 'updateCategory'])->name('categories.update');
+            Route::post('/empresas/{company}/metas', [CompanyController::class, 'saveBudgets'])->name('budgets.save');
+        });
+
+        Route::middleware('ability:despesas.aprovar')->group(function () {
+            Route::get('/aprovacoes', [ApprovalController::class, 'index'])->name('approvals.index');
+            Route::post('/aprovacoes/{entry}', [ApprovalController::class, 'decide'])->where('entry', '[0-9a-z]{26}')->name('approvals.decide');
         });
 
         Route::middleware('ability:usuarios.gerenciar')->group(function () {
@@ -103,12 +122,17 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::middleware('ability:dados.importar')->group(function () {
             Route::get('/importar', [ImportController::class, 'show'])->name('import.show');
             Route::post('/importar', [ImportController::class, 'store'])->name('import.store');
+            Route::post('/importar/extrato', [ImportController::class, 'uploadStatement'])->middleware('throttle:20,1')->name('import.statement.upload');
+            Route::get('/importar/extrato/{batch}', [ImportController::class, 'showStatement'])->where('batch', '[0-9a-z]{26}')->name('import.statement.show');
+            Route::post('/importar/extrato/{batch}', [ImportController::class, 'confirmStatement'])->where('batch', '[0-9a-z]{26}')->name('import.statement.confirm');
+            Route::post('/importar/extrato/{batch}/cancelar', [ImportController::class, 'cancelStatement'])->where('batch', '[0-9a-z]{26}')->name('import.statement.cancel');
         });
 
         Route::middleware('ability:assinatura.gerenciar')->withoutMiddleware('can.write')->group(function () {
             Route::get('/assinatura', [BillingController::class, 'show'])->name('billing.show');
             Route::post('/assinatura', [BillingController::class, 'subscribe'])->name('billing.subscribe');
             Route::post('/assinatura/cancelar', [BillingController::class, 'cancel'])->name('billing.cancel');
+            Route::post('/assinatura/pedido', [BillingController::class, 'requestPlan'])->middleware('throttle:5,1')->name('billing.request');
             Route::post('/assinatura/faturas/{invoice}/simular-pagamento', [BillingController::class, 'simulatePayment'])->name('billing.simulate');
         });
 
@@ -130,6 +154,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('/planos', [Admin\PlanController::class, 'index'])->name('plans.index');
         Route::post('/planos', [Admin\PlanController::class, 'store'])->name('plans.store');
         Route::put('/planos/{plan}', [Admin\PlanController::class, 'update'])->name('plans.update');
+        Route::post('/planos/pedidos/{id}', [Admin\PlanController::class, 'decideRequest'])->where('id', '[0-9a-z]{26}')->name('plans.request');
         Route::get('/faturas', [Admin\InvoiceController::class, 'index'])->name('invoices.index');
         Route::post('/faturas/{invoice}/baixa', [Admin\InvoiceController::class, 'markPaid'])->name('invoices.paid');
         Route::get('/uso', [Admin\DashboardController::class, 'usage'])->name('usage');

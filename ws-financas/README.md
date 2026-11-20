@@ -38,11 +38,20 @@ Os testes cobrem: instalador web (código, CSRF, APP_KEY, bloqueio, fluxo comple
 
 ## Pacote de instalação e atualização
 ```bash
-deploy/build-zip.sh 1.1.6 1.1.1    # → dist/ws-financas-1.1.6.zip (versão, versão mínima de origem)
+deploy/build-zip.sh 1.1.7 1.1.1    # → dist/ws-financas-1.1.7.zip (versão, versão mínima de origem)
 WSF_UPDATE_SIGNING_KEY=... deploy/build-zip.sh 1.1.0   # assinado (chaves: php deploy/assinar-pacote.php gerar-chaves)
 ```
 O mesmo ZIP serve para instalar (extrair no cPanel) e para atualizar pelo painel: arquivos na raiz, `vendor/` incluído,
 manifesto `wsf-update.json` e `CHECKSUMS.sha256`; nunca contém `.env`, dados de `storage`, testes ou caches.
+
+## Novidades da 1.1.7 (controle de gastos por entidade)
+- **Resumo** simplificado por CPF/CNPJ: receitas, despesas, saldo, comparação com o período anterior, metas, categorias, centros de custo e recomendações.
+- **WhatsApp**: pergunta a entidade e o **centro de custo** (ou identifica pelo nome); avisos de **meta** mensal/semanal; `relatório`, `pendentes`, `aprovar 1`.
+- **Funcionários**: empresas e centros de custo permitidos, **aprovação de despesas** (com limite) por administrador/gestor; pendente não é despesa efetiva; responsável registrado.
+- **Relatórios automáticos** semanais (segunda) e mensais (dia 1º), um por entidade, por e-mail e/ou WhatsApp — escolhidos no cadastro.
+- **Planos por faixa** de empresas (CPF do titular incluído), plano Pessoal e pedido de plano personalizado; mudança só com autorização.
+- **Importação de extrato** OFX, CSV, Excel (.xlsx) e PDF (com texto), com prévia e sem duplicar.
+- Relatório: [docs/RELATORIO-1.1.7.md](docs/RELATORIO-1.1.7.md).
 
 ## Novidades da 1.1.6 (2FA opcional para clientes e português completo)
 - Verificação em duas etapas: obrigatória para o proprietário da plataforma; **opcional para clientes** — escolha no cadastro, ativar/desativar em *Segurança* (desativar exige senha + código). `WSF_2FA_CLIENTE_OBRIGATORIO=true` volta a exigir para administradores de cliente.

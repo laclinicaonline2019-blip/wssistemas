@@ -10,7 +10,10 @@
   </header>
   @php($cur = request()->route()?->getName())
   <nav class="menu" aria-label="Menu">
-    <a href="{{ route('app') }}" @if($cur==='app') aria-current="page" @endif>Painel</a>
+    <a href="{{ route('summary') }}" @if($cur==='summary') aria-current="page" @endif>Resumo</a>
+    <a href="{{ route('app') }}" @if($cur==='app') aria-current="page" @endif>Lançamentos</a>
+    @if (can_do('despesas.aprovar'))@php($pend = \App\Services\FinanceService::pendingCount(app(\App\Core\Tenancy\TenantContext::class)->companyIds()))<a href="{{ route('approvals.index') }}" @if($cur==='approvals.index') aria-current="page" @endif>Aprovações @if($pend)<span class="pill warn">{{ $pend }}</span>@endif</a>@endif
+    @if (can_do('relatorios.automaticos'))<a href="{{ route('report_prefs.show') }}" @if($cur==='report_prefs.show') aria-current="page" @endif>Relatórios automáticos</a>@endif
     @if (can_do('empresas.gerenciar'))<a href="{{ route('companies.index') }}" @if($cur==='companies.index') aria-current="page" @endif>Empresas e contas</a>@endif
     @if (can_do('usuarios.gerenciar'))<a href="{{ route('users.index') }}" @if($cur==='users.index') aria-current="page" @endif>Usuários</a>@endif
     @if (can_do('whatsapp.gerenciar'))<a href="{{ route('whatsapp.index') }}" @if($cur==='whatsapp.index') aria-current="page" @endif>WhatsApp</a>@endif

@@ -21,6 +21,9 @@ return [
         // Modelo (template) aprovado pela Meta para lembretes fora da janela de 24 h. Vazio = sem lembretes ativos.
         'reminder_template' => env('WHATSAPP_REMINDER_TEMPLATE'),
         'reminder_template_lang' => env('WHATSAPP_REMINDER_TEMPLATE_LANG', 'pt_BR'),
+        // 1.1.7: modelo aprovado para avisar que o relatório semanal/mensal está pronto (fora da janela de 24 h)
+        'report_template' => env('WHATSAPP_RELATORIO_TEMPLATE'),
+        'report_template_lang' => env('WHATSAPP_RELATORIO_TEMPLATE_LANG', 'pt_BR'),
         // mensagens por número a cada 5 minutos (excedente é ignorado)
         'rate_per_5min' => (int) env('WHATSAPP_LIMITE_5MIN', 30),
     ],

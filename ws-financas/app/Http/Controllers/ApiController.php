@@ -37,18 +37,20 @@ class ApiController extends Controller
             'empresa' => ['required', 'string'], 'tipo' => ['required', 'in:despesa,receita'], 'desc' => ['required', 'string', 'max:190'],
             'valor' => ['required'], 'cat' => ['nullable', 'string', 'max:60'], 'data' => ['required', 'date_format:Y-m-d'],
             'pago' => ['boolean'], 'repetir' => ['integer', 'min:1', 'max:120'], 'modo' => ['nullable', 'in:fixa,parcelada'], 'conta' => ['nullable', 'string'],
+            'centro' => ['nullable', 'string'],
         ]);
         $company = $this->finance->company($d['empresa']);
         $created = $this->finance->create($company, ['tipo' => $d['tipo'], 'desc' => $d['desc'], 'valor_cents' => $this->money($d['valor']), 'cat' => $d['cat'] ?? null,
-            'data' => $d['data'], 'pago' => (bool) ($d['pago'] ?? false), 'repetir' => (int) ($d['repetir'] ?? 1), 'modo' => $d['modo'] ?? 'fixa', 'conta' => $d['conta'] ?? null]);
+            'data' => $d['data'], 'pago' => (bool) ($d['pago'] ?? false), 'repetir' => (int) ($d['repetir'] ?? 1), 'modo' => $d['modo'] ?? 'fixa', 'conta' => $d['conta'] ?? null,
+            'centro' => $d['centro'] ?? null]);
 
-        return response()->json(['itens' => array_map(fn ($e) => $this->finance->item($e), $created)], 201);
+        return response()->json(['itens' => array_map(fn ($e) => $this->finance->item($e), $created), 'pendente' => $created[0]->isPending()], 201);
     }
 
     public function update(Request $request, Entry $entry): JsonResponse
     {
         $d = $request->validate(['desc' => ['sometimes', 'string', 'max:190'], 'valor' => ['sometimes'], 'data' => ['sometimes', 'date_format:Y-m-d'],
-            'cat' => ['nullable', 'string', 'max:60'], 'pago' => ['sometimes', 'boolean'], 'conta' => ['sometimes', 'nullable', 'string']]);
+            'cat' => ['nullable', 'string', 'max:60'], 'pago' => ['sometimes', 'boolean'], 'conta' => ['sometimes', 'nullable', 'string'], 'centro' => ['sometimes', 'nullable', 'string']]);
         if (array_key_exists('valor', $d)) {
             $d['valor_cents'] = $this->money($d['valor']);
         }

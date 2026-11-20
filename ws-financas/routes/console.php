@@ -8,6 +8,8 @@ use App\Services\Billing\BillingService;
 use App\Services\Health;
 use App\Services\PrivacyService;
 use App\Services\Reminders;
+use App\Services\Reports\ReportDispatcher;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
@@ -107,6 +109,18 @@ Artisan::command('wsf:reminders', function (Reminders $reminders, TenantContext 
     $this->info($n.' lembretes enviados.');
 })->purpose('Lembretes de contas do dia no WhatsApp (somente com modelo aprovado e opt-in)');
 
+Artisan::command('wsf:reports {tipo : semanal ou mensal} {--data= : data de referência AAAA-MM-DD (padrão: hoje)}', function (ReportDispatcher $reports, TenantContext $ctx) {
+    $kind = (string) $this->argument('tipo');
+    if (! in_array($kind, ['semanal', 'mensal'], true)) {
+        $this->error('Tipo inválido: use semanal ou mensal.');
+
+        return 1;
+    }
+    $date = $this->option('data') ? CarbonImmutable::parse((string) $this->option('data')) : null;
+    $r = $ctx->runAsSystem(fn () => $reports->run($kind, $date));
+    $this->info('Relatórios '.$kind.': '.json_encode($r, JSON_UNESCAPED_UNICODE));
+})->purpose('Relatórios automáticos por entidade (semanal: semana anterior; mensal: mês anterior) — idempotente');
+
 Artisan::command('wsf:preflight', function (Health $health, TenantContext $ctx) {
     $fail = 0;
     foreach ($ctx->runAsSystem(fn () => $health->checks()) as $c) {
@@ -121,6 +135,11 @@ Schedule::command('wsf:heartbeat')->everyMinute();
 Schedule::command('queue:work --stop-when-empty --max-time=50')->everyMinute()->withoutOverlapping();
 Schedule::command('wsf:billing:run')->hourly()->withoutOverlapping();
 Schedule::command('wsf:reminders')->dailyAt('08:05');
+// relatórios: segunda (semana anterior) e dia 1º (mês anterior); repetições no mesmo dia completam lotes sem duplicar
+foreach (['07:40', '08:40', '10:40', '14:40'] as $t) {
+    Schedule::command('wsf:reports semanal')->weeklyOn(1, $t)->withoutOverlapping();
+    Schedule::command('wsf:reports mensal')->monthlyOn(1, $t)->withoutOverlapping();
+}
 Schedule::command('wsf:retention:run')->dailyAt('03:20');
 Schedule::command('wsf:backup')->dailyAt('02:10');
 Schedule::command('wsf:backup --verificar')->weeklyOn(0, '04:15');

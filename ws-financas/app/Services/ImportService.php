@@ -78,7 +78,7 @@ class ImportService
 
                     continue;
                 }
-                if (Entry::withTrashed()->where('company_id', $company->id)->where('external_ref', $ref)->exists()) {
+                if (Entry::withPending()->withTrashed()->where('company_id', $company->id)->where('external_ref', $ref)->exists()) {
                     $sum['ja_existentes']++;
 
                     continue;
@@ -105,7 +105,7 @@ class ImportService
             // contas fixas do painel antigo continuam agrupadas ("esta e as próximas")
             foreach ($groups as $ids) {
                 if (count($ids) > 1) {
-                    Entry::query()->whereIn('id', $ids)->update(['recurrence_group' => (string) Str::ulid(), 'recurrence_kind' => 'fixa']);
+                    Entry::withPending()->whereIn('id', $ids)->update(['recurrence_group' => (string) Str::ulid(), 'recurrence_kind' => 'fixa']);
                 }
             }
         });

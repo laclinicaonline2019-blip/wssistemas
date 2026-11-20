@@ -437,12 +437,23 @@ class UpdateService
             && version_compare((string) $s['from'], '1.1.1', '<')) {
             throw new BusinessRule('O formato v2 da auditoria já foi ativado: não é possível voltar para a versão '.$s['from'].', que não o suporta (antirrebaixamento). Corrija "para frente" com uma nova versão.');
         }
+        // 1.1.7: versões anteriores não conhecem a aprovação — uma despesa pendente passaria a contar como efetiva
+        if (version_compare((string) $s['from'], '1.1.7', '<') && Schema::hasColumn('entries', 'approval_status')
+            && ($pend = DB::table('entries')->where('approval_status', 'pendente')->whereNull('deleted_at')->count()) > 0) {
+            throw new BusinessRule("Há {$pend} despesa(s) pendente(s) de aprovação. A versão {$s['from']} não conhece a aprovação e as trataria como despesas efetivas. "
+                .'Aprove ou rejeite as pendências (Painel → Aprovações) e tente reverter de novo.');
+        }
         @set_time_limit(300);
         Artisan::call('down', ['--retry' => 60]);
         try {
             if ($mode === 'banco') {
                 if (empty($s['db_backup']) || ! is_file($s['db_backup'])) {
                     throw new BusinessRule('Backup do banco desta atualização não encontrado.');
+                }
+                // 1.1.7 → anterior: as colunas novas das tabelas antigas precisam sair (os backups da versão anterior são
+                // conferidos com o esquema dela); a migração da 1.1.7 guarda os valores antes e os devolve ao reaplicar
+                if (version_compare((string) $s['from'], '1.1.7', '<')) {
+                    $this->rollbackMigrations($s);
                 }
             } else {
                 $this->rollbackMigrations($s);
@@ -509,12 +520,15 @@ class UpdateService
     /** Tabelas cuja remoção apagaria a proteção da auditoria: só saem se ESTA execução as criou e falhou na migração. */
     private const PROTECTED_TABLES = ['audit_chain_head'];
 
+    /** Dados do cliente criados a partir da 1.1.7: mantidos numa reversão concluída (a versão anterior só os ignora). */
+    private const KEEP_ON_REVERT = ['cost_centers', 'company_categories', 'budgets', 'report_preferences', 'report_runs', 'plan_change_requests', 'import_batches'];
+
     private function dropNewTables(array $s, bool $includeProtected = false): void
     {
         if (empty($s['tables_before'])) {
             return;
         }
-        $new = array_diff($this->tables(), $s['tables_before'], $includeProtected ? [] : self::PROTECTED_TABLES);
+        $new = array_diff($this->tables(), $s['tables_before'], $includeProtected ? [] : [...self::PROTECTED_TABLES, ...self::KEEP_ON_REVERT]);
         if (! $new) {
             return;
         }

@@ -2,6 +2,7 @@
 
 namespace App\Services\Assistant;
 
+use App\Core\Access\ApprovalPolicy;
 use App\Core\Access\Permissions;
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\Money;
@@ -15,6 +16,7 @@ use App\Models\UsageCounter;
 use App\Models\WhatsappPending;
 use App\Services\CategoryGuesser;
 use App\Services\FinanceService;
+use App\Services\Reports\PeriodReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -34,10 +36,11 @@ class Assistant
         private readonly AiInterpreter $ai,
         private readonly FinanceService $finance,
         private readonly TenantContext $ctx,
+        private readonly PeriodReport $reports,
     ) {}
 
     /**
-     * @param  array{account_id:string, key:string, channel:string, role:string, company_ids:?array, default_company_id:?string, can_write:bool, user_id:?string, forced_company_id?:?string, base_date?:?string}  $s
+     * @param  array{account_id:string, key:string, channel:string, role:string, company_ids:?array, default_company_id:?string, can_write:bool, user_id:?string, forced_company_id?:?string, base_date?:?string, rules?:array}  $s
      * @return array{reply:string, intent:string, entry_ids:list<string>, pending:bool, used_ai:bool}
      */
     public function handle(array $s, string $text): array
@@ -81,6 +84,9 @@ class Assistant
             'consulta_gastos', 'consulta_recebido' => $this->spent($s, $p, $today),
             'saldo' => $this->balance($s, $p, $today),
             'por_categoria' => $this->byCategory($s, $p, $today),
+            'pendentes' => $this->approvals($s),
+            'aprovar', 'rejeitar' => $this->decide($s, $p),
+            'relatorio' => $this->report($s, $p, $today),
             'despesa', 'receita', 'pagar' => $this->launch($s, $p),
             default => $this->out("Não entendi. 🤔\n".$this->shortHelp(), 'desconhecido'),
         };
@@ -148,6 +154,26 @@ class Assistant
         }
 
         $tipo = $p['intent'] === 'receita' ? 'receita' : 'despesa';
+
+        // centro de custo: identificado na mensagem ou perguntado (só entre os permitidos para quem lança)
+        if (! array_key_exists('cost_center_id', $p)) {
+            $rules = $this->rules($s);
+            $centers = ApprovalPolicy::allowedCostCenters($company->id, $rules);
+            $found = $centers->filter(fn ($c) => preg_match('/\b'.preg_quote(CategoryGuesser::norm($c->name), '/').'\b/u', CategoryGuesser::norm((string) $p['raw'])));
+            $restricted = $rules['cost_center_ids'] !== null;
+            if ($found->count() === 1) {
+                $p['cost_center_id'] = $found->first()->id;
+            } elseif ($centers->count() === 1 && $restricted) {
+                $p['cost_center_id'] = $centers->first()->id;
+            } elseif ($centers->isNotEmpty() && ($tipo === 'despesa' || $restricted)) {
+                $opts = $centers->values();
+
+                return $this->ask($s, ['kind' => 'cost_center', 'options' => $opts->pluck('id')->all(), 'company_id' => $company->id, 'optional' => ! $restricted],
+                    "🏷️ Qual o centro de custo?\n".$opts->map(fn ($c, $i) => ($i + 1).' - '.$c->name)->implode("\n").($restricted ? '' : "\n0 - Sem centro de custo")."\n\nResponda com o número.", $p);
+            } else {
+                $p['cost_center_id'] = null;
+            }
+        }
         $date = CarbonImmutable::parse($p['date'] ?? CarbonImmutable::today()->toDateString());
         $today = CarbonImmutable::today();
         $dateDoubt = false;
@@ -164,7 +190,7 @@ class Assistant
             'op' => 'create', 'company_id' => $company->id, 'tipo' => $tipo,
             'desc' => $p['description'], 'valor_cents' => (int) $p['amount_cents'], 'data' => $date->toDateString(), 'pago' => (bool) $p['paid'],
             'repetir' => $p['installments'] ?: ($p['recurring'] ? 12 : 1), 'modo' => $p['installments'] ? 'parcelada' : 'fixa',
-            'cat' => $p['category'] ?? null,
+            'cat' => $p['category'] ?? null, 'centro' => $p['cost_center_id'] ?? null,
         ];
 
         if (! $confirmed) {
@@ -241,14 +267,16 @@ class Assistant
         $cat = $this->categoryFor($s, $a);
         $created = $this->finance->create($company, [
             'tipo' => $a['tipo'], 'desc' => $a['desc'], 'valor_cents' => $a['valor_cents'], 'data' => $a['data'], 'pago' => $a['pago'],
-            'repetir' => $a['repetir'], 'modo' => $a['modo'], 'source' => $channel, 'cat' => $cat,
+            'repetir' => $a['repetir'], 'modo' => $a['modo'], 'source' => $channel, 'cat' => $cat, 'centro' => $a['centro'] ?? null, 'regras' => $this->rules($s),
         ]);
         $ids = array_map(fn ($e) => $e->id, $created);
         $this->remember($s, ['op' => 'create', 'entry_ids' => $ids]);
         $first = $created[0];
         $multi = Company::query()->where('active', true)->count() > 1;
+        $pending = $first->isPending();
 
         $title = match (true) {
+            $pending => '⏳ Despesa enviada para aprovação!',
             $a['tipo'] === 'receita' => '✅ Receita registrada com sucesso!',
             (bool) $first->paid => '✅ Despesa registrada com sucesso!',
             default => '✅ Conta a pagar registrada com sucesso!',
@@ -258,10 +286,20 @@ class Assistant
         if ($multi) {
             $lines[] = '🏢 Empresa: '.$company->name;
         }
+        if ($first->cost_center_id) {
+            $lines[] = '🏷️ Centro de custo: '.$first->costCenter?->name;
+        }
         if (count($created) > 1) {
             $lines[] = '🔁 '.($a['modo'] === 'parcelada' ? 'Parcelada em '.count($created).'x' : 'Repetindo por '.count($created).' meses');
         }
-        $lines[] = 'Seu controle financeiro já foi atualizado.';
+        if ($pending) {
+            $lines[] = 'Ela só entra no saldo e nos relatórios depois de aprovada por um administrador ou gestor.';
+        } else {
+            $lines[] = 'Seu controle financeiro já foi atualizado.';
+            if ($a['tipo'] === 'despesa') {
+                array_push($lines, ...$this->reports->goalWarnings($company, $first->category, CarbonImmutable::parse($first->due_date->toDateString())));
+            }
+        }
 
         return $this->out(implode("\n", $lines).$undo, $a['tipo'], $ids, usedAi: $usedAi);
     }
@@ -310,6 +348,17 @@ class Assistant
 
             return $this->launch($s, $parsed, $data['company_id'] ?? null, true);
         }
+        if ($kind === 'cost_center' && $p['intent'] === 'escolha') {
+            $id = $p['choice'] === 0 && ! empty($data['optional']) ? '' : ($data['options'][$p['choice'] - 1] ?? null);
+            if ($id === null) {
+                return $this->out('Número inválido. Responda com um dos números da lista ou NÃO para cancelar.', 'escolha', pending: true);
+            }
+            $pending->delete();
+            $parsed = $data['parsed'];
+            $parsed['cost_center_id'] = $id ?: null;
+
+            return $this->launch($s, $parsed, $data['company_id']);
+        }
         if (($kind === 'company' || $kind === 'bill') && $p['intent'] === 'escolha') {
             $id = $data['options'][$p['choice'] - 1] ?? null;
             if (! $id) {
@@ -352,7 +401,7 @@ class Assistant
                 return $this->out('↩️ Desfeito: '.$e->description.' voltou para em aberto.', 'desfazer', [$e->id]);
             }
         } else {
-            $entries = Entry::query()->whereIn('id', $last['entry_ids'])->get();
+            $entries = Entry::withPending()->whereIn('id', $last['entry_ids'])->get();
             foreach ($entries as $e) {
                 $this->finance->delete($e, 'um', $channel);
             }
@@ -371,7 +420,7 @@ class Assistant
         }
         $last = Cache::get($this->lastKey($s));
         $id = $last['op'] ?? null ? ($last['op'] === 'pay' ? $last['entry_id'] : ($last['entry_ids'][0] ?? null)) : null;
-        $e = $id ? Entry::query()->find($id) : null;
+        $e = $id ? Entry::withPending()->find($id) : null;
         if (! $e || $cents <= 0) {
             return $this->out('Não encontrei lançamento recente para corrigir. Use o painel para editar.', 'corrigir');
         }
@@ -532,6 +581,101 @@ class Assistant
         return $this->out('📊 '.($income ? 'Entradas' : 'Despesas').' por categoria '.$per['label'].$scope.":\n".$lines->implode("\n")."\n\nTotal: ".Money::brl($total), 'por_categoria');
     }
 
+    // ------------------------------------------------------------------ aprovação (1.1.7)
+
+    /** "pendentes": lista numerada das despesas aguardando aprovação (só administrador/gestor). */
+    private function approvals(array $s): array
+    {
+        if (! ApprovalPolicy::canApprove($this->ctx->role())) {
+            return $this->out('🔒 Somente administrador ou gestor aprovam despesas.', 'bloqueado');
+        }
+        $list = $this->finance->pendingList($this->ctx->companyIds());
+        if ($list->isEmpty()) {
+            Cache::forget($this->approvalKey($s));
+
+            return $this->out('✅ Nenhuma despesa aguardando aprovação.', 'pendentes');
+        }
+        $show = $list->take(15)->values();
+        Cache::put($this->approvalKey($s), $show->pluck('id')->all(), now()->addMinutes(self::PENDING_MINUTES));
+        $multi = Company::query()->where('active', true)->count() > 1;
+        $lines = $show->map(fn ($e, $i) => ($i + 1).' - '.$e->description.' — '.Money::brl($e->amount_cents).($e->installments_total ? ' ('.$e->installments_total.'x)' : '')
+            .' · '.$e->due_date->format('d/m').($multi ? ' · '.$e->company->name : '').($e->costCenter ? ' · '.$e->costCenter->name : '').($e->responsible ? ' · por '.$e->responsible : ''));
+
+        return $this->out('⏳ Despesas aguardando aprovação ('.$list->count()."):\n".$lines->implode("\n")
+            ."\n\nResponda APROVAR <número>, REJEITAR <número> ou APROVAR TODOS.", 'pendentes');
+    }
+
+    private function decide(array $s, array $p): array
+    {
+        if (! ApprovalPolicy::canApprove($this->ctx->role())) {
+            return $this->out('🔒 Somente administrador ou gestor aprovam despesas.', 'bloqueado');
+        }
+        $ids = Cache::get($this->approvalKey($s));
+        if (! $ids) {
+            return $this->approvals($s);   // sem lista recente: mostra a lista antes de decidir
+        }
+        $approve = $p['intent'] === 'aprovar';
+        $targets = ! empty($p['all']) && $approve ? $ids : array_filter([$ids[$p['choice'] - 1] ?? null]);
+        if (! $targets) {
+            return $this->out('Número inválido. Mande PENDENTES para ver a lista.', $p['intent']);
+        }
+        $done = [];
+        foreach ($targets as $id) {
+            try {
+                $e = $this->finance->decide($id, $approve, $s['channel'] === 'whatsapp' ? 'whatsapp' : 'web');
+                $done[] = $e->description.' — '.Money::brl($e->amount_cents);
+            } catch (\App\Core\Support\BusinessRule) {
+                // já decidido por outra pessoa: segue
+            }
+        }
+        Cache::forget($this->approvalKey($s));
+        if (! $done) {
+            return $this->out('Essa despesa já tinha sido decidida. Mande PENDENTES para ver a lista atual.', $p['intent']);
+        }
+
+        return $this->out(($approve ? '✅ Aprovada(s)' : '❌ Rejeitada(s)').":\n• ".implode("\n• ", $done).($approve ? "\nJá contam no saldo e nos relatórios." : "\nNão entram no saldo; ficam registradas na auditoria."), $p['intent']);
+    }
+
+    private function approvalKey(array $s): string
+    {
+        return 'wsf:aprov:'.$s['key'];
+    }
+
+    /** Regras de quem está lançando (aprovação, limite, centros de custo). */
+    private function rules(array $s): array
+    {
+        return $s['rules'] ?? ApprovalPolicy::forUser($s['user_id'] ?? null, $s['account_id']);
+    }
+
+    // ------------------------------------------------------------------ relatório sob demanda (1.1.7)
+
+    /** "relatório" / "relatório mensal" / "relatório deste mês da empresa X": o mesmo texto dos envios automáticos, por entidade. */
+    private function report(array $s, array $p, CarbonImmutable $today): array
+    {
+        $companies = Company::query()->where('active', true)->orderBy('name')->get();
+        $target = $p['company_hint'] ? $this->matchCompany($companies, $p['company_hint']) : null;
+        $target ??= ! empty($p['report_target']) ? $this->matchCompany($companies, $p['report_target']) : null;
+        $target ??= ! empty($s['forced_company_id']) ? $companies->firstWhere('id', $s['forced_company_id']) : null;
+        $target ??= $companies->count() === 1 ? $companies->first() : null;
+        $kind = $p['report_kind'] ?? 'semanal';
+        [$from, $to] = ! empty($p['report_current']) ? PeriodReport::currentPeriod($kind, $today) : PeriodReport::lastPeriod($kind, $today);
+
+        if (! $target) {
+            $lines = $companies->map(function ($c) use ($kind, $from, $to) {
+                $f = $this->reports->facts($c, $kind, $from, $to);
+
+                return '🏢 '.$c->name.': despesas '.Money::brl($f['despesas']).' · saldo '.Money::brl($f['saldo']);
+            });
+
+            return $this->out('📊 Resumo por entidade — '.PeriodReport::label($kind, $from, $to).":\n".$lines->implode("\n")
+                ."\n\nPara o relatório completo de uma delas mande, por exemplo: relatório ".($kind === 'mensal' ? 'mensal ' : '').'empresa '.($companies->first()->alias ?: $companies->first()->name), 'relatorio');
+        }
+        $facts = $this->reports->facts($target, $kind, $from, $to);
+        $hint = empty($p['report_current']) ? "\n\nPara o período em andamento, mande: relatório ".($kind === 'mensal' ? 'deste mês' : 'desta semana').'.' : '';
+
+        return $this->out($this->reports->render($facts, $this->reports->polish($s['account_id'], $facts, $this->reports->insights($facts))).$hint, 'relatorio');
+    }
+
     // ------------------------------------------------------------------ apoio
 
     private function resolveCompany(array $s, Collection $companies, ?string $hint, ?string $forced): ?Company
@@ -581,7 +725,7 @@ class Assistant
 
     private function looksDuplicate(Company $company, array $a): bool
     {
-        return Entry::query()->where('company_id', $company->id)->where('type', $a['tipo'])->where('amount_cents', $a['valor_cents'])
+        return Entry::withPending()->where('company_id', $company->id)->where('type', $a['tipo'])->where('amount_cents', $a['valor_cents'])
             ->where('created_at', '>=', now()->subDay())->get()
             ->contains(fn ($e) => CategoryGuesser::norm($e->description) === CategoryGuesser::norm($a['desc'])
                 || ($e->created_at->gte(now()->subMinutes(10)) && ($a['desc'] === '' || in_array($a['desc'], ['Despesa', 'Conta a pagar', 'Entrada'], true))));
@@ -661,6 +805,7 @@ class Assistant
     {
         return "👋 Sou o assistente do *WS Finanças em Dia*.\n\n*Lançar*\n• 100 de combustível\n• gastei 50 no almoço\n• recebi 3.000 de salário\n• paguei 350 de energia da empresa A\n• cadastre uma conta de 1.200 para pagar dia 20\n"
             ."• aluguel 1.100 dia 5 fixa (repete 12 meses)\n• geladeira 3.000 em 10x (parcelado)\n• paguei internet (marca a conta em aberto)\n\n*Consultar*\n• quanto tenho para pagar amanhã?\n• contas desta semana?\n"
-            ."• contas vencidas?\n• quanto gastei hoje?\n• quanto gastei de combustível este mês?\n• quanto recebi este mês?\n• qual meu saldo?\n• despesas por categoria\n\n*Corrigir*\n• DESFAZER (cancela o último)\n• CORRIGIR PARA 360 (muda o valor do último)\n\nTudo aparece na hora no painel.";
+            ."• contas vencidas?\n• quanto gastei hoje?\n• quanto gastei de combustível este mês?\n• quanto recebi este mês?\n• qual meu saldo?\n• despesas por categoria\n• relatório (semana passada) · relatório mensal\n\n"
+            ."*Aprovação* (administrador/gestor)\n• PENDENTES · APROVAR 1 · REJEITAR 1 · APROVAR TODOS\n\n*Corrigir*\n• DESFAZER (cancela o último)\n• CORRIGIR PARA 360 (muda o valor do último)\n\nTudo aparece na hora no painel.";
     }
 }

@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\Money;
 use App\Http\Controllers\Controller;
+use App\Core\Tenancy\TenantContext;
 use App\Models\Plan;
+use App\Models\PlanChangeRequest;
+use Database\Seeders\PlanSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,7 +19,27 @@ class PlanController extends Controller
 {
     public function index(): View
     {
-        return view('admin.plans', ['plans' => Plan::query()->withCount(['subscriptions' => fn ($q) => $q->whereIn('status', ['trialing', 'active', 'past_due'])])->orderBy('sort')->get()]);
+        PlanSeeder::tiers();   // 1.1.7: garante os planos por faixa (inativos, preço zero) sem alterar os existentes
+
+        return view('admin.plans', [
+            'plans' => Plan::query()->withCount(['subscriptions' => fn ($q) => $q->whereIn('status', ['trialing', 'active', 'past_due'])])->orderBy('sort')->get(),
+            'requests' => app(TenantContext::class)->runAsSystem(fn () => PlanChangeRequest::query()->with('account', 'fromPlan', 'toPlan')->latest()->limit(50)->get()),
+        ]);
+    }
+
+    /** Pedido de mudança de plano (ex.: personalizado): registro do atendimento — a troca em si é feita na tela do cliente. */
+    public function decideRequest(Request $request, string $id, AuditLogger $audit): RedirectResponse
+    {
+        $d = $request->validate(['status' => ['required', 'in:atendido,recusado']]);
+        $r = app(TenantContext::class)->runAsSystem(function () use ($id, $d, $request) {
+            $r = PlanChangeRequest::query()->findOrFail($id);
+            $r->update(['status' => $d['status'], 'decided_by' => $request->user()->id, 'decided_at' => now()]);
+
+            return $r;
+        });
+        $audit->log('plano.pedido_'.$d['status'], $r, ['cliente' => $r->account_id], accountId: $r->account_id);
+
+        return back()->with('ok', 'Pedido marcado como '.$d['status'].'.');
     }
 
     public function store(Request $request, AuditLogger $audit): RedirectResponse
@@ -42,7 +65,7 @@ class PlanController extends Controller
             'code' => [$plan ? 'nullable' : 'required', 'alpha_dash', 'max:40', Rule::unique('plans', 'code')->ignore($plan?->id)],
             'name' => ['required', 'string', 'max:80'], 'description' => ['nullable', 'string', 'max:500'],
             'price_monthly' => ['required', 'string', 'max:20'], 'price_yearly' => ['required', 'string', 'max:20'],
-            'max_companies' => ['required', 'integer', 'min:1', 'max:1000'], 'max_users' => ['required', 'integer', 'min:1', 'max:1000'],
+            'max_companies' => ['required', 'integer', 'min:0', 'max:10000'], 'kind' => ['nullable', Rule::in(array_keys(Plan::KINDS))], 'max_users' => ['required', 'integer', 'min:1', 'max:1000'],
             'whatsapp_messages_month' => ['required', 'integer', 'min:0'], 'ai_calls_month' => ['required', 'integer', 'min:0'],
             'features' => ['array'], 'features.*' => [Rule::in(array_keys(Plan::FEATURES))], 'active' => ['boolean'], 'sort' => ['nullable', 'integer'],
         ]);
@@ -51,6 +74,7 @@ class PlanController extends Controller
             'price_monthly_cents' => Money::parse($d['price_monthly']) ?? 0, 'price_yearly_cents' => Money::parse($d['price_yearly']) ?? 0,
             'max_companies' => $d['max_companies'], 'max_users' => $d['max_users'], 'whatsapp_messages_month' => $d['whatsapp_messages_month'], 'ai_calls_month' => $d['ai_calls_month'],
             'features' => array_fill_keys($d['features'] ?? [], true), 'active' => $request->boolean('active'), 'sort' => (int) ($d['sort'] ?? 0),
+            'kind' => $d['kind'] ?? ($plan?->kind ?? 'business'),
         ];
         if (! $plan) {
             $out['code'] = $d['code'];

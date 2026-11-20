@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Core\Security\PasswordRules;
 use App\Core\Validation\Document;
+use App\Core\Tenancy\TenantContext;
 use App\Models\Plan;
+use App\Models\ReportPreference;
 use App\Services\AccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,14 +38,24 @@ class SignupController extends Controller
             'cycle' => ['required', 'in:monthly,yearly'],
             'accept' => ['accepted'],
             'two_factor' => ['nullable', 'boolean'],
+            'report_weekly' => ['nullable', 'boolean'], 'report_monthly' => ['nullable', 'boolean'], 'report_whatsapp' => ['nullable', 'boolean'], 'report_email' => ['nullable', 'boolean'],
         ], ['accept.accepted' => 'É preciso aceitar os termos de uso e a política de privacidade.']);
 
         $plan = Plan::query()->where('code', $d['plan'])->where('active', true)->firstOrFail();
-        [, $user] = $accounts->register([
+        if ($plan->isPersonal() && $d['person_type'] !== 'pf') {
+            return back()->withInput()->withErrors(['plan' => 'O plano '.$plan->name.' é só para pessoa física (CPF). Escolha um plano para empresas.']);
+        }
+        [$account, $user] = $accounts->register([
             'name' => $d['name'], 'person_type' => $d['person_type'], 'document' => ! empty($d['document']) ? preg_replace('/\D/', '', $d['document']) : null,
             'email' => $d['email'], 'phone' => $d['phone'] ?? null, 'company_name' => ($d['company_name'] ?? null) ?: $d['name'],
             'admin_name' => $d['admin_name'], 'admin_email' => $d['email'], 'password' => $d['password'],
         ], $plan, $d['cycle']);
+
+        // relatórios automáticos escolhidos no cadastro pelo administrador (alteráveis em Relatórios automáticos)
+        app(TenantContext::class)->runFor($account->id, fn () => ReportPreference::query()->create([
+            'weekly' => $request->boolean('report_weekly'), 'monthly' => $request->boolean('report_monthly'),
+            'via_whatsapp' => $request->boolean('report_whatsapp') && $plan->has('whatsapp'), 'via_email' => $request->boolean('report_email'),
+        ]));
 
         Auth::login($user);
         $request->session()->regenerate();

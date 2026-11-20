@@ -48,6 +48,18 @@ final class LegacyVerifier
         ['backup', 'saida'],                                                         // plataforma.migrar
         ['trial_days', 'grace_days', 'retention'],                                   // plataforma.configuracoes
         ['nome', 'ativa'],                                                           // empresa.editar
+        // 1.1.7 (gravados em v1 enquanto o formato v2 não for ativado)
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'centro'],                                        // lancamento.criar + centro de custo
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'responsavel'],                                   // lancamento.criar + responsável
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'centro', 'responsavel'],
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'pendente_aprovacao'],
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'centro', 'pendente_aprovacao'],
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'pendente_aprovacao', 'responsavel'],
+        ['tipo', 'desc', 'valor', 'repetir', 'modo', 'origem', 'centro', 'pendente_aprovacao', 'responsavel'],
+        ['papel', 'empresas', 'status', 'aprovacao', 'limite', 'centros'],                                      // usuario.permissoes
+        ['final', 'aprovacao', 'limite', 'empresas', 'centros'],                                                // whatsapp.editar
+        ['arquivo', 'formato', 'importadas', 'duplicadas', 'ignoradas'],                                        // importacao.extrato
+        ['weekly', 'monthly', 'via_whatsapp', 'via_email', 'company_ids'],                                      // relatorios.preferencias
         ['formato', 'de', 'ate', 'empresas'],                                        // relatorio.exportar
     ];
 

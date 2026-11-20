@@ -49,6 +49,15 @@ class MailDelivery
         });
     }
 
+    /** Relatório semanal/mensal de uma entidade (texto simples; passa pela mesma proteção contra credenciais). */
+    public function sendReport(string $to, string $subject, string $body): array
+    {
+        return $this->attempt('relatorio', function () use ($to, $subject, $body) {
+            $text = str_replace('*', '', $body)."\n\n—\n".config('wsf.brand.name').' · Para deixar de receber, ajuste em Relatórios automáticos no painel.';
+            Mail::raw($text, fn ($m) => $m->to($to)->subject($subject));
+        });
+    }
+
     /** @return array{ok:bool, erro:?string, dica:?string} */
     private function attempt(string $context, callable $send): array
     {

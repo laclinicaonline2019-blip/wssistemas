@@ -31,6 +31,7 @@
       <div class="checks full"><label><input type="hidden" name="can_write" value="0"><input type="checkbox" name="can_write" value="1" @checked($c->can_write)> Pode lançar</label>
         <label><input type="hidden" name="reminders_opt_in" value="0"><input type="checkbox" name="reminders_opt_in" value="1" @checked($c->reminders_opt_in)> Aceita lembretes</label>
         <label><input type="hidden" name="active" value="0"><input type="checkbox" name="active" value="1" @checked($c->active)> Ativo</label></div>
+      @if (! $c->user_id)@include('partials.employee-rules', ['rules' => $c, 'centers' => $centers, 'withCompanies' => true, 'companies' => $allCompanies])@else<p class="small muted full">Regras de aprovação e centros de custo: as do usuário vinculado (em Usuários).</p>@endif
       <div class="formacts full"><button class="btn primary" type="submit">Salvar</button></div>
     </form>
     <form method="post" action="{{ route('whatsapp.destroy', $c) }}" data-confirm="Remover este número?">@csrf @method('DELETE')<button class="icon" type="submit">remover número</button></form>
@@ -49,6 +50,8 @@
     <div class="field"><label for="wu">Usuário vinculado</label><select id="wu" name="user_id"><option value="">Nenhum</option>@foreach ($members as $m)<option value="{{ $m->user_id }}">{{ $m->user->name }}</option>@endforeach</select></div>
     <div class="checks full"><label><input type="hidden" name="can_write" value="0"><input type="checkbox" name="can_write" value="1" checked> Pode lançar</label>
       <label><input type="hidden" name="reminders_opt_in" value="0"><input type="checkbox" name="reminders_opt_in" value="1"> Aceita receber lembretes de contas</label></div>
+    <p class="small muted full mt0">Funcionário com o próprio número: vincule-o a um usuário (as regras dele valem aqui) ou, sem usuário, defina as regras abaixo.</p>
+    @include('partials.employee-rules', ['rules' => null, 'centers' => $centers, 'withCompanies' => true, 'companies' => $allCompanies])
   </div>
   <div class="formacts"><button class="btn primary" type="submit">Autorizar</button></div>
 </form>

@@ -9,6 +9,8 @@
   <div class="stat"><label>{{ $sub?->status === 'trialing' ? 'Teste até' : 'Pago até' }}</label><b>{{ $sub?->status === 'trialing' ? $sub->trial_ends_at?->format('d/m/Y') : ($sub?->current_period_end?->format('d/m/Y') ?? '—') }}</b></div>
 </div>
 @if ($sub?->cancel_at_period_end)<div class="banner warn">Cancelamento agendado para {{ $sub->current_period_end?->format('d/m/Y') }}. Para desfazer, assine novamente abaixo.</div>@endif
+<p class="small">Empresas (CNPJ) ativas: <b>{{ $companiesCount }}</b> de {{ $sub?->plan?->isPersonal() ? '0 (plano só CPF)' : $sub?->plan?->max_companies }} — o CPF do titular está incluído em todos os planos e não conta.</p>
+@if ($suggested)<div class="banner info"><span>Você está no limite de empresas do plano. Para cadastrar mais, o plano indicado é <b>{{ $suggested->name }}</b> ({{ brl($suggested->price_monthly_cents) }}/mês). A mudança só acontece se você autorizar abaixo.</span></div>@endif
 <section class="block"><h2>{{ $sub?->gateway_subscription_id ? 'Trocar de plano' : 'Escolher plano e assinar' }}</h2>
 <div class="plans">
 @foreach ($plans as $p)
@@ -17,13 +19,22 @@
     <h3>{{ $p->name }} @if($sub?->plan_id === $p->id)<span class="pill ok">atual</span>@endif</h3>
     <span class="price num">{{ brl($p->price_monthly_cents) }}<span class="small muted">/mês</span></span>
     <span class="small muted">ou {{ brl($p->price_yearly_cents) }}/ano</span>
-    <ul><li>{{ $p->max_companies }} empresa(s) · {{ $p->max_users }} usuário(s)</li>@foreach (\App\Models\Plan::FEATURES as $k => $l) @if($p->has($k))<li>{{ $l }}</li>@endif @endforeach</ul>
+    <ul><li>{{ $p->isPersonal() ? 'Somente o CPF do titular' : 'CPF do titular + até '.$p->max_companies.' empresa(s)' }} · {{ $p->max_users }} usuário(s)</li>@foreach (\App\Models\Plan::FEATURES as $k => $l) @if($p->has($k))<li>{{ $l }}</li>@endif @endforeach</ul>
     <div class="field"><label>Cobrança</label><select name="cycle"><option value="monthly" @selected($sub?->cycle !== 'yearly')>Mensal</option><option value="yearly" @selected($sub?->cycle === 'yearly')>Anual</option></select></div>
     @if (! $account->document)<div class="field"><label>CPF/CNPJ do titular</label><input name="document" required></div>@endif
+    @if ($sub?->gateway_subscription_id)<label class="inline-check small"><input type="hidden" name="consent" value="0"><input type="checkbox" name="consent" value="1" required> Autorizo a mudança e o novo valor ({{ brl($p->price_monthly_cents) }}/mês ou {{ brl($p->price_yearly_cents) }}/ano) a partir da próxima cobrança.</label>@endif
     <button class="btn {{ $sub?->plan_id === $p->id ? '' : 'primary' }}" type="submit">{{ $sub?->gateway_subscription_id ? ($sub->plan_id === $p->id ? 'Atualizar ciclo' : 'Mudar para '.$p->name) : 'Assinar '.$p->name }}</button>
   </form>
 @endforeach
 </div>
+<details class="card"><summary><b>Mais de 50 empresas? Pedir plano personalizado</b></summary>
+  <form method="post" action="{{ route('billing.request') }}" class="form" style="margin-top:10px">@csrf
+    <div class="field"><label>Quantas empresas (CNPJ)?</label><input type="number" name="companies_wanted" min="1" required></div>
+    <div class="field full"><label>Observações</label><input name="message" maxlength="500" placeholder="Ex.: grupo com 60 lojas, 40 usuários"></div>
+    <div class="formacts full"><button class="btn" type="submit">Enviar pedido</button></div>
+  </form>
+  @foreach ($requests as $r)<p class="small muted mt0">{{ $r->created_at->format('d/m/Y') }} — pedido de {{ $r->companies_wanted }} empresas: {{ \App\Models\PlanChangeRequest::STATUSES[$r->status] ?? $r->status }}</p>@endforeach
+</details>
 <p class="small muted">Pagamento por Pix, boleto ou cartão na página segura do Asaas. A confirmação chega automaticamente e libera o acesso na hora. Durante o teste, a primeira cobrança vence no fim do período grátis.</p>
 </section>
 <section class="block"><h2>Cobranças</h2>

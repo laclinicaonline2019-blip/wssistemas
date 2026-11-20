@@ -78,4 +78,27 @@ return [
             'Dívidas', 'Fornecedores', 'Folha de pagamento', 'Impostos e taxas', 'Aluguel comercial', 'Serviços e manutenção', 'Marketing', 'Tarifas bancárias', 'Outros'],
         'receita' => ['Salário', 'Vendas', 'Serviços prestados', 'Recebimento de clientes', 'Rendimentos', 'Outras entradas'],
     ],
+
+    // 1.1.7: categorias padrão sugeridas por tipo de entidade (todas as da lista acima continuam aceitas em qualquer entidade).
+    'categories_by_person' => [
+        'pf' => [
+            'despesa' => ['Moradia', 'Contas da casa', 'Alimentação', 'Refeições', 'Delivery e lanches', 'Transporte', 'Combustível', 'Saúde', 'Educação', 'Assinaturas',
+                'Lazer', 'Compras', 'Dívidas', 'Impostos e taxas', 'Tarifas bancárias', 'Outros'],
+            'receita' => ['Salário', 'Serviços prestados', 'Rendimentos', 'Outras entradas'],
+        ],
+        'pj' => [
+            'despesa' => ['Fornecedores', 'Folha de pagamento', 'Impostos e taxas', 'Aluguel comercial', 'Contas da casa', 'Serviços e manutenção', 'Marketing', 'Combustível',
+                'Transporte', 'Refeições', 'Tarifas bancárias', 'Assinaturas', 'Compras', 'Dívidas', 'Outros'],
+            'receita' => ['Vendas', 'Serviços prestados', 'Recebimento de clientes', 'Rendimentos', 'Outras entradas'],
+        ],
+    ],
+
+    // 1.1.7: relatórios automáticos (segunda-feira = semana anterior; dia 1º = mês anterior), em lotes.
+    'reports' => [
+        'batch' => (int) env('WSF_RELATORIOS_LOTE', 200),
+        // Reescrita do texto das recomendações pela IA (os números são sempre os do banco; texto com número
+        // que não está nos dados é descartado e fica o texto padrão).
+        'ai_text' => (bool) env('WSF_RELATORIOS_IA', false),
+        'goal_warning_percent' => 80,
+    ],
 ];

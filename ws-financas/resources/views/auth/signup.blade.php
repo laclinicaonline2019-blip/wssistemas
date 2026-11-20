@@ -19,6 +19,14 @@
     <div class="field"><label for="plan">Plano</label><select id="plan" name="plan">@foreach ($plans as $p)<option value="{{ $p->code }}" @selected(old('plan', $selected ?? 'profissional') === $p->code)>{{ $p->name }} — {{ brl($p->price_monthly_cents) }}/mês</option>@endforeach</select></div>
     <div class="field"><label for="cycle">Cobrança</label><select id="cycle" name="cycle"><option value="monthly">Mensal</option><option value="yearly" @selected(old('cycle')==='yearly')>Anual (desconto)</option></select></div>
     <label class="inline-check full"><input type="hidden" name="two_factor" value="0"><input type="checkbox" name="two_factor" value="1" @checked(old('two_factor'))> Quero ativar a <b>verificação em duas etapas</b> (recomendado): além da senha, um código do aplicativo autenticador no celular. Pode ser ativada ou desativada depois, em Segurança.</label>
+    <fieldset class="full rules"><legend class="small"><b>Relatórios automáticos</b> (pode mudar depois)</legend>
+      <span class="small muted">Um resumo de cada CPF/CNPJ com receitas, despesas, saldo, principais categorias e sugestões de economia.</span>
+      <div class="checks"><label><input type="hidden" name="report_weekly" value="0"><input type="checkbox" name="report_weekly" value="1" @checked(old('report_weekly', '1'))> Semanal (toda segunda-feira)</label>
+        <label><input type="hidden" name="report_monthly" value="0"><input type="checkbox" name="report_monthly" value="1" @checked(old('report_monthly', '1'))> Mensal (todo dia 1º)</label></div>
+      <div class="checks"><span class="small muted">Receber por:</span>
+        <label><input type="hidden" name="report_whatsapp" value="0"><input type="checkbox" name="report_whatsapp" value="1" @checked(old('report_whatsapp', '1'))> WhatsApp</label>
+        <label><input type="hidden" name="report_email" value="0"><input type="checkbox" name="report_email" value="1" @checked(old('report_email', '1'))> E-mail</label></div>
+    </fieldset>
     <label class="inline-check full"><input type="checkbox" name="accept" value="1" required> Li e aceito os <a href="{{ route('terms') }}" target="_blank" rel="noopener">termos de uso</a> e a <a href="{{ route('privacy') }}" target="_blank" rel="noopener">política de privacidade</a>.</label>
   </div>
   <div class="formacts"><button class="btn primary" type="submit">Criar minha conta</button></div>

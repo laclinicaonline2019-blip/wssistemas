@@ -11,12 +11,13 @@
   <tr><td><b>{{ $m->user->name }}</b><br><span class="small muted">{{ $m->user->email }}</span> @if($m->status!=='active')<span class="pill bad">inativo</span>@endif
       @if($m->user->hasTwoFactor())<span class="pill ok">2FA</span>@endif</td>
     <td>
-      <details class="edit"><summary>{{ \App\Models\Membership::ROLES[$m->role] }} · {{ $m->all_companies && $m->role !== 'contador' ? 'todas as empresas' : ($m->companies->pluck('name')->implode(', ') ?: 'nenhuma empresa') }}</summary>
+      <details class="edit"><summary>{{ \App\Models\Membership::ROLES[$m->role] }} · {{ $m->all_companies && $m->role !== 'contador' ? 'todas as empresas' : ($m->companies->pluck('name')->implode(', ') ?: 'nenhuma empresa') }}@if($m->requires_approval && ! in_array($m->role, ['admin','gestor'])) · <span class="pill warn">aprovação{{ $m->approval_limit_cents !== null ? ' acima de '.brl($m->approval_limit_cents) : '' }}</span>@endif</summary>
         <form method="post" action="{{ route('users.update', $m) }}" class="form" style="margin-top:8px">@csrf @method('PUT')
           <div class="field"><label>Perfil</label><select name="role">@foreach (\App\Models\Membership::ROLES as $k => $l)<option value="{{ $k }}" @selected($m->role===$k)>{{ $l }}</option>@endforeach</select></div>
           <div class="field"><label>Situação</label><select name="status"><option value="active">Ativo</option><option value="inactive" @selected($m->status!=='active')>Inativo</option></select></div>
           <label class="inline-check full"><input type="hidden" name="all_companies" value="0"><input type="checkbox" name="all_companies" value="1" @checked($m->all_companies)> Todas as empresas (não vale para contador)</label>
           <div class="checks full">@foreach ($allCompanies as $c)<label><input type="checkbox" name="companies[]" value="{{ $c->id }}" @checked($m->companies->contains('id', $c->id))> {{ $c->name }}</label>@endforeach</div>
+          @include('partials.employee-rules', ['rules' => $m, 'centers' => $centers])
           <div class="formacts full"><button class="btn primary" type="submit">Salvar</button></div>
         </form></details>
     </td></tr>
@@ -32,6 +33,7 @@
     <div class="field"><label for="up">Senha inicial <span class="muted">(vazio = a pessoa cria pelo e-mail)</span></label><input id="up" name="password" type="password" autocomplete="new-password"></div>
     <label class="inline-check full"><input type="hidden" name="all_companies" value="0"><input type="checkbox" name="all_companies" value="1" checked> Acesso a todas as empresas</label>
     <div class="checks full"><span class="small muted">Ou só estas:</span>@foreach ($allCompanies as $c)<label><input type="checkbox" name="companies[]" value="{{ $c->id }}"> {{ $c->name }}</label>@endforeach</div>
+    @include('partials.employee-rules', ['rules' => null, 'centers' => $centers])
   </div>
   <div class="formacts"><button class="btn primary" type="submit">Adicionar</button></div>
 </form>

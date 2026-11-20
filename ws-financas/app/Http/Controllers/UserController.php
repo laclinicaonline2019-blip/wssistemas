@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Core\Security\PasswordRules;
+use App\Http\Concerns\EmployeeRulesInput;
+use App\Models\CostCenter;
 use App\Models\Company;
 use App\Models\Membership;
 use App\Services\AccountService;
@@ -14,11 +16,14 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
+    use EmployeeRulesInput;
+
     public function index(): View
     {
         return view('settings.users', [
             'list' => Membership::query()->with('user', 'companies')->orderBy('role')->get(),
             'allCompanies' => Company::query()->orderBy('name')->get(),
+            'centers' => CostCenter::query()->with('company')->where('active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -26,7 +31,7 @@ class UserController extends Controller
     {
         $d = $request->validate(['name' => ['required', 'string', 'max:160'], 'email' => ['required', 'email', 'max:190'], 'role' => ['required', Rule::in(array_keys(Membership::ROLES))],
             'all_companies' => ['boolean'], 'companies' => ['array'], 'companies.*' => ['string'], 'password' => ['nullable', PasswordRules::default()]]);
-        [$user, , $created] = $accounts->addUser($d, $d['password'] ?? null);
+        [$user, , $created] = $accounts->addUser($d + $this->employeeRules($request), $d['password'] ?? null);
         $mail = ['ok' => true];
         if ($created && empty($d['password'])) {
             $mail = app(MailDelivery::class)->sendPasswordLink($user->email, 'novo_usuario'); // o próprio usuário define a senha pelo link
@@ -42,7 +47,7 @@ class UserController extends Controller
     {
         $d = $request->validate(['role' => ['required', Rule::in(array_keys(Membership::ROLES))], 'all_companies' => ['boolean'], 'companies' => ['array'], 'companies.*' => ['string'],
             'status' => ['required', 'in:active,inactive']]);
-        $accounts->updateMembership($membership, $d);
+        $accounts->updateMembership($membership, $d + $this->employeeRules($request));
 
         return back()->with('ok', 'Permissões atualizadas.');
     }

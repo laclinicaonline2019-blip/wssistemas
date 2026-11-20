@@ -56,3 +56,13 @@ Fase 2 (somente após aprovar a fase 1):
 - [ ] Verificação íntegra com a cadeia mista (v1 + compatibilidade + v2)
 
 Testes automatizados: `php artisan test` (SQLite) e em MariaDB/MySQL — ver README.
+
+## Atualização 1.1.7 (controle de gastos por entidade) — homologação
+
+1. *Proprietário → Planos*: os planos por faixa (Pessoal, até 3, 8, 15, 25, 50, Personalizado) aparecem **inativos e com preço zero** — defina preços e ative os que forem à venda.
+2. *Empresas e contas*: cadastre o CPF do titular e as empresas; em cada uma, centros de custo, categorias próprias e metas (mensal/semanal).
+3. *Usuários* e *WhatsApp*: funcionário com aprovação (e limite), empresas e centros permitidos; valide o número pelo código.
+4. WhatsApp: `100 almoço`, `250 combustível`, `1500 aluguel`, `Recebi 3500 de um cliente`, `Paguei 180 de energia`; do funcionário, uma despesa acima do limite → `PENDENTES` / `APROVAR 1` pelo administrador.
+5. *Resumo*: confira cada entidade (semana/mês, metas, categorias, centros de custo, recomendações).
+6. *Relatórios automáticos*: escolha semanal/mensal e canal. Para testar sem esperar a segunda-feira, no Cron Jobs do cPanel crie **uma execução única** de `php artisan wsf:reports semanal` (ou peça pelo WhatsApp: `relatório`).
+7. *Importar*: envie um extrato (OFX/CSV/Excel/PDF), confira a prévia e importe; reenvie o mesmo arquivo → tudo marcado como "já importada".

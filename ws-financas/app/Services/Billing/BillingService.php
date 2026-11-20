@@ -250,25 +250,58 @@ class BillingService
         $this->event($account, 'teste_prorrogado', $from, 'trialing', ['dias' => $days], $userId);
     }
 
+    /**
+     * Empresas que contam no limite do plano (1.1.7): CNPJs ativos. O CPF do titular (primeira entidade PF) é incluído
+     * em todos os planos e não conta; entidades PF adicionais contam como empresas.
+     */
+    public static function countable(string $accountId, int $addPf = 0, int $addPj = 0): int
+    {
+        $q = fn (string $t) => Company::query()->withoutGlobalScopes()->where('account_id', $accountId)->where('active', true)->where('person_type', $t)->count();
+
+        return $q('pj') + $addPj + max(0, $q('pf') + $addPf - 1);
+    }
+
+    /** Menor plano ativo (exceto pessoal e personalizado) que comporta N empresas; null = só o personalizado. */
+    public function suggestPlan(int $companies, int $users = 1): ?Plan
+    {
+        return Plan::query()->where('active', true)->whereNotIn('kind', ['personal', 'custom'])->where('max_companies', '>=', $companies)->where('max_users', '>=', $users)
+            ->orderBy('max_companies')->orderBy('price_monthly_cents')->first();
+    }
+
     /** Limites do plano (empresas/usuários) — conferidos ao criar empresa/usuário e ao trocar de plano. */
     public function assertFits(Account $account, Plan $plan): void
     {
-        $companies = Company::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('active', true)->count();
+        $companies = self::countable($account->id);
         $users = Membership::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('status', 'active')->count();
+        if ($plan->isPersonal() && $companies > 0) {
+            throw new BusinessRule("O plano {$plan->name} cobre somente o CPF do titular; hoje você tem {$companies} empresa(s) ativa(s). Desative-as antes de trocar.", 'limite');
+        }
         if ($companies > $plan->max_companies || $users > $plan->max_users) {
-            throw new BusinessRule("O plano {$plan->name} permite {$plan->max_companies} empresa(s) e {$plan->max_users} usuário(s); hoje você usa {$companies} e {$users}. Desative o excedente antes de trocar.", 'limite');
+            throw new BusinessRule("O plano {$plan->name} permite {$plan->max_companies} empresa(s) (CNPJ) e {$plan->max_users} usuário(s); hoje você usa {$companies} e {$users}. Desative o excedente antes de trocar.", 'limite');
         }
     }
 
-    public function assertCanAdd(Account $account, string $what): void
+    /** @param  string  $personType  tipo da entidade que será criada/reativada (pf|pj) */
+    public function assertCanAdd(Account $account, string $what, string $personType = 'pj'): void
     {
         $plan = $account->plan() ?? throw new BusinessRule('Cliente sem plano.');
-        $count = $what === 'company'
-            ? Company::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('active', true)->count()
-            : Membership::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('status', 'active')->count();
-        $max = $what === 'company' ? $plan->max_companies : $plan->max_users;
-        if ($count >= $max) {
-            throw new BusinessRule('Limite do plano '.$plan->name.' atingido ('.$max.' '.($what === 'company' ? 'empresa(s)' : 'usuário(s)').'). Faça upgrade em Assinatura.', 'limite');
+        if ($what === 'company') {
+            $after = self::countable($account->id, $personType === 'pf' ? 1 : 0, $personType === 'pf' ? 0 : 1);
+            $max = $plan->isPersonal() ? 0 : (int) $plan->max_companies;
+            if ($after > $max) {
+                $suggest = $this->suggestPlan($after, Membership::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('status', 'active')->count());
+                $what = $plan->isPersonal() ? 'O plano '.$plan->name.' cobre somente o CPF do titular.' : 'Limite do plano '.$plan->name.' atingido ('.$max.' empresa(s) além do CPF do titular).';
+                $next = $suggest ? ' Para cadastrar mais, autorize a mudança para o plano '.$suggest->name.' ('.\App\Core\Support\Money::brl($suggest->price_monthly_cents).'/mês) em Assinatura.'
+                    : ' Para mais empresas, solicite um plano personalizado em Assinatura.';
+
+                throw new BusinessRule($what.$next.' Nenhuma cobrança muda sem a sua autorização.', 'limite');
+            }
+
+            return;
+        }
+        $count = Membership::query()->withoutGlobalScopes()->where('account_id', $account->id)->where('status', 'active')->count();
+        if ($count >= $plan->max_users) {
+            throw new BusinessRule('Limite do plano '.$plan->name.' atingido ('.$plan->max_users.' usuário(s)). Faça upgrade em Assinatura.', 'limite');
         }
     }
 

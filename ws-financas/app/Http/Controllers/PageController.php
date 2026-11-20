@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\Access\ApprovalPolicy;
 use App\Core\Access\Permissions;
 use App\Core\Tenancy\TenantContext;
 use App\Models\BankAccount;
@@ -38,6 +39,7 @@ class PageController extends Controller
         $account = $request->attributes->get('account');
         $companies = $request->attributes->get('companies');
         $plan = $account->plan();
+        $rules = ApprovalPolicy::forUser($request->user()->id, $account->id);
 
         return view('app.dashboard', [
             'boot' => [
@@ -52,6 +54,10 @@ class PageController extends Controller
                 'podeExportar' => Permissions::can('relatorios.exportar'),
                 'bloqueado' => ! $account->canWrite(),
                 'categorias' => config('wsf.categories'),
+                // 1.1.7: categorias da entidade (PF/PJ + próprias) e centros de custo permitidos para quem está lançando
+                'catsEmpresa' => $companies->mapWithKeys(fn ($c) => [$c->id => ['despesa' => $c->categories('despesa'), 'receita' => $c->categories('receita')]]),
+                'centros' => $companies->flatMap(fn ($c) => ApprovalPolicy::allowedCostCenters($c->id, $rules))->map(fn ($cc) => ['id' => $cc->id, 'empresa' => $cc->company_id, 'nome' => $cc->name])->values(),
+                'centroObrigatorio' => $rules['cost_center_ids'] !== null,
                 'hoje' => today()->toDateString(),
             ],
         ]);

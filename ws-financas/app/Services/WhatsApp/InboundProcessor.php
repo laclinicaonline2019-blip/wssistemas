@@ -2,6 +2,7 @@
 
 namespace App\Services\WhatsApp;
 
+use App\Core\Access\ApprovalPolicy;
 use App\Core\Audit\AuditLogger;
 use App\Core\Tenancy\TenantContext;
 use App\Models\Account;
@@ -149,7 +150,7 @@ class InboundProcessor
         $result = $this->assistant->handle([
             'account_id' => $account->id, 'key' => $hash, 'channel' => 'whatsapp', 'role' => $role, 'company_ids' => $companyIds,
             'default_company_id' => $contact->default_company_id, 'can_write' => $account->canWrite() && $contact->can_write, 'user_id' => $userId,
-            'base_date' => $baseDate,
+            'base_date' => $baseDate, 'rules' => ApprovalPolicy::forContact($contact),
         ], $msg['text']);
 
         $log->update(['status' => 'processed', 'intent' => $result['intent'], 'entry_id' => $result['entry_ids'][0] ?? null, 'used_ai' => $result['used_ai']]);
@@ -157,7 +158,7 @@ class InboundProcessor
         return $this->reply($msg['from'], $account->id, $result['reply']);
     }
 
-    /** Número ligado a um usuário herda o papel e as empresas dele; número avulso lança em todas (financeiro). */
+    /** Número ligado a um usuário herda o papel e as empresas dele; número avulso lança nas empresas autorizadas para ele (todas, se não limitado). */
     private function permissions(WhatsappContact $c): array
     {
         if ($c->user_id) {
@@ -171,7 +172,9 @@ class InboundProcessor
             return ['consulta', [], $c->user_id];
         }
 
-        return [$c->can_write ? 'financeiro' : 'consulta', null, null];
+        $ids = is_array($c->company_ids) ? array_values($c->company_ids) : null;
+
+        return [$c->can_write ? 'financeiro' : 'consulta', $ids, null];
     }
 
     private function reply(string $to, ?string $accountId, string $text): ?string

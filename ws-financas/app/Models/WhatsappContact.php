@@ -14,7 +14,8 @@ class WhatsappContact extends Model
 
     protected ?string $companyColumn = null;
 
-    protected $fillable = ['user_id', 'label', 'phone', 'phone_hash', 'phone_last4', 'default_company_id', 'can_write', 'reminders_opt_in', 'active', 'verified_at', 'verify_code_hash', 'verify_expires_at', 'verify_attempts'];
+    protected $fillable = ['user_id', 'label', 'phone', 'phone_hash', 'phone_last4', 'default_company_id', 'can_write', 'reminders_opt_in', 'active', 'verified_at', 'verify_code_hash', 'verify_expires_at', 'verify_attempts',
+        'requires_approval', 'approval_limit_cents', 'company_ids', 'cost_center_ids'];
 
     protected $hidden = ['verify_code_hash'];
 
@@ -22,7 +23,8 @@ class WhatsappContact extends Model
 
     protected function casts(): array
     {
-        return ['phone' => 'encrypted', 'can_write' => 'boolean', 'reminders_opt_in' => 'boolean', 'active' => 'boolean', 'verified_at' => 'datetime', 'verify_expires_at' => 'datetime'];
+        return ['phone' => 'encrypted', 'can_write' => 'boolean', 'reminders_opt_in' => 'boolean', 'active' => 'boolean', 'verified_at' => 'datetime', 'verify_expires_at' => 'datetime',
+            'requires_approval' => 'boolean', 'approval_limit_cents' => 'integer', 'company_ids' => 'array', 'cost_center_ids' => 'array'];
     }
 
     /** Normaliza para E.164 brasileiro sem "+" (55 + DDD + número). */

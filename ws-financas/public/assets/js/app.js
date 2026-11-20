@@ -62,6 +62,8 @@ const LKEY = "wsfin:v1";
 const consolidado = () => S.empresa === "todas";
 const podeLancar = () => !!BOOT.podeLancar;
 const contasDa = emp => (BOOT.contas || []).filter(c => c.empresa === emp);
+const centrosDa = emp => (BOOT.centros || []).filter(c => c.empresa === emp);
+const catsDa = (emp, tipo) => ((BOOT.catsEmpresa || {})[emp] || {})[tipo] || (tipo === "despesa" ? CATS : CATS_R);
 const empresaNome = id => (BOOT.empresas.find(e => e.id === id) || {}).nome || "";
 try { const e = localStorage.getItem("wsf:empresa"); if (e && (BOOT.empresas.some(x => x.id === e) || (e === "todas" && BOOT.consolidado))) S.empresa = e; } catch(e){}
 
@@ -200,8 +202,9 @@ function formPanel(){
   const f = S.form; if (!f) return "";
   const desp = f.tipo === "despesa";
   const emp = f.empresa || (consolidado() ? (BOOT.empresas[0]||{}).id : S.empresa);
-  const cats = desp ? CATS : CATS_R;
+  const cats = catsDa(emp, desp ? "despesa" : "receita");
   const contas = contasDa(emp);
+  const centros = centrosDa(emp);
   const reps = [["1","Só este mês"],["f3","Fixa por 3 meses"],["f6","Fixa por 6 meses"],["f12","Fixa por 12 meses"],["p2","Parcelar em 2x"],["p3","Parcelar em 3x"],["p4","Parcelar em 4x"],["p5","Parcelar em 5x"],["p6","Parcelar em 6x"],["p10","Parcelar em 10x"],["p12","Parcelar em 12x"],["p24","Parcelar em 24x"]];
   return `<form class="panel" data-form="lanc">
     <div class="full blockhead"><h3>${f.id ? "Editar lançamento" : "Novo lançamento"}</h3>
@@ -213,6 +216,7 @@ function formPanel(){
     <div class="field"><label for="f-cat">Categoria</label><select id="f-cat">${cats.map(c=>`<option ${c===f.cat?"selected":""}>${esc(c)}</option>`).join("")}</select></div>
     ${!f.id ? `<div class="field"><label for="f-rep">Repetir / parcelar</label><select id="f-rep">${reps.map(([n,l])=>`<option value="${n}" ${String(f.rep)===n?"selected":""}>${l}</option>`).join("")}</select></div>` : ""}
     ${contas.length ? `<div class="field"><label for="f-conta">Conta bancária</label><select id="f-conta"><option value="">—</option>${contas.map(c=>`<option value="${c.id}" ${c.id===f.conta?"selected":""}>${esc(c.nome)}</option>`).join("")}</select></div>` : ""}
+    ${centros.length ? `<div class="field"><label for="f-centro">Centro de custo</label><select id="f-centro">${BOOT.centroObrigatorio ? "" : `<option value="">—</option>`}${centros.map(c=>`<option value="${c.id}" ${c.id===f.centro?"selected":""}>${esc(c.nome)}</option>`).join("")}</select></div>` : ""}
     ${desp ? `<label class="inline-check full"><input type="checkbox" id="f-pago" ${f.pago?"checked":""}> Já está paga</label>` : ""}
     <div class="formacts full"><button type="button" class="btn" data-act="fcancel">Cancelar</button><button type="submit" class="btn primary">${f.id?"Salvar":"Lançar"}</button></div>
   </form>`;
@@ -509,7 +513,7 @@ async function pedirAnalise(){
 function lerForm(){
   const g = id => document.getElementById(id);
   return { desc:g("f-desc")?.value, valor: g("f-valor")?.value ? parseValor(g("f-valor").value) : undefined, data:g("f-data")?.value, cat:g("f-cat")?.value || S.form?.cat,
-    rep:g("f-rep")?.value || "1", pago:g("f-pago")?.checked, conta:g("f-conta")?.value || null, empresa:g("f-emp")?.value || S.form?.empresa };
+    rep:g("f-rep")?.value || "1", pago:g("f-pago")?.checked, conta:g("f-conta")?.value || null, centro:g("f-centro")?.value || null, empresa:g("f-emp")?.value || S.form?.empresa };
 }
 const recarregarTudo = () => { S.fluxo = null; S.rel = null; S.ai = {state:"idle",text:""}; S.fb = null; S.pend = false; S.carregando = true; render(); carregar(); };
 
@@ -526,7 +530,7 @@ document.addEventListener("click", async ev => {
     case "resp": S.pend = false; await lancarTexto(b.dataset.t); break;
     case "toggle": if (it) await acao(() => api("POST", `/app/api/lancamentos/${it.id}/pago`, { pago:!it.pago })); break;
     case "new": S.form = { tipo:"despesa", data: S.mes === MES_ATUAL ? HOJE : `${S.mes}-01`, cat:"Outros", rep:"1" }; render(); $("#f-desc")?.focus(); break;
-    case "edit": if (it) { S.form = { id, tipo:it.tipo, desc:it.desc, valor:it.valor, data: it.tipo==="receita" ? it.data : it.venc, cat:it.cat, pago:it.pago, conta:it.conta, empresa:it.company_id }; S.tab = "mes"; render(); $("#f-desc")?.focus(); } break;
+    case "edit": if (it) { S.form = { id, tipo:it.tipo, desc:it.desc, valor:it.valor, data: it.tipo==="receita" ? it.data : it.venc, cat:it.cat, pago:it.pago, conta:it.conta, centro:it.centro, empresa:it.company_id }; S.tab = "mes"; render(); $("#f-desc")?.focus(); } break;
     case "ftipo": { const f = lerForm(); S.form = { ...S.form, ...f, tipo:b.dataset.v, cat: b.dataset.v === "receita" ? CATS_R[0] : "Outros" }; render(); break; }
     case "fcancel": S.form = null; render(); break;
     case "del": case "ddel": S.confirm = id; render(); break;
@@ -558,13 +562,16 @@ document.addEventListener("submit", async ev => {
     const emp = f.empresa || (consolidado() ? (BOOT.empresas[0]||{}).id : S.empresa);
     const btn = form.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
     try {
-      if (f.id) await api("PUT", `/app/api/lancamentos/${f.id}`, { desc:f.desc.trim(), valor:f.valor, data:f.data, cat:f.cat, pago:!!f.pago, conta:f.conta });
+      let pend = false;
+      if (f.id) await api("PUT", `/app/api/lancamentos/${f.id}`, { desc:f.desc.trim(), valor:f.valor, data:f.data, cat:f.cat, pago:!!f.pago, conta:f.conta, centro:f.centro });
       else {
         const rep = String(f.rep||"1"), modo = rep.startsWith("p") ? "parcelada" : "fixa", n = parseInt(rep.replace(/\D/g,""),10) || 1;
-        await api("POST", "/app/api/lancamentos", { empresa:emp, tipo:f.tipo, desc:f.desc.trim(), valor:f.valor, cat:f.cat, data:f.data, pago: f.tipo==="despesa" ? !!f.pago : true, repetir:n, modo, conta:f.conta });
+        const r = await api("POST", "/app/api/lancamentos", { empresa:emp, tipo:f.tipo, desc:f.desc.trim(), valor:f.valor, cat:f.cat, data:f.data, pago: f.tipo==="despesa" ? !!f.pago : true, repetir:n, modo, conta:f.conta, centro:f.centro });
+        pend = !!(r && r.pendente);
         S.mes = f.data.slice(0,7);
       }
-      S.form = null; S.fb = { ok:true, t: f.id ? "Lançamento salvo." : `${empresaNome(emp) && consolidado() ? empresaNome(emp)+": " : ""}lançamento salvo.` };
+      S.form = null; S.fb = { ok:true, t: pend ? "⏳ Despesa enviada para aprovação: só entra no saldo e nos relatórios depois de aprovada por um administrador ou gestor."
+        : f.id ? "Lançamento salvo." : `${empresaNome(emp) && consolidado() ? empresaNome(emp)+": " : ""}lançamento salvo.` };
     } catch(e) { S.fb = { ok:false, t:e.message }; if (btn) btn.disabled = false; render(); return; }
     S.fluxo = null; S.rel = null; await carregar(); return;
   }

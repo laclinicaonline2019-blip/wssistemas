@@ -20,7 +20,19 @@ class Plan extends Model
     ];
 
     protected $fillable = ['code', 'name', 'description', 'price_monthly_cents', 'price_yearly_cents', 'max_companies', 'max_users',
-        'whatsapp_messages_month', 'ai_calls_month', 'features', 'active', 'sort'];
+        'whatsapp_messages_month', 'ai_calls_month', 'features', 'active', 'sort', 'kind'];
+
+    public const KINDS = ['business' => 'Empresas (faixa)', 'personal' => 'Pessoal (só CPF)', 'custom' => 'Personalizado (sob consulta)'];
+
+    public function isPersonal(): bool
+    {
+        return $this->kind === 'personal';
+    }
+
+    public function isCustom(): bool
+    {
+        return $this->kind === 'custom';
+    }
 
     protected function casts(): array
     {

@@ -21,11 +21,13 @@ final class Permissions
         'assinatura.gerenciar' => 'Gerenciar assinatura e pagamentos',
         'lgpd.gerenciar' => 'Exportar dados e solicitar exclusão (LGPD)',
         'auditoria.ver' => 'Ver auditoria',
+        'despesas.aprovar' => 'Aprovar ou rejeitar despesas de funcionários',
+        'relatorios.automaticos' => 'Configurar relatórios automáticos (semanal/mensal)',
     ];
 
     public const ROLES = [
         'admin' => ['*'],
-        'gestor' => ['financeiro.ver', 'financeiro.lancar', 'relatorios.exportar', 'empresas.gerenciar', 'whatsapp.gerenciar', 'dados.importar', 'auditoria.ver'],
+        'gestor' => ['financeiro.ver', 'financeiro.lancar', 'relatorios.exportar', 'empresas.gerenciar', 'whatsapp.gerenciar', 'dados.importar', 'auditoria.ver', 'despesas.aprovar'],
         'financeiro' => ['financeiro.ver', 'financeiro.lancar', 'relatorios.exportar', 'dados.importar'],
         'consulta' => ['financeiro.ver'],
         'contador' => ['financeiro.ver', 'relatorios.exportar'],

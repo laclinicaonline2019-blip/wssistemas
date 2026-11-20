@@ -49,7 +49,7 @@ class AccountService
     public function createCompany(array $d, bool $checkLimit = true): Company
     {
         if ($checkLimit) {
-            $this->billing->assertCanAdd(Account::query()->with('subscription.plan')->findOrFail($this->ctx->accountId()), 'company');
+            $this->billing->assertCanAdd(Account::query()->with('subscription.plan')->findOrFail($this->ctx->accountId()), 'company', ($d['person_type'] ?? 'pj') === 'pf' ? 'pf' : 'pj');
         }
         $company = Company::query()->create(['name' => trim($d['name']), 'alias' => isset($d['alias']) ? trim((string) $d['alias']) ?: null : null,
             'person_type' => in_array($d['person_type'] ?? 'pj', ['pf', 'pj'], true) ? $d['person_type'] : 'pj', 'document' => $d['document'] ?? null, 'active' => true]);
@@ -88,9 +88,13 @@ class AccountService
                 throw new BusinessRule('Este usuário já faz parte da sua conta.');
             }
             $all = $role !== 'contador' && ! empty($d['all_companies']);
-            $m = Membership::query()->create(['account_id' => $this->ctx->accountId(), 'user_id' => $user->id, 'role' => $role, 'all_companies' => $all, 'status' => 'active']);
+            $m = Membership::query()->create(['account_id' => $this->ctx->accountId(), 'user_id' => $user->id, 'role' => $role, 'all_companies' => $all, 'status' => 'active']
+                + $this->rulesOf($d));
             $this->syncCompanies($m, $all ? [] : ($d['companies'] ?? []));
             $this->audit->log('usuario.vincular', $m, ['email' => $email, 'papel' => $role, 'empresas' => $d['companies'] ?? 'todas']);
+            if ($m->requires_approval || $m->cost_center_ids !== null) {
+                $this->audit->log('usuario.regras', $m, ['aprovacao' => (bool) $m->requires_approval, 'limite' => $m->approval_limit_cents, 'centros' => $m->cost_center_ids ?? 'todos']);
+            }
 
             return [$user, $m, $created];
         });
@@ -106,9 +110,16 @@ class AccountService
             throw new BusinessRule('O cliente precisa de pelo menos um administrador ativo.');
         }
         $all = $d['role'] !== 'contador' && ! empty($d['all_companies']);
-        $m->update(['role' => $d['role'], 'all_companies' => $all, 'status' => $d['status'] ?? 'active']);
+        $m->update(['role' => $d['role'], 'all_companies' => $all, 'status' => $d['status'] ?? 'active'] + $this->rulesOf($d));
         $this->syncCompanies($m, $all ? [] : ($d['companies'] ?? []));
         $this->audit->log('usuario.permissoes', $m, ['papel' => $d['role'], 'empresas' => $all ? 'todas' : ($d['companies'] ?? []), 'status' => $m->status]);
+        $this->audit->log('usuario.regras', $m, ['aprovacao' => (bool) $m->requires_approval, 'limite' => $m->approval_limit_cents, 'centros' => $m->cost_center_ids ?? 'todos']);
+    }
+
+    /** Regras de funcionário (1.1.7): aprovação de despesas, limite e centros de custo. Ausentes = mantém o que está. */
+    private function rulesOf(array $d): array
+    {
+        return array_intersect_key($d, array_flip(['requires_approval', 'approval_limit_cents', 'cost_center_ids']));
     }
 
     /** Só empresas do próprio cliente (e às quais o administrador tem acesso) podem ser autorizadas. */

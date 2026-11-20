@@ -22,11 +22,11 @@ class Membership extends Model
         'contador' => 'Contador',
     ];
 
-    protected $fillable = ['account_id', 'user_id', 'role', 'all_companies', 'status'];
+    protected $fillable = ['account_id', 'user_id', 'role', 'all_companies', 'status', 'requires_approval', 'approval_limit_cents', 'cost_center_ids'];
 
     protected function casts(): array
     {
-        return ['all_companies' => 'boolean'];
+        return ['all_companies' => 'boolean', 'requires_approval' => 'boolean', 'approval_limit_cents' => 'integer', 'cost_center_ids' => 'array'];
     }
 
     public function user(): BelongsTo

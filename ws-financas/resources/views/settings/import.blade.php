@@ -1,6 +1,23 @@
 @extends('layouts.app')
 @section('title', 'Importar dados locais')
 @section('content')
+<div class="blockhead"><h2>Importar extrato do banco</h2><span class="muted small">Opcional — OFX, CSV, Excel (.xlsx) ou PDF</span></div>
+<form class="card" method="post" action="{{ route('import.statement.upload') }}" enctype="multipart/form-data">@csrf
+  <p class="small mt0">Envie o extrato baixado no site ou aplicativo do banco. Antes de lançar, você vê uma <b>prévia</b>, escolhe o que entra e as categorias.
+    Transações já importadas ou já lançadas (por exemplo, pelo WhatsApp) são marcadas para <b>não duplicar</b>.
+    PDF: somente extrato com texto (gerado pelo banco); PDF escaneado não é lido.</p>
+  <div class="form">
+    <div class="field"><label>Para qual entidade?</label><select name="empresa" required>@foreach ($companies as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach</select></div>
+    <div class="field"><label>Arquivo do extrato</label><input type="file" name="extrato" required accept=".ofx,.qfx,.csv,.txt,.xlsx,.pdf"></div>
+  </div>
+  <div class="formacts"><button class="btn primary" type="submit">Ver prévia</button></div>
+</form>
+@if ($batches->isNotEmpty())
+<div class="table-wrap"><table class="t"><thead><tr><th>Data</th><th>Arquivo</th><th>Situação</th></tr></thead><tbody>
+@foreach ($batches as $b)<tr><td>{{ $b->created_at->format('d/m/Y H:i') }}</td><td>{{ $b->filename }} <span class="muted small">{{ strtoupper($b->format) }}</span></td>
+  <td>@if($b->status === 'previa')<a href="{{ route('import.statement.show', $b->id) }}">prévia aguardando confirmação</a>@elseif($b->status === 'importado'){{ $b->imported }} importado(s), {{ $b->duplicates }} duplicado(s) ignorado(s)@else cancelada @endif</td></tr>@endforeach
+</tbody></table></div>
+@endif
 <div class="blockhead"><h2>Importar dados do WS Finanças antigo</h2></div>
 <div class="card small">
   <p class="mt0">O sistema anterior guardava os lançamentos só no navegador. Aqui você traz tudo para o banco de dados, com segurança:</p>

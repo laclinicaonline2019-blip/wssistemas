@@ -1,7 +1,23 @@
 @extends('layouts.admin')
 @section('title', 'Planos e preços')
 @section('content')
-<p class="small muted">Preços, limites e recursos são editáveis. Assinaturas existentes mantêm o preço contratado até trocarem de plano.</p>
+<p class="small muted">Preços, limites e recursos são editáveis. Assinaturas existentes mantêm o preço contratado até trocarem de plano.
+  <b>Máx. empresas</b> conta só os CNPJs: o CPF do titular está incluído em todos os planos. Os planos por faixa (Pessoal, até 3, 8, 15, 25, 50 e Personalizado) vêm <b>inativos e com preço zero</b> — defina os preços e marque "Ativo" para colocá-los à venda.</p>
+@if ($requests->isNotEmpty())
+<div class="card"><h3 class="mt0">Pedidos de mudança de plano</h3>
+  <div class="table-wrap"><table class="t"><thead><tr><th>Data</th><th>Cliente</th><th>Pedido</th><th>Situação</th><th></th></tr></thead><tbody>
+  @foreach ($requests as $r)
+    <tr><td>{{ $r->created_at->format('d/m/Y H:i') }}</td><td><a href="{{ route('admin.accounts.show', $r->account_id) }}">{{ $r->account?->name }}</a></td>
+      <td>{{ $r->fromPlan?->name ?? '—' }} → {{ $r->toPlan?->name ?? 'Personalizado' }}{{ $r->companies_wanted ? ' · '.$r->companies_wanted.' empresas' : '' }}<br><span class="small muted">{{ $r->message }}</span></td>
+      <td>{{ \App\Models\PlanChangeRequest::STATUSES[$r->status] ?? $r->status }}</td>
+      <td class="nowrap">@if ($r->status === 'pendente')
+        <form class="inline" method="post" action="{{ route('admin.plans.request', $r) }}">@csrf<input type="hidden" name="status" value="atendido"><button class="btn sm primary" type="submit">Marcar atendido</button></form>
+        <form class="inline" method="post" action="{{ route('admin.plans.request', $r) }}">@csrf<input type="hidden" name="status" value="recusado"><button class="btn sm" type="submit">Recusar</button></form>@endif</td></tr>
+  @endforeach
+  </tbody></table></div>
+  <p class="small muted mt0">Para atender: crie/ajuste um plano (pode ser inativo, exclusivo do cliente) e troque o plano do cliente na tela dele — a mudança no Asaas acontece só nesse momento.</p>
+</div>
+@endif
 @foreach ($plans->concat([null]) as $p)
 <form class="card" method="post" action="{{ $p ? route('admin.plans.update', $p) : route('admin.plans.store') }}">@csrf @if($p) @method('PUT') @endif
   <div class="blockhead"><h3>{{ $p ? $p->name : 'Novo plano' }} @if($p)<span class="small muted">código {{ $p->code }} · {{ $p->subscriptions_count }} assinante(s)</span>@endif</h3></div>
@@ -11,7 +27,8 @@
     <div class="field full"><label>Descrição</label><input name="description" value="{{ $p?->description }}"></div>
     <div class="field"><label>Preço mensal (R$)</label><input name="price_monthly" required value="{{ $p ? number_format($p->price_monthly_cents/100, 2, ',', '.') : '' }}"></div>
     <div class="field"><label>Preço anual (R$)</label><input name="price_yearly" required value="{{ $p ? number_format($p->price_yearly_cents/100, 2, ',', '.') : '' }}"></div>
-    <div class="field"><label>Máx. empresas</label><input type="number" name="max_companies" min="1" required value="{{ $p?->max_companies ?? 1 }}"></div>
+    <div class="field"><label>Tipo</label><select name="kind">@foreach (\App\Models\Plan::KINDS as $k => $l)<option value="{{ $k }}" @selected(($p?->kind ?? 'business') === $k)>{{ $l }}</option>@endforeach</select></div>
+    <div class="field"><label>Máx. empresas (CNPJ)</label><input type="number" name="max_companies" min="0" required value="{{ $p?->max_companies ?? 1 }}"></div>
     <div class="field"><label>Máx. usuários</label><input type="number" name="max_users" min="1" required value="{{ $p?->max_users ?? 1 }}"></div>
     <div class="field"><label>Mensagens WhatsApp/mês</label><input type="number" name="whatsapp_messages_month" min="0" required value="{{ $p?->whatsapp_messages_month ?? 0 }}"></div>
     <div class="field"><label>Usos de IA/mês</label><input type="number" name="ai_calls_month" min="0" required value="{{ $p?->ai_calls_month ?? 0 }}"></div>

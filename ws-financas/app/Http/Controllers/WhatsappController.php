@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRule;
+use App\Http\Concerns\EmployeeRulesInput;
+use App\Models\CostCenter;
 use App\Models\Company;
 use App\Models\Membership;
 use App\Models\UsageCounter;
@@ -15,6 +17,8 @@ use Illuminate\View\View;
 /** Números autorizados a falar com o assistente em nome do cliente. */
 class WhatsappController extends Controller
 {
+    use EmployeeRulesInput;
+
     public function __construct(private readonly AuditLogger $audit) {}
 
     public function index(Request $request): View
@@ -27,6 +31,7 @@ class WhatsappController extends Controller
             'members' => Membership::query()->with('user')->where('status', 'active')->get(),
             'usage' => UsageCounter::current($account->id),
             'plan' => $account->plan(),
+            'centers' => CostCenter::query()->with('company')->where('active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -69,7 +74,8 @@ class WhatsappController extends Controller
     {
         $d = $this->validated($request, false);
         $contact->update($d + ['active' => $request->boolean('active')]);
-        $this->audit->log('whatsapp.editar', $contact, ['final' => $contact->phone_last4]);
+        $this->audit->log('whatsapp.editar', $contact, ['final' => $contact->phone_last4, 'aprovacao' => $contact->requires_approval, 'limite' => $contact->approval_limit_cents,
+            'empresas' => $contact->company_ids ?? 'todas', 'centros' => $contact->cost_center_ids ?? 'todos']);
 
         return back()->with('ok', 'Número atualizado.');
     }
@@ -93,6 +99,8 @@ class WhatsappController extends Controller
         $d['user_id'] = ! empty($d['user_id']) ? Membership::query()->where('user_id', $d['user_id'])->value('user_id') : null;
         $d['can_write'] = $request->boolean('can_write');
         $d['reminders_opt_in'] = $request->boolean('reminders_opt_in');
+        // número avulso (sem usuário): regras próprias; ligado a usuário: valem as do usuário
+        $d += $d['user_id'] ? ['requires_approval' => false, 'approval_limit_cents' => null, 'company_ids' => null, 'cost_center_ids' => null] : $this->employeeRules($request, true);
 
         return $d;
     }

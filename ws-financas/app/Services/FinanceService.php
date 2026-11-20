@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Core\Access\ApprovalPolicy;
 use App\Core\Audit\AuditLogger;
 use App\Core\Support\BusinessRule;
 use App\Core\Support\Money;
@@ -9,7 +10,9 @@ use App\Core\Support\Months;
 use App\Core\Tenancy\TenantContext;
 use App\Models\BankAccount;
 use App\Models\Company;
+use App\Models\CompanyCategory;
 use App\Models\CompanySetting;
+use App\Models\CostCenter;
 use App\Models\Debt;
 use App\Models\Entry;
 use Carbon\CarbonImmutable;
@@ -85,6 +88,7 @@ class FinanceService
             'id' => $e->id, 'tipo' => $e->type, 'desc' => $e->description, 'valor' => $e->amount_cents / 100, 'mes' => $e->competence,
             'criado' => $e->created_at?->getTimestampMs(), 'exemplo' => $e->is_sample, 'origem' => $e->source,
             'conta' => $e->bank_account_id, 'empresa' => $companyName, 'company_id' => $e->company_id,
+            'centro' => $e->cost_center_id, 'responsavel' => $e->responsible, 'pendente' => $e->approval_status === Entry::PENDING,
         ];
         if ($e->recurrence_group) {
             $base['grupo'] = $e->recurrence_group;
@@ -102,7 +106,10 @@ class FinanceService
     /**
      * Cria um lançamento; com repetir > 1 cria a série (fixa: mesmo valor todo mês; parcelada: valor dividido).
      *
-     * @param  array{tipo:string, desc:string, valor_cents:int, cat?:?string, data:string, pago?:bool, repetir?:int, modo?:string, conta?:?string, source?:string, exemplo?:bool, external_ref?:?string}  $d
+     * 1.1.7: despesa de quem precisa de aprovação nasce PENDENTE (não conta em saldo/relatórios até ser aprovada);
+     * centro de custo opcional (obrigatório se as regras do funcionário limitarem os centros); responsável registrado.
+     *
+     * @param  array{tipo:string, desc:string, valor_cents:int, cat?:?string, data:string, pago?:bool, repetir?:int, modo?:string, conta?:?string, source?:string, exemplo?:bool, external_ref?:?string, centro?:?string, regras?:array}  $d
      * @return list<Entry>
      */
     public function create(Company $company, array $d): array
@@ -116,8 +123,12 @@ class FinanceService
         $repeat = max(1, min(120, (int) ($d['repetir'] ?? 1)));
         $mode = ($d['modo'] ?? 'fixa') === 'parcelada' ? 'parcelada' : 'fixa';
         $conta = $this->bankAccountId($company, $d['conta'] ?? null);
-        $cat = $this->category($type, $d['cat'] ?? null, $desc);
+        $cat = $this->category($type, $d['cat'] ?? null, $desc, $company);
         $group = $repeat > 1 ? (string) Str::ulid() : null;
+        $rules = $d['regras'] ?? ApprovalPolicy::forUser($this->ctx->userId());
+        $costCenter = $this->costCenterId($company, $d['centro'] ?? null, $rules, ! empty($d['exemplo']) || ($d['source'] ?? '') === 'import');
+        $pending = empty($d['exemplo']) && ApprovalPolicy::needsApproval($rules, $this->ctx->role(), $type, (int) $d['valor_cents']);
+        $responsible = Str::limit((string) ($rules['responsible'] ?? ''), 115, '') ?: null;
 
         $amounts = array_fill(0, $repeat, (int) $d['valor_cents']);
         if ($repeat > 1 && $mode === 'parcelada') {
@@ -126,7 +137,7 @@ class FinanceService
             $amounts[0] += (int) $d['valor_cents'] - $part * $repeat; // centavos de arredondamento na 1ª parcela
         }
 
-        return DB::transaction(function () use ($company, $d, $type, $desc, $date, $repeat, $mode, $conta, $cat, $group, $amounts) {
+        return DB::transaction(function () use ($company, $d, $type, $desc, $date, $repeat, $mode, $conta, $cat, $group, $amounts, $costCenter, $pending, $responsible) {
             $created = [];
             for ($i = 0; $i < $repeat; $i++) {
                 $ym = Months::add($date->format('Y-m'), $i);
@@ -138,12 +149,17 @@ class FinanceService
                     'bank_account_id' => $conta, 'recurrence_group' => $group, 'recurrence_kind' => $group ? $mode : null,
                     'installment_no' => $group ? $i + 1 : null, 'installments_total' => $group ? $repeat : null,
                     'source' => $d['source'] ?? 'web', 'is_sample' => (bool) ($d['exemplo'] ?? false), 'external_ref' => $d['external_ref'] ?? null,
-                    'created_by' => $this->ctx->userId(),
+                    'created_by' => $this->ctx->userId(), 'cost_center_id' => $costCenter, 'approval_status' => $pending ? Entry::PENDING : null, 'responsible' => $responsible,
                 ]);
             }
             if (empty($d['exemplo'])) {
+                // formato histórico (6 campos) — verificável por qualquer versão; o que é novo da 1.1.7 vai num evento à parte
                 $this->audit->log('lancamento.criar', $created[0], ['tipo' => $type, 'desc' => $desc, 'valor' => $amounts[0], 'repetir' => $repeat, 'modo' => $mode, 'origem' => $d['source'] ?? 'web'],
                     channel: $d['source'] ?? 'web');
+                $extra = array_filter(['centro' => $costCenter, 'pendente_aprovacao' => $pending ?: null, 'responsavel' => $responsible], fn ($v) => $v !== null);
+                if ($extra) {
+                    $this->audit->log('lancamento.detalhes', $created[0], $extra, channel: $d['source'] ?? 'web');
+                }
             }
 
             return $created;
@@ -152,7 +168,7 @@ class FinanceService
 
     public function update(Entry $e, array $d): Entry
     {
-        $before = $e->only(['description', 'amount_cents', 'due_date', 'category', 'paid']);
+        $before = $e->only(['description', 'amount_cents', 'due_date', 'category', 'paid', 'cost_center_id']);
         if (isset($d['desc'])) {
             $e->description = trim(Str::limit(strip_tags($d['desc']), 190, '')) ?: $e->description;
         }
@@ -171,7 +187,10 @@ class FinanceService
             }
         }
         if (array_key_exists('cat', $d) && $d['cat'] !== null) {
-            $e->category = $this->category($e->type, $d['cat'], $e->description);
+            $e->category = $this->category($e->type, $d['cat'], $e->description, $e->company);
+        }
+        if (array_key_exists('centro', $d)) {
+            $e->cost_center_id = $this->costCenterId($e->company, $d['centro'], ApprovalPolicy::forUser($this->ctx->userId()));
         }
         if (array_key_exists('conta', $d)) {
             $e->bank_account_id = $this->bankAccountId($e->company, $d['conta']);
@@ -254,6 +273,55 @@ class FinanceService
         return $s;
     }
 
+    // ---------------------------------------------------------------- aprovação (1.1.7)
+
+    /** Despesas pendentes (uma linha por lançamento ou série) das empresas visíveis. */
+    public function pendingList(?array $companyIds = null): Collection
+    {
+        $q = Entry::withPending()->with('company', 'costCenter')->where('approval_status', Entry::PENDING)->orderBy('created_at');
+        if ($companyIds !== null) {
+            $q->whereIn('company_id', $companyIds ?: ['-']);
+        }
+
+        return $q->limit(500)->get()->groupBy(fn ($e) => $e->recurrence_group ?? $e->id)->map->first()->values();
+    }
+
+    /** Aprova (vira despesa efetiva) ou rejeita (fica cancelada e registrada na auditoria) um lançamento pendente e a série dele. */
+    public function decide(string $entryId, bool $approve, string $channel = 'web'): Entry
+    {
+        if (! ApprovalPolicy::canApprove($this->ctx->role())) {
+            throw new BusinessRule('Somente administrador ou gestor podem aprovar despesas.', 'permissao');
+        }
+
+        return DB::transaction(function () use ($entryId, $approve, $channel) {
+            $e = Entry::withPending()->where('approval_status', Entry::PENDING)->whereKey($entryId)->lockForUpdate()->first()
+                ?? throw new BusinessRule('Lançamento pendente não encontrado (já decidido ou sem permissão).', 'aprovacao');
+            $targets = $e->recurrence_group
+                ? Entry::withPending()->where('recurrence_group', $e->recurrence_group)->where('approval_status', Entry::PENDING)->get()
+                : collect([$e]);
+            foreach ($targets as $t) {
+                $t->forceFill(['approval_status' => $approve ? null : Entry::REJECTED, 'approved_by' => $this->ctx->userId(), 'approved_at' => now()])->save();
+                if (! $approve) {
+                    $t->delete();
+                }
+            }
+            $this->audit->log($approve ? 'lancamento.aprovar' : 'lancamento.rejeitar', $e, ['desc' => $e->description, 'valor' => $e->amount_cents, 'qtd' => $targets->count(),
+                'responsavel' => $e->responsible], channel: $channel);
+
+            return $e;
+        });
+    }
+
+    public static function pendingCount(?array $companyIds = null): int
+    {
+        $q = Entry::withPending()->where('approval_status', Entry::PENDING);
+        if ($companyIds !== null) {
+            $q->whereIn('company_id', $companyIds ?: ['-']);
+        }
+
+        return (int) $q->count();
+    }
+
     // ---------------------------------------------------------------- exemplos
 
     public function loadSample(Company $company): void
@@ -290,14 +358,36 @@ class FinanceService
 
     // ---------------------------------------------------------------- apoio
 
-    public function category(string $type, ?string $cat, string $desc): string
+    public function category(string $type, ?string $cat, string $desc, ?Company $company = null): string
     {
         $list = config('wsf.categories.'.$type);
         if ($cat && in_array($cat, $list, true)) {
             return $cat;
         }
+        if ($cat && $company && CompanyCategory::query()->where('company_id', $company->id)->where('type', $type)->where('name', $cat)->where('active', true)->exists()) {
+            return $cat;   // categoria própria da entidade
+        }
 
         return $type === 'despesa' ? CategoryGuesser::guess($desc) : (CategoryGuesser::guessIncome($desc));
+    }
+
+    /** Centro de custo válido para a empresa e permitido para quem lança (obrigatório se as regras limitarem os centros). */
+    public function costCenterId(Company $company, ?string $id, array $rules, bool $lenient = false): ?string
+    {
+        if (! $id) {
+            if (! $lenient && ($rules['cost_center_ids'] ?? null) !== null && ApprovalPolicy::allowedCostCenters($company->id, $rules)->isNotEmpty()) {
+                throw new BusinessRule('Escolha um dos centros de custo permitidos para você.', 'centro_custo');
+            }
+
+            return null;
+        }
+        $cc = CostCenter::query()->where('company_id', $company->id)->where('active', true)->whereKey($id)->first()
+            ?? throw new BusinessRule('Centro de custo inválido para esta empresa.', 'validacao');
+        if (($rules['cost_center_ids'] ?? null) !== null && ! in_array($cc->id, $rules['cost_center_ids'], true)) {
+            throw new BusinessRule('Você não tem permissão para lançar neste centro de custo.', 'centro_custo');
+        }
+
+        return $cc->id;
     }
 
     private function bankAccountId(Company $company, ?string $id): ?string

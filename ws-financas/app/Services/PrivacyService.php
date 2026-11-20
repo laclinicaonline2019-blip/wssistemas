@@ -5,6 +5,10 @@ namespace App\Services;
 use App\Core\Audit\AuditLogger;
 use App\Models\Account;
 use App\Models\BankAccount;
+use App\Models\Budget;
+use App\Models\CompanyCategory;
+use App\Models\CostCenter;
+use App\Models\ReportPreference;
 use App\Models\Company;
 use App\Models\Debt;
 use App\Models\Entry;
@@ -13,6 +17,7 @@ use App\Models\User;
 use App\Models\WhatsappContact;
 use App\Models\WhatsappMessage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * LGPD: portabilidade (exportação completa dos dados do cliente) e retenção/eliminação.
@@ -35,10 +40,14 @@ class PrivacyService
             'empresas' => Company::query()->get()->map(fn ($c) => ['id' => $c->id, 'nome' => $c->name, 'apelido' => $c->alias, 'documento' => $c->document]),
             'usuarios' => Membership::query()->with('user')->get()->map(fn ($m) => ['nome' => $m->user->name, 'email' => $m->user->email, 'papel' => $m->role]),
             'contas_bancarias' => BankAccount::query()->get()->map->only(['id', 'company_id', 'name', 'bank', 'opening_balance_cents']),
-            'lancamentos' => Entry::query()->get()->map(fn ($e) => $e->only(['id', 'company_id', 'type', 'description', 'amount_cents', 'category', 'competence', 'paid', 'source', 'recurrence_kind', 'installment_no', 'installments_total'])
+            'lancamentos' => Entry::withPending()->get()->map(fn ($e) => $e->only(['id', 'company_id', 'type', 'description', 'amount_cents', 'category', 'competence', 'paid', 'source', 'recurrence_kind', 'installment_no', 'installments_total', 'cost_center_id', 'approval_status', 'responsible'])
                 + ['due_date' => $e->due_date?->toDateString(), 'paid_at' => $e->paid_at?->toDateString()]),
             'dividas' => Debt::query()->get()->map->only(['id', 'company_id', 'creditor', 'balance_cents', 'monthly_rate', 'min_payment_cents']),
             'whatsapp_numeros' => WhatsappContact::query()->get()->map(fn ($c) => ['rotulo' => $c->label, 'telefone' => $c->phone]),
+            'centros_de_custo' => CostCenter::query()->get()->map->only(['id', 'company_id', 'name', 'active']),
+            'categorias_proprias' => CompanyCategory::query()->get()->map->only(['company_id', 'type', 'name', 'active']),
+            'metas' => Budget::query()->get()->map->only(['company_id', 'period', 'category', 'amount_cents']),
+            'relatorios_automaticos' => ReportPreference::query()->get()->map->only(['weekly', 'monthly', 'via_whatsapp', 'via_email', 'company_ids', 'email']),
         ];
     }
 
@@ -71,6 +80,12 @@ class PrivacyService
             DB::table('whatsapp_pendings')->where('account_id', $account->id)->delete();
             foreach (['entries', 'debts', 'company_settings', 'local_imports', 'bank_accounts', 'company_access', 'whatsapp_contacts'] as $t) {
                 DB::table($t)->where('account_id', $account->id)->delete();
+            }
+            // 1.1.7: centros de custo, categorias, metas, relatórios, pedidos de plano e prévias de importação
+            foreach (['cost_centers', 'company_categories', 'budgets', 'report_runs', 'report_preferences', 'plan_change_requests', 'import_batches'] as $t) {
+                if (Schema::hasTable($t)) {
+                    DB::table($t)->where('account_id', $account->id)->delete();
+                }
             }
             DB::table('companies')->where('account_id', $account->id)->delete();
             DB::table('memberships')->where('account_id', $account->id)->delete();

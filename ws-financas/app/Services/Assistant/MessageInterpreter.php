@@ -57,6 +57,29 @@ class MessageInterpreter
             return ['intent' => 'corrigir', 'amount_cents' => $v[0]] + $r;
         }
 
+        // --- aprovação de despesas de funcionários (1.1.7; só administrador/gestor executam)
+        if (preg_match('/^(pendentes|pendencias|aprovacoes|aprovacao|despesas pendentes|lancamentos pendentes|o que (tem|falta) (para|pra) aprovar)\??$/u', $n)) {
+            return ['intent' => 'pendentes'] + $r;
+        }
+        if (preg_match('/^(aprovar|aprova|aprovo|aprovado)\s+(todos|todas|tudo|\d{1,2})$/u', $n, $m)) {
+            return ['intent' => 'aprovar', 'choice' => ctype_digit($m[2]) ? (int) $m[2] : 0, 'all' => ! ctype_digit($m[2])] + $r;
+        }
+        if (preg_match('/^(rejeitar|rejeita|rejeito|recusar|recusa|recuso|reprovar|reprova)\s+(\d{1,2})$/u', $n, $m)) {
+            return ['intent' => 'rejeitar', 'choice' => (int) $m[2]] + $r;
+        }
+
+        // --- relatório da entidade (semana/mês), o mesmo enviado automaticamente
+        if (preg_match('/^(me (manda|envia|mostra|mostre) (o )?)?(relatorio|relatorios)\b(.*)$/u', $n, $m)) {
+            $rest = $m[5];
+            $r['report_kind'] = preg_match('/\b(mes|mensal)\b/u', $rest) ? 'mensal' : 'semanal';
+            $r['report_current'] = (bool) preg_match('/\b(deste|desse|este|esse|atual)\b/u', $rest);
+            $r['company_hint'] = $this->companyHint($raw, $n);
+            $target = preg_replace('/\b(semanal|mensal|semana|mes|passad[ao]|anterior|deste|desse|desta|dessa|este|esse|esta|essa|atual|da|do|de|empresa|completo|detalhado)\b/u', ' ', $rest) ?? '';
+            $r['report_target'] = trim(preg_replace('/\s+/', ' ', $target) ?? '') ?: null;
+
+            return ['intent' => 'relatorio'] + $r;
+        }
+
         // --- consultas (somente leitura; os números vêm sempre do banco)
         $isQuestion = str_contains($raw, '?') || preg_match('/^(quanto|quantos|quantas|quais|qual|o que|oque|tenho|mostra|mostre|mostrar|me mostra|me mostre|me manda|me envie|me diga|me fala|me passa|lista|liste|listar|ver|resumo|saldo|extrato|relatorio|como estou|como esta|como estamos|contas|minhas|meus|quero (ver|saber)|despesas|gastos|receitas|entradas|recebimentos|lancamentos)\b/u', $n);
         if ($isQuestion && $this->amount($raw) === null) {
